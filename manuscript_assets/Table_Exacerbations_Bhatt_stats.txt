@@ -1,0 +1,2 @@
+n_cohort=8393
+n_total_exac=23102

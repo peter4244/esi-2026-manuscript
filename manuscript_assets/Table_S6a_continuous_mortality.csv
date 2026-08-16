@@ -1,0 +1,7 @@
+"outcome","model","ESI_HR","ESI_p","FEV1FVC_HR","FEV1FVC_p","LR_vs_FEV1FVC_only"
+"all-cause","ESI only","1.10 (1.07-1.13)","<0.001","-","-","-"
+"all-cause","FEV1/FVC only","-","-","0.84 (0.80-0.89)","<0.001","-"
+"all-cause","ESI + FEV1/FVC","1.08 (1.03-1.12)","<0.001","0.95 (0.87-1.04)","0.256","chi2=11.48, df=1, p=<0.001"
+"respiratory","ESI only","1.10 (1.07-1.14)","<0.001","-","-","-"
+"respiratory","FEV1/FVC only","-","-","0.77 (0.71-0.83)","<0.001","-"
+"respiratory","ESI + FEV1/FVC","1.01 (0.94-1.07)","0.849","0.78 (0.67-0.90)","<0.001","chi2=0.04, df=1, p=0.849"

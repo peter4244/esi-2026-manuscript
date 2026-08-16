@@ -1,0 +1,7 @@
+"stratum","n_subj","model","ESI_slope_mL_yr","ESI_p","FEV1FVC_slope_mL_yr","FEV1FVC_p"
+"GOLD 0",4073,"ESI only","-5.42 (SE 1.44)","<0.001","-","-"
+"GOLD 0",4073,"ESI + FEV1/FVC","-4.75 (SE 1.47)","0.001","30.71 (SE 11.15)","0.006"
+"PRISm",1144,"ESI only","-1.93 (SE 3.59)","0.591","-","-"
+"PRISm",1144,"ESI + FEV1/FVC","2.04 (SE 3.77)","0.587","74.68 (SE 26.91)","0.006"
+"pooled",9463,"ESI only","0.47 (SE 0.29)","0.103","-","-"
+"pooled",9463,"ESI + FEV1/FVC","2.57 (SE 0.53)","<0.001","20.83 (SE 6.16)","<0.001"

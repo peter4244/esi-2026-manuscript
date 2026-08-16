@@ -1,0 +1,34 @@
+"table","model","term","est_full","LCI_full","UCI_full","p_full","est_min","LCI_min","UCI_min","p_min","pct_change"
+"Table 1","all-cause CT","AFL-only-NoCOPD",0.897,0.622,1.296,0.564,0.902,0.625,1.303,0.583,0.542
+"Table 1","all-cause ESI","AFL-only-NoCOPD",0.913,0.571,1.46,0.705,0.974,0.609,1.556,0.911,6.592
+"Table 1","respiratory CT","AFL-only-NoCOPD",1.653,0.662,4.13,0.282,1.664,0.666,4.156,0.276,0.65
+"Table 1","respiratory ESI","AFL-only-NoCOPD",2.017,0.736,5.532,0.173,2.122,0.774,5.82,0.144,5.202
+"Table 1","all-cause CT","COPD-minor",1.907,1.64,2.218,4.79e-17,2.085,1.797,2.421,4.52e-22,9.339
+"Table 1","all-cause ESI","COPD-minor",1.943,1.625,2.324,3.26e-13,2.109,1.766,2.518,1.8e-16,8.502
+"Table 1","respiratory CT","COPD-minor",3.092,2.012,4.751,2.59e-07,3.104,2.023,4.761,2.12e-07,0.37
+"Table 1","respiratory ESI","COPD-minor",2.912,1.767,4.8,2.77e-05,2.888,1.754,4.754,3.04e-05,-0.828
+"Table 1","all-cause CT","COPD-major",2.591,2.351,2.855,2.91e-82,2.927,2.662,3.217,1.4e-109,12.941
+"Table 1","all-cause ESI","COPD-major",2.395,2.184,2.626,8.8e-77,2.687,2.455,2.94,1.34e-102,12.199
+"Table 1","respiratory CT","COPD-major",13.93,10.593,18.317,2.78e-79,16.231,12.369,21.297,6.69e-90,16.518
+"Table 1","respiratory ESI","COPD-major",11.853,9.256,15.179,1.73e-85,13.817,10.811,17.658,9.88e-98,16.571
+"Table 1","exacerbations CT","AFL-only-NoCOPD",1.28,0.942,1.739,0.115,1.241,0.911,1.691,0.17,-3.01
+"Table 1","exacerbations ESI","AFL-only-NoCOPD",0.969,0.629,1.492,0.885,0.902,0.583,1.397,0.645,-6.853
+"Table 1","exacerbations CT","COPD-minor",2.728,2.366,3.145,2.31e-43,2.841,2.469,3.269,4e-48,4.134
+"Table 1","exacerbations ESI","COPD-minor",2.781,2.337,3.309,1.01e-30,2.91,2.448,3.46,1.02e-33,4.65
+"Table 1","exacerbations CT","COPD-major",5.068,4.609,5.573,4.62e-246,5.189,4.733,5.689,1.22e-269,2.377
+"Table 1","exacerbations ESI","COPD-major",4.473,4.079,4.905,3.87e-222,4.599,4.203,5.032,2.78e-242,2.813
+"Table 2","all-cause","Both-COPD",2.607,2.368,2.869,3.32e-85,2.936,2.674,3.224,1.18e-112,12.631
+"Table 2","respiratory","Both-COPD",13.653,10.32,18.063,7.64e-75,15.682,11.879,20.702,4.83e-84,14.861
+"Table 2","exacerbations","Both-COPD",4.891,4.463,5.36,6.75e-253,5.037,4.609,5.503,4.8e-280,2.983
+"Table 2","all-cause","Bhatt-only-COPD",1.577,1.302,1.909,3.04e-06,1.723,1.424,2.084,2.09e-08,9.258
+"Table 2","respiratory","Bhatt-only-COPD",3.071,1.85,5.099,1.44e-05,3.095,1.866,5.134,1.21e-05,0.784
+"Table 2","exacerbations","Bhatt-only-COPD",1.992,1.665,2.384,5.38e-14,2.027,1.695,2.425,1.04e-14,1.769
+"Table 2","all-cause","ESI-only-COPD",1.096,0.806,1.489,0.56,1.114,0.82,1.514,0.488,1.725
+"Table 2","respiratory","ESI-only-COPD",2.321,1.103,4.883,0.0265,2.26,1.074,4.754,0.0317,-2.637
+"Table 2","exacerbations","ESI-only-COPD",1.373,1.053,1.79,0.0192,1.327,1.016,1.733,0.0381,-3.356
+"S6a","cont ESI, all-cause","ESI_v1post (ESI alone)",1.1,1.071,1.131,7.63e-12,1.251,1.235,1.267,2.51e-260,13.685
+"S6a","cont ESI + FEV1/FVC, all-cause","ESI_v1post (joint)",1.068,1.022,1.117,0.00377,1.1,1.064,1.137,1.83e-08,2.926
+"S6b","cont ESI, resp","ESI_v1post (ESI alone)",1.103,1.066,1.143,3.46e-08,1.414,1.389,1.438,0,28.111
+"S6b","cont ESI + FEV1/FVC, resp","ESI_v1post (joint)",0.99,0.926,1.058,0.77,0.965,0.916,1.016,0.174,-2.586
+"S6c","cont ESI, exac","ESI_v1post (ESI alone)",1.111,1.072,1.152,9.46e-09,1.33,1.306,1.355,7.55e-204,19.68
+"S6c","cont ESI + FEV1/FVC, exac","ESI_v1post (joint)",1.007,0.955,1.062,0.796,0.978,0.94,1.018,0.281,-2.854

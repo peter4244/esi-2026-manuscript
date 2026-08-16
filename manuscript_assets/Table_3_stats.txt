@@ -1,0 +1,7 @@
+LR_chisq_all=11.48
+LR_p_all=7.041e-04
+LR_chisq_resp=0.04
+LR_p_resp=8.487e-01
+n_cohort=10043
+n_deaths_all=2839
+n_deaths_resp=1163

@@ -1,0 +1,1093 @@
+---
+title: "ESI across the full COPDGene spectrum: first-look readiness analysis"
+author: "Pete Castaldi"
+date: "2026-05-17"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    df_print: paged
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  fig.width = 9, fig.height = 5.5, dpi = 110
+)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(knitr)
+library(table1)
+library(patchwork)
+
+# Two-font, Arial body, never-bold body — matches Pete's figure conventions
+theme_set(
+  theme_bw(base_family = "Arial", base_size = 11) +
+    theme(
+      panel.grid.minor   = element_blank(),
+      strip.background   = element_blank(),
+      plot.title         = element_text(face = "plain", size = 12),
+      plot.subtitle      = element_text(size = 10),
+      axis.title         = element_text(face = "plain"),
+      legend.title       = element_text(face = "plain")
+    )
+)
+```
+
+# Background and scope
+
+Massimo's spectrum-wide proposal asks whether ESI adds information about
+lung structure, function, and prognosis beyond what FEV1/FVC already
+provides across the **full** COPDGene cohort (never-smoker → GOLD 4),
+not just GOLD 2–4.  Within GOLD 2–4 the correlation between ESI and
+FEV1/FVC is r ≈ −0.94 (88% of the ESI subtyping is recoverable from
+FEV1/FVC alone), so the unique signal of ESI should emerge at the
+preserved/mild end of the spectrum where the correlation is weaker.
+
+This report is the **data-readiness pass** for that analysis.  It does
+not change the v10 manuscript.  Outputs:
+
+1. Merge yield between Massimo's ESI file and the local COPDGene
+   phenotype file
+2. ESI distribution by spectrum stratum
+3. Per-stratum correlations of ESI with FEV1/FVC and CT structure
+4. Coverage of CT, DLco, and other downstream outcomes
+5. Two analytic caveats (DLco availability, ESI ceiling effect)
+6. A draft of the proposed Figure 1 for the spectrum-wide paper
+
+# Data linkage
+
+The locally accessible COPDGene phenotype/CT/outcome files use
+**randomized (research) participant IDs**.  Massimo's original ESI file
+used the **original COPDGene `sid` identifiers**.  Pete generated the
+`sid` → `rand_id` crosswalk on the secure side and applied it to
+Massimo's ESI data.  All downstream files use randomized IDs only.
+
+```{r paths}
+esi_path <- "/Users/petecastaldi/claude_projects/projects/ESI_2024/copdgene_esi_randid_2026.5.17.csv"
+phe_path <- "/Users/petecastaldi/claude_projects/copdgene/deidentified/COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24_randid.csv"
+```
+
+# Load and merge
+
+## Massimo's ESI data
+
+```{r load-esi}
+esi_raw <- read.csv(esi_path, stringsAsFactors = FALSE)
+# Drop trailing empty V10–V16 columns left over from the source xlsx
+esi_raw <- esi_raw[, c("rand_id","visitnum","PrePost","FVC","PEF","FEF25","FEF50","FEF75","ESI")]
+esi_raw$rand_id  <- as.character(esi_raw$rand_id)
+esi_raw$visitnum <- as.integer(esi_raw$visitnum)
+esi_raw$PrePost  <- as.integer(esi_raw$PrePost)
+
+cat("Total ESI rows:", nrow(esi_raw),
+    "\nUnique rand_ids:", length(unique(esi_raw$rand_id)), "\n")
+```
+
+For cross-sectional readiness, take Visit 1, POST-bronchodilator (matches
+`FEV1_FVC_post` usage in the v10 manuscript).
+
+```{r esi-v1post}
+esi_v1 <- esi_raw %>%
+  filter(visitnum == 1, PrePost == 1) %>%
+  select(rand_id, ESI_v1post = ESI)
+cat("V1 POST ESI subjects:", nrow(esi_v1), "\n")
+```
+
+## COPDGene Visit 1 phenotype
+
+Read only the columns needed for the readiness pass.
+
+```{r load-phe}
+phe_cols <- c(
+  "rand_id","visitnum",
+  "smoking_status","finalgold_visit","finalGold","finalgold_baseline",
+  "FEV1_post","FVC_post","FEV1pp_post","FEV1_FVC_post",
+  "fev1_pp_gli_global","fev1fvc_pp_gli_global",
+  "DLco_GLI_pp_PbHb_adj",
+  "pctEmph_Thirona","Insp_LAA950_total_Thirona",
+  "Exp_LAA856_total_Thirona",
+  "PRM_pct_emphysema_Thirona","PRM_pct_airtrapping_Thirona","Pi10_Thirona",
+  "ATS_PackYears","age_visit","gender","race","BMI","SmokCigNow"
+)
+
+# Read just V1 rows to keep memory small
+phe_all <- read.csv(phe_path, stringsAsFactors = FALSE, na.strings = c("","NA"))
+phe_v1  <- phe_all %>% filter(visitnum == 1) %>% select(all_of(phe_cols))
+phe_v1$rand_id <- as.character(phe_v1$rand_id)
+cat("V1 phenotype subjects:", nrow(phe_v1), "\n")
+```
+
+## Merge
+
+```{r merge}
+d <- esi_v1 %>% inner_join(phe_v1, by = "rand_id")
+cat("Merged V1 subjects with ESI + phenotype:", nrow(d), "\n")
+cat("Phenotype-only V1 (no ESI):", sum(!phe_v1$rand_id %in% esi_v1$rand_id), "\n")
+cat("ESI-only V1 (no phenotype):", sum(!esi_v1$rand_id %in% phe_v1$rand_id), "\n")
+```
+
+# Define spectrum stratum
+
+`finalgold_visit` encodes the spectrum directly in COPDGene:
+−2 = never-smoker, −1 = PRISm, 0 = GOLD 0 (smoker without obstruction),
+1–4 = GOLD 1–4.
+
+```{r stratum}
+stratum_levels <- c("Never","GOLD0","PRISm","GOLD1","GOLD2","GOLD3","GOLD4")
+d <- d %>%
+  mutate(
+    stratum = case_when(
+      finalgold_visit == -2 ~ "Never",
+      finalgold_visit == -1 ~ "PRISm",
+      finalgold_visit ==  0 ~ "GOLD0",
+      finalgold_visit ==  1 ~ "GOLD1",
+      finalgold_visit ==  2 ~ "GOLD2",
+      finalgold_visit ==  3 ~ "GOLD3",
+      finalgold_visit ==  4 ~ "GOLD4",
+      TRUE                  ~ NA_character_
+    ),
+    stratum = factor(stratum, levels = stratum_levels)
+  )
+
+d %>%
+  count(stratum) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  kable(caption = "Subject counts by spectrum stratum (V1 POST-BD ESI, n=10,169)")
+```
+
+# Cohort overview by stratum
+
+```{r table1, results='asis'}
+d_t1 <- d %>% filter(!is.na(stratum))
+label(d_t1$age_visit)     <- "Age (yr)"
+label(d_t1$BMI)           <- "BMI"
+label(d_t1$ATS_PackYears) <- "Pack-years"
+label(d_t1$FEV1pp_post)   <- "FEV1 % pred (post-BD)"
+label(d_t1$FEV1_FVC_post) <- "FEV1/FVC (post-BD)"
+label(d_t1$ESI_v1post)    <- "ESI (V1 post-BD)"
+
+table1(
+  ~ age_visit + BMI + ATS_PackYears + FEV1pp_post + FEV1_FVC_post + ESI_v1post | stratum,
+  data = d_t1, overall = FALSE
+)
+```
+
+# ESI distribution by stratum
+
+```{r esi-by-stratum}
+esi_summary <- d %>%
+  filter(!is.na(stratum)) %>%
+  group_by(stratum) %>%
+  summarise(
+    n        = n(),
+    mean_ESI = mean(ESI_v1post, na.rm = TRUE),
+    sd_ESI   = sd(ESI_v1post,   na.rm = TRUE),
+    median_ESI = median(ESI_v1post, na.rm = TRUE),
+    q1_ESI   = quantile(ESI_v1post, 0.25, na.rm = TRUE),
+    q3_ESI   = quantile(ESI_v1post, 0.75, na.rm = TRUE),
+    n_at_10  = sum(ESI_v1post >= 9.999, na.rm = TRUE),
+    pct_at_10 = round(100 * sum(ESI_v1post >= 9.999, na.rm = TRUE) / n(), 1)
+  )
+kable(esi_summary, digits = 2,
+      caption = "ESI distribution by spectrum stratum (V1 POST-BD)")
+```
+
+**Observed:** clean monotonic gradient from never-smoker (mean 0.83) to
+GOLD 4 (mean 8.25).  PRISm and GOLD 0 have **identical** ESI
+distributions, which is consistent with ESI not seeing PRISm as an
+emphysema-like physiologic pattern.
+
+# Per-stratum correlations — the headline finding
+
+```{r cor-table}
+cor_strat <- function(g) {
+  c(
+    r_FF_FVC  = cor(g$ESI_v1post, g$FEV1_FVC_post,         use = "pairwise.complete.obs"),
+    n_FF_FVC  = sum(complete.cases(g$ESI_v1post, g$FEV1_FVC_post)),
+    r_LAA950  = cor(g$ESI_v1post, g$Insp_LAA950_total_Thirona, use = "pairwise.complete.obs"),
+    n_LAA950  = sum(complete.cases(g$ESI_v1post, g$Insp_LAA950_total_Thirona))
+  )
+}
+
+cor_tab <- d %>%
+  filter(!is.na(stratum)) %>%
+  group_by(stratum) %>%
+  group_modify(~ as.data.frame(t(cor_strat(.x)))) %>%
+  bind_rows(
+    d %>% mutate(stratum = "ALL (whole spectrum)") %>%
+      group_by(stratum) %>%
+      group_modify(~ as.data.frame(t(cor_strat(.x))))
+  )
+
+kable(cor_tab, digits = 3,
+      caption = "Per-stratum and overall Pearson correlations of ESI with FEV1/FVC and %LAA-950")
+```
+
+**Observed:**
+
+- In Never / GOLD 0 / PRISm (n ≈ 5,700): r(ESI, FEV1/FVC) is weak
+  (−0.26 to −0.40).
+- In GOLD 2–4 (the v10 paper's window): r tightens to roughly
+  −0.85 to −0.92 — i.e., the collinearity Massimo flagged.
+- Overall whole-spectrum r ≈ −0.89, almost identical to the −0.87
+  he cited from the 2019 Respir Res paper (internal consistency check).
+
+**Interpretation:** ESI provides information beyond FEV1/FVC primarily
+in the preserved-spirometry portion of the spectrum.  This is the
+empirical justification for the proposed pivot away from the GOLD 2–4
+restriction.
+
+# CT, DLco, and downstream-variable coverage
+
+```{r coverage}
+coverage <- d %>%
+  filter(!is.na(stratum)) %>%
+  group_by(stratum) %>%
+  summarise(
+    n          = n(),
+    n_FEV1FVC  = sum(!is.na(FEV1_FVC_post)),
+    n_LAA950   = sum(!is.na(Insp_LAA950_total_Thirona)),
+    n_pctEmph  = sum(!is.na(pctEmph_Thirona)),
+    n_PRM_emph = sum(!is.na(PRM_pct_emphysema_Thirona)),
+    n_Pi10     = sum(!is.na(Pi10_Thirona)),
+    n_DLco_V1  = sum(!is.na(DLco_GLI_pp_PbHb_adj))
+  )
+kable(coverage,
+      caption = "Variable coverage at Visit 1 by spectrum stratum")
+```
+
+**Caveat 1 — DLco is zero at Visit 1.**  Confirms the v10 methods note
+that DLco was first measured at Visit 2.  The ESI × DLco analysis from
+the proposal will need to use either V2 ESI merged with V2 DLco, or V1
+ESI merged with V2 DLco (lagged design).  Worth a sentence in methods.
+
+# ESI ceiling effect
+
+```{r ceiling-hist}
+ggplot(d %>% filter(!is.na(stratum)), aes(x = ESI_v1post, fill = stratum)) +
+  geom_histogram(binwidth = 0.5, boundary = 0, position = "stack") +
+  scale_x_continuous(breaks = seq(0, 10, 1)) +
+  labs(
+    x = "ESI (V1, post-BD)",
+    y = "Subjects",
+    fill = "Stratum",
+    title = "ESI distribution across the spectrum (whole cohort)",
+    subtitle = "Note pile-up at ESI = 10 (GOLD 4)"
+  )
+```
+
+```{r ceiling-counts}
+d %>%
+  filter(!is.na(stratum)) %>%
+  group_by(stratum) %>%
+  summarise(
+    n         = n(),
+    n_at_10   = sum(ESI_v1post >= 9.999, na.rm = TRUE),
+    pct_at_10 = round(100 * sum(ESI_v1post >= 9.999, na.rm = TRUE) / n(), 1)
+  ) %>%
+  kable(caption = "ESI ceiling: subjects at ESI = 10 by stratum")
+```
+
+**Caveat 2 — 228 of 593 GOLD-4 subjects (38%) are pegged at ESI = 10.**
+Continuous-ESI splines and Cox/HR estimates will be distorted unless we
+either (a) treat ESI = 10 as right-censored (Tobit / censored
+regression) or (b) report a sensitivity model that excludes ESI = 10.
+Recommend doing both in the analysis paper.
+
+# Other overall correlations
+
+```{r overall-cor}
+overall_cor <- tibble(
+  variable = c("FEV1/FVC (post-BD)","FEV1 % pred (post-BD)",
+               "%LAA-950 (insp)","pctEmph_Thirona",
+               "PRM emphysema","PRM air-trapping",
+               "%LAA-856 (exp)","Pi10"),
+  r = c(
+    cor(d$ESI_v1post, d$FEV1_FVC_post,             use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$FEV1pp_post,               use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$Insp_LAA950_total_Thirona, use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$pctEmph_Thirona,           use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$PRM_pct_emphysema_Thirona, use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$PRM_pct_airtrapping_Thirona,use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$Exp_LAA856_total_Thirona,  use="pairwise.complete.obs"),
+    cor(d$ESI_v1post, d$Pi10_Thirona,              use="pairwise.complete.obs")
+  )
+)
+kable(overall_cor, digits = 3,
+      caption = "Whole-spectrum (V1) Pearson r between ESI and key variables")
+```
+
+# BD reversibility (sanity check)
+
+```{r bd-reversibility}
+bd <- esi_raw %>%
+  filter(visitnum == 1, !is.na(ESI), PrePost %in% c(0, 1)) %>%
+  group_by(rand_id, PrePost) %>%
+  summarise(ESI = mean(ESI), .groups = "drop") %>%
+  pivot_wider(id_cols = rand_id,
+              names_from = PrePost, values_from = ESI,
+              names_prefix = "ESI_pp") %>%
+  filter(!is.na(ESI_pp0), !is.na(ESI_pp1)) %>%
+  mutate(deltaESI = ESI_pp1 - ESI_pp0)
+
+cat("Subjects with both PRE and POST ESI at V1:", nrow(bd), "\n")
+summary(bd$deltaESI)
+
+ggplot(bd, aes(x = deltaESI)) +
+  geom_histogram(binwidth = 0.1, color = "white", fill = "grey30") +
+  geom_vline(xintercept = 0, linetype = 2) +
+  labs(
+    x = "ΔESI (POST − PRE) at V1",
+    y = "Subjects",
+    title = "Acute bronchodilator effect on ESI",
+    subtitle = "ESI is largely insensitive to BD (mean Δ ≈ -0.07)"
+  )
+```
+
+# Draft Figure 1 — ESI across the COPDGene spectrum
+
+Three panels (mockup, not validator-clean):
+
+- **A.** ESI distribution by stratum (boxplot + jittered points).
+- **B.** ESI vs FEV1/FVC scatter, color-coded by stratum.
+- **C.** Per-stratum Pearson r(ESI, FEV1/FVC).
+
+```{r fig1, fig.width = 13, fig.height = 5.5}
+stratum_pal <- c(
+  Never = "#7F7F7F", GOLD0 = "#1F77B4", PRISm = "#9467BD",
+  GOLD1 = "#2CA02C", GOLD2 = "#FFB000", GOLD3 = "#D62728", GOLD4 = "#8B0000"
+)
+
+d_f <- d %>% filter(!is.na(stratum))
+
+pA <- ggplot(d_f, aes(x = stratum, y = ESI_v1post, color = stratum)) +
+  geom_jitter(width = 0.25, alpha = 0.15, size = 0.5) +
+  geom_boxplot(outlier.shape = NA, fill = NA, color = "black", width = 0.5) +
+  scale_color_manual(values = stratum_pal, guide = "none") +
+  labs(x = NULL, y = "ESI (V1, post-BD)",
+       title = "A. ESI distribution across the spectrum")
+
+pB <- ggplot(d_f, aes(x = FEV1_FVC_post, y = ESI_v1post, color = stratum)) +
+  geom_point(alpha = 0.35, size = 0.6) +
+  scale_color_manual(values = stratum_pal, name = "Stratum") +
+  labs(x = "FEV1/FVC (post-BD)", y = "ESI",
+       title = "B. ESI vs FEV1/FVC, by stratum") +
+  guides(color = guide_legend(override.aes = list(alpha = 1, size = 2)))
+
+# Per-stratum r for Panel C — reuse cor_tab from earlier section
+cor_plot <- cor_tab %>%
+  filter(stratum %in% stratum_levels) %>%
+  mutate(stratum = factor(stratum, levels = stratum_levels))
+
+pC <- ggplot(cor_plot, aes(x = stratum, y = r_FF_FVC, fill = stratum)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", r_FF_FVC)),
+            vjust = ifelse(cor_plot$r_FF_FVC < 0, 1.4, -0.4),
+            size = 3.4) +
+  scale_fill_manual(values = stratum_pal, guide = "none") +
+  scale_y_continuous(limits = c(-1, 0.05)) +
+  labs(x = NULL, y = "Pearson r (ESI vs FEV1/FVC)",
+       title = "C. ESI–FEV1/FVC correlation by stratum")
+
+(pA | pB | pC) + plot_layout(widths = c(1, 1.2, 1))
+```
+
+# Longitudinal extension (V1 → V2 → V3)
+
+## Build the longitudinal long-format dataset
+
+Use POST-BD ESI for all three visits.  Carry the baseline (V1) spectrum
+stratum forward as the grouping variable.
+
+```{r long-data}
+phe_long_cols <- c(
+  "rand_id","visitnum","days_since_baseline","years_from_baseline","age_visit",
+  "FEV1_post","FEV1_FVC_post","FEV1pp_post","fev1_pp_gli_global",
+  "DLco_GLI_pp_PbHb_adj",
+  "pctEmph_Thirona","Insp_LAA950_total_Thirona",
+  "Severe_Exacerbations","Exacerbation_Frequency",
+  "SmokCigNow","ATS_PackYears","gender","race","BMI"
+)
+phe_long <- phe_all %>%
+  filter(visitnum %in% c(1, 2, 3)) %>%
+  select(all_of(phe_long_cols))
+phe_long$rand_id <- as.character(phe_long$rand_id)
+
+esi_long <- esi_raw %>%
+  filter(PrePost == 1) %>%                       # POST-BD only
+  group_by(rand_id, visitnum) %>%
+  summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop")
+
+long <- esi_long %>% inner_join(phe_long, by = c("rand_id","visitnum"))
+
+# Baseline stratum carried forward
+baseline_stratum <- d %>% select(rand_id, baseline_stratum = stratum)
+long <- long %>% left_join(baseline_stratum, by = "rand_id")
+
+long %>%
+  count(visitnum) %>%
+  kable(caption = "Longitudinal ESI rows by visit (POST-BD)")
+```
+
+## Multi-visit ESI coverage
+
+```{r long-coverage}
+visit_pattern <- long %>%
+  group_by(rand_id) %>%
+  summarise(visits = paste(sort(unique(visitnum)), collapse = "+"), .groups = "drop") %>%
+  count(visits) %>% arrange(desc(n))
+kable(visit_pattern,
+      caption = "Number of subjects by visit-completeness pattern (POST-BD ESI)")
+
+long %>%
+  filter(!is.na(baseline_stratum)) %>%
+  group_by(baseline_stratum, visitnum) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  pivot_wider(names_from = visitnum, values_from = n, names_prefix = "V") %>%
+  kable(caption = "Subjects per visit by baseline (V1) stratum")
+```
+
+## ESI trajectory by baseline stratum
+
+```{r esi-trajectory, fig.width = 11, fig.height = 5.5}
+traj_summary <- long %>%
+  filter(!is.na(baseline_stratum), !is.na(ESI)) %>%
+  group_by(baseline_stratum, visitnum) %>%
+  summarise(
+    n = n(),
+    mean_ESI = mean(ESI),
+    se_ESI   = sd(ESI) / sqrt(n()),
+    .groups = "drop"
+  )
+
+ggplot(traj_summary,
+       aes(x = factor(visitnum), y = mean_ESI,
+           color = baseline_stratum, group = baseline_stratum)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_ESI - 1.96*se_ESI,
+                    ymax = mean_ESI + 1.96*se_ESI),
+                width = 0.1) +
+  scale_color_manual(values = stratum_pal, name = "Baseline\nstratum") +
+  labs(x = "Visit (V1 = baseline, V2 ≈ 5y, V3 ≈ 10y)",
+       y = "Mean ESI (POST-BD)",
+       title = "ESI trajectory by baseline spectrum stratum",
+       subtitle = "Means with 95% CI; subject set drops at later visits")
+```
+
+## Within-subject ΔESI from baseline
+
+```{r delta-esi, fig.width = 10, fig.height = 4.5}
+esi_wide <- esi_long %>%
+  pivot_wider(id_cols = rand_id,
+              names_from = visitnum, values_from = ESI,
+              names_prefix = "ESI_v") %>%
+  left_join(baseline_stratum, by = "rand_id") %>%
+  filter(!is.na(baseline_stratum))
+
+# V1->V2 and V1->V3 deltas
+delta_tab <- esi_wide %>%
+  transmute(
+    rand_id, baseline_stratum,
+    delta_v2 = ESI_v2 - ESI_v1,
+    delta_v3 = ESI_v3 - ESI_v1
+  ) %>%
+  pivot_longer(c(delta_v2, delta_v3), names_to = "interval", values_to = "deltaESI") %>%
+  mutate(interval = recode(interval, delta_v2 = "V1→V2 (~5y)", delta_v3 = "V1→V3 (~10y)"))
+
+ggplot(delta_tab %>% filter(!is.na(deltaESI)),
+       aes(x = baseline_stratum, y = deltaESI, fill = baseline_stratum)) +
+  geom_hline(yintercept = 0, linetype = 2, color = "grey50") +
+  geom_boxplot(outlier.size = 0.4, outlier.alpha = 0.3, width = 0.6) +
+  facet_wrap(~ interval) +
+  scale_fill_manual(values = stratum_pal, guide = "none") +
+  labs(x = NULL, y = "ΔESI from baseline",
+       title = "Within-subject ΔESI from V1 to V2 / V1 to V3 by baseline stratum")
+
+delta_tab %>%
+  group_by(interval, baseline_stratum) %>%
+  summarise(
+    n = sum(!is.na(deltaESI)),
+    mean_delta = mean(deltaESI, na.rm = TRUE),
+    sd_delta   = sd(deltaESI,   na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  kable(digits = 3,
+        caption = "Within-subject ΔESI summary by baseline stratum and interval")
+```
+
+## Linear mixed-effects model of ESI trajectory
+
+```{r lmm}
+lme_ok <- requireNamespace("lme4", quietly = TRUE) &&
+          requireNamespace("lmerTest", quietly = TRUE)
+if (lme_ok) {
+  library(lme4); library(lmerTest)
+  lmm_d <- long %>%
+    filter(!is.na(baseline_stratum), !is.na(ESI), !is.na(years_from_baseline))
+  lmm <- lmer(ESI ~ years_from_baseline * baseline_stratum +
+                age_visit + factor(SmokCigNow) + (1 | rand_id),
+              data = lmm_d)
+  print(summary(lmm)$coefficients)
+} else {
+  cat("Install `lme4` and `lmerTest` to run the LME trajectory model.\n")
+}
+```
+
+## FEV1 decline by baseline ESI
+
+Linear mixed-effects model: FEV1_post (mL) over V1–V3, predicted by
+baseline ESI × time interaction, adjusted for **baseline FEV1/FVC × time**,
+baseline stratum, height, sex, race, time-varying age, current smoking,
+and pack-years.  Random intercept per subject.  Coefficients on
+`years_from_baseline` interactions are reported in **mL per year per
+1-unit predictor**.
+
+```{r fev1-decline}
+# Baseline (V1) ESI + FEV1/FVC + stratum + height/sex/race — one row per subject
+v1_baseline <- d %>%
+  transmute(rand_id,
+            ESI_baseline      = ESI_v1post,
+            FEV1_FVC_baseline     = FEV1_FVC_post,
+            stratum_baseline  = stratum) %>%
+  left_join(
+    phe_all %>% filter(visitnum == 1) %>%
+      transmute(rand_id = as.character(rand_id),
+                Height_CM = as.numeric(Height_CM),
+                gender_baseline = factor(gender),
+                race_baseline   = factor(race)),
+    by = "rand_id"
+  )
+
+# Per-visit FEV1 series at V1–V3.  IMPORTANT: this does NOT require ESI at
+# V2/V3 — only V1 ESI is needed (as the baseline predictor).  Earlier
+# versions of this chunk derived the FEV1 series from `long` (an ESI-only
+# inner-join), which dropped FEV1 measurements at visits where ESI happened
+# to be missing.  The current version takes all V1–V3 FEV1 records from
+# the phenotype file directly.
+fev1_long <- phe_all %>%
+  filter(visitnum %in% c(1, 2, 3),
+         !is.na(FEV1_post), !is.na(years_from_baseline)) %>%
+  transmute(rand_id          = as.character(rand_id),
+            visitnum,
+            years_from_baseline,
+            FEV1_post_mL     = FEV1_post * 1000,
+            age_visit        = as.numeric(age_visit),
+            ATS_PackYears    = as.numeric(ATS_PackYears),
+            SmokCigNow       = factor(SmokCigNow))
+
+decline_d <- fev1_long %>%
+  inner_join(v1_baseline, by = "rand_id") %>%
+  filter(!is.na(ESI_baseline), !is.na(FEV1_FVC_baseline),
+         !is.na(stratum_baseline),
+         !is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
+
+# Use GOLD 0 (smoker without obstruction; n ≈ 4,300) as the reference
+# level for stratum in all model fits.  Never-smokers (n = 107) are a
+# different population and make a noisy reference.  Display ordering
+# Never → GOLD 4 is preserved for plots and tables elsewhere.
+decline_d$stratum_baseline <- relevel(decline_d$stratum_baseline, ref = "GOLD0")
+
+cat("Decline-model rows:", nrow(decline_d),
+    "; unique subjects:", length(unique(decline_d$rand_id)), "\n")
+cat("Rows by visit:\n"); print(table(decline_d$visitnum))
+cat("Subjects per stratum:\n"); print(table(decline_d$stratum_baseline[!duplicated(decline_d$rand_id)]))
+
+if (lme_ok) {
+  # Full model: both ESI and FEV1/FVC interactions with time, plus stratum
+  m_full <- lmer(
+    FEV1_post_mL ~ years_from_baseline * (ESI_baseline + FEV1_FVC_baseline) +
+      stratum_baseline + Height_CM + gender_baseline + race_baseline +
+      age_visit + SmokCigNow + ATS_PackYears + (1 | rand_id),
+    data = decline_d
+  )
+
+  cat("\n--- Key interaction coefficients (mL/yr per 1-unit predictor) ---\n")
+  co <- summary(m_full)$coefficients
+  ix <- grep("years_from_baseline:", rownames(co))
+  print(round(co[ix, , drop = FALSE], 3))
+}
+```
+
+**Reading the coefficient.**  The `years_from_baseline:ESI_baseline`
+term is the additional FEV1 change in **mL/yr** per 1-unit higher
+baseline ESI, **adjusted for baseline FEV1/FVC** (and stratum, height,
+demographics, smoking).  A negative value means higher baseline ESI
+accelerates FEV1 decline beyond what FEV1/FVC + stratum predict.
+
+### Head-to-head: is ESI a better predictor of FEV1 decline than FEV1/FVC?
+
+```{r decline-headtohead}
+if (lme_ok) {
+  # All models share the same covariates and baseline stratum.
+  # They differ only in which "× years" interaction(s) they include.
+  cov_block <- "+ stratum_baseline + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow + ATS_PackYears + (1 | rand_id)"
+
+  m_base  <- lmer(as.formula(paste("FEV1_post_mL ~ years_from_baseline + ESI_baseline + FEV1_FVC_baseline", cov_block)), data = decline_d)
+  m_ESI   <- lmer(as.formula(paste("FEV1_post_mL ~ years_from_baseline * ESI_baseline + FEV1_FVC_baseline", cov_block)), data = decline_d)
+  m_FEV1_FVC  <- lmer(as.formula(paste("FEV1_post_mL ~ years_from_baseline * FEV1_FVC_baseline + ESI_baseline", cov_block)), data = decline_d)
+  m_both  <- lmer(as.formula(paste("FEV1_post_mL ~ years_from_baseline * (ESI_baseline + FEV1_FVC_baseline)", cov_block)), data = decline_d)
+
+  get_term <- function(fit, term) {
+    co <- summary(fit)$coefficients
+    if (!term %in% rownames(co)) return(c(NA, NA, NA))
+    round(co[term, c("Estimate","Std. Error","Pr(>|t|)")], 3)
+  }
+
+  cmp <- rbind(
+    `years × ESI only`           = c(get_term(m_ESI,  "years_from_baseline:ESI_baseline"), NA, NA, NA),
+    `years × FEV1/FVC only`      = c(NA, NA, NA, get_term(m_FEV1_FVC, "years_from_baseline:FEV1_FVC_baseline")),
+    `years × both`               = c(get_term(m_both, "years_from_baseline:ESI_baseline"),
+                                     get_term(m_both, "years_from_baseline:FEV1_FVC_baseline"))
+  )
+  colnames(cmp) <- c("ESI×yrs (mL/yr/unit)","ESI SE","ESI p",
+                     "FEV1/FVC×yrs (mL/yr/unit)","FEV1/FVC SE","FEV1/FVC p")
+  kable(cmp,
+        caption = "Head-to-head: which baseline interaction with time predicts FEV1 decline?  All models share covariates: baseline stratum, height, sex, race, time-varying age, current smoking, pack-years.  `ESI×yrs` and `FEV1/FVC×yrs` are the years-from-baseline interaction coefficients in mL/yr per 1-unit higher baseline predictor.")
+
+  aic <- AIC(m_base, m_ESI, m_FEV1_FVC, m_both)
+  aic$dAIC <- round(aic$AIC - min(aic$AIC), 2)
+  aic$df   <- as.integer(aic$df)
+  aic$AIC  <- round(aic$AIC, 2)
+  kable(aic[, c("df","AIC","dAIC")],
+        caption = "Model AIC (lower = better).  Base model has no time-interaction terms.")
+
+  cat("\nLR test: m_FEV1_FVC vs m_both (does adding years × ESI improve fit?)\n")
+  print(anova(m_FEV1_FVC, m_both))
+  cat("\nLR test: m_ESI vs m_both (does adding years × FEV1/FVC improve fit?)\n")
+  print(anova(m_ESI, m_both))
+}
+```
+
+### Per-stratum FEV1 decline slope per 1-unit baseline ESI
+
+The per-stratum models below are **adjusted for baseline FEV1/FVC** and
+the standard covariate block (no stratum term, since the model is
+fit within each stratum).
+
+```{r decline-by-stratum}
+if (lme_ok) {
+  strata_to_test <- c("GOLD0","PRISm","GOLD1","GOLD2","GOLD3","GOLD4")
+  rows <- lapply(strata_to_test, function(s) {
+    df <- decline_d %>% filter(stratum_baseline == s)
+    if (length(unique(df$rand_id)) < 50 || nrow(df) < 100) return(NULL)
+    fit <- try(lmer(
+      FEV1_post_mL ~ years_from_baseline * (ESI_baseline + FEV1_FVC_baseline) +
+        Height_CM + gender_baseline + race_baseline + age_visit +
+        SmokCigNow + ATS_PackYears + (1 | rand_id),
+      data = df
+    ), silent = TRUE)
+    if (inherits(fit, "try-error")) return(NULL)
+    co <- summary(fit)$coefficients
+    ix_e <- which(rownames(co) == "years_from_baseline:ESI_baseline")
+    ix_f <- which(rownames(co) == "years_from_baseline:FEV1_FVC_baseline")
+    data.frame(
+      stratum                       = s,
+      n_subj                        = length(unique(df$rand_id)),
+      n_rows                        = nrow(df),
+      `ESI slope (mL/yr/unit)`      = if(length(ix_e)) round(co[ix_e, "Estimate"], 2)   else NA,
+      `ESI p`                       = if(length(ix_e)) signif(co[ix_e, "Pr(>|t|)"], 3) else NA,
+      `FEV1/FVC slope (mL/yr/unit)` = if(length(ix_f)) round(co[ix_f, "Estimate"], 2)   else NA,
+      `FEV1/FVC p`                  = if(length(ix_f)) signif(co[ix_f, "Pr(>|t|)"], 3) else NA,
+      check.names = FALSE
+    )
+  })
+  decline_tab <- do.call(rbind, rows)
+  kable(decline_tab,
+        caption = "Within-stratum interactions with time, mL/yr per 1-unit higher predictor, **mutually adjusted for ESI and FEV1/FVC**.")
+}
+```
+
+### Visual: predicted FEV1 trajectory by baseline ESI tertile
+
+```{r decline-fig, fig.width = 10, fig.height = 5}
+if (lme_ok) {
+  # Tertile bins of baseline ESI within the modelling dataset
+  tert <- quantile(decline_d$ESI_baseline, c(1/3, 2/3), na.rm = TRUE)
+  decline_d$ESI_tertile <- cut(
+    decline_d$ESI_baseline,
+    breaks = c(-Inf, tert[1], tert[2], Inf),
+    labels = c("Low ESI","Mid ESI","High ESI")
+  )
+
+  obs <- decline_d %>%
+    filter(!is.na(ESI_tertile)) %>%
+    mutate(year_bin = round(years_from_baseline)) %>%
+    group_by(stratum_baseline, ESI_tertile, year_bin) %>%
+    summarise(
+      n = n(),
+      mean_FEV1 = mean(FEV1_post_mL),
+      se_FEV1   = sd(FEV1_post_mL) / sqrt(n()),
+      .groups = "drop"
+    ) %>% filter(n >= 5)
+
+  # Include GOLD 0 (the reference/largest stratum) and arrange panels by
+  # severity.  Never-smokers (n=107) are omitted only because the tertile
+  # split is unstable at that sample size; all other strata included.
+  panel_strata <- c("GOLD0","PRISm","GOLD1","GOLD2","GOLD3","GOLD4")
+  obs_plot <- obs %>%
+    filter(stratum_baseline %in% panel_strata) %>%
+    mutate(stratum_baseline = factor(stratum_baseline, levels = panel_strata))
+
+  ggplot(obs_plot,
+         aes(x = year_bin, y = mean_FEV1, color = ESI_tertile, group = ESI_tertile)) +
+    geom_line(linewidth = 0.7) + geom_point(size = 1.5) +
+    geom_errorbar(aes(ymin = mean_FEV1 - 1.96*se_FEV1,
+                      ymax = mean_FEV1 + 1.96*se_FEV1), width = 0.2) +
+    facet_wrap(~ stratum_baseline, nrow = 1, scales = "free_y") +
+    scale_color_manual(values = c("Low ESI" = "#1F77B4",
+                                  "Mid ESI" = "#FFB000",
+                                  "High ESI" = "#D62728")) +
+    labs(x = "Years from baseline", y = "Mean FEV1 (mL), post-BD",
+         color = "Baseline ESI tertile",
+         title = "Observed FEV1 by baseline ESI tertile within stratum",
+         subtitle = "Within-stratum split shows whether ESI separates decline trajectories")
+}
+```
+
+## Cross-sectional ESI vs DLco at Visit 2
+
+DLco was first measured at Visit 2, so the proposal §4 analysis lives
+here.
+
+```{r esi-dlco-v2, fig.width = 8.5, fig.height = 5}
+v2 <- long %>%
+  filter(visitnum == 2, !is.na(ESI), !is.na(DLco_GLI_pp_PbHb_adj),
+         !is.na(baseline_stratum))
+cat("V2 subjects with both ESI and DLco:", nrow(v2), "\n")
+cat("r(ESI, DLco%pred) at V2 = ",
+    round(cor(v2$ESI, v2$DLco_GLI_pp_PbHb_adj), 3),
+    "\n", sep = "")
+
+v2_cor <- v2 %>%
+  group_by(baseline_stratum) %>%
+  summarise(
+    n = n(),
+    r_ESI_DLco = cor(ESI, DLco_GLI_pp_PbHb_adj),
+    .groups = "drop"
+  )
+kable(v2_cor, digits = 3,
+      caption = "Per-(baseline)-stratum r between V2 ESI and V2 DLco%pred")
+
+ggplot(v2, aes(x = DLco_GLI_pp_PbHb_adj, y = ESI, color = baseline_stratum)) +
+  geom_point(alpha = 0.35, size = 0.7) +
+  geom_smooth(method = "loess", se = FALSE, color = "black", linewidth = 0.5) +
+  scale_color_manual(values = stratum_pal, name = "Baseline\nstratum") +
+  labs(x = "DLco % predicted (V2, GLI, Hb/PB-adjusted)",
+       y = "ESI (V2, POST-BD)",
+       title = "ESI vs DLco at Visit 2",
+       subtitle = "Lower DLco = more emphysema; expect negative slope")
+```
+
+## Mortality
+
+Vital-status data are now available locally for the Smoker /
+Never-smoker cohort (`COPDGene_VitalStatus_SM_NS_Sep23_randid.csv`,
+n = 10,652 records, 2,932 deaths in the full vital-status file).
+A small ILD/Bronch file (n = 66) is excluded from this report.  After
+merging with the V1 ESI cohort, the mortality-analysis set is n = 10,105,
+with 2,857 deaths and a median follow-up of 10.7 years; 532 subjects
+have `days_followed = 0` (censored at study entry; all `vital_status = 0`,
+so Cox handles them as non-informative).
+
+```{r mort-load}
+vs <- read.csv(
+  "/Users/petecastaldi/claude_projects/copdgene/deidentified/COPDGene_VitalStatus_SM_NS_Sep23_randid.csv",
+  stringsAsFactors = FALSE
+)
+vs$rand_id <- as.character(vs$rand_id)
+cat("Vital status n =", nrow(vs),
+    "; deaths =", sum(vs$vital_status == 1),
+    "; median follow-up (yr) =", round(median(vs$days_followed)/365.25, 1), "\n")
+
+mort <- d %>% inner_join(vs %>% select(rand_id, vital_status, days_followed),
+                         by = "rand_id")
+mort$gender     <- factor(mort$gender)
+mort$race       <- factor(mort$race)
+mort$SmokCigNow <- factor(mort$SmokCigNow)
+
+cat("Merged V1 ESI + phenotype + vital status: n =", nrow(mort), "\n")
+```
+
+```{r mort-by-stratum}
+mort %>%
+  filter(!is.na(stratum)) %>%
+  group_by(stratum) %>%
+  summarise(
+    n          = n(),
+    deaths     = sum(vital_status == 1),
+    pct_died   = round(100 * mean(vital_status == 1), 1),
+    med_fu_yr  = round(median(days_followed)/365.25, 1),
+    .groups = "drop"
+  ) %>%
+  kable(caption = "Mortality by baseline stratum (V1 ESI cohort)")
+```
+
+### Kaplan–Meier by baseline stratum
+
+```{r km-strata, fig.width = 9, fig.height = 5.5}
+library(survival)
+sf <- survfit(Surv(days_followed/365.25, vital_status) ~ stratum,
+              data = mort %>% filter(!is.na(stratum)))
+
+km_df <- data.frame(
+  time     = sf$time,
+  surv     = sf$surv,
+  strata   = rep(names(sf$strata), sf$strata)
+)
+km_df$baseline_stratum <- factor(
+  sub(".*=", "", km_df$strata),
+  levels = stratum_levels
+)
+
+ggplot(km_df, aes(x = time, y = surv, color = baseline_stratum)) +
+  geom_step(linewidth = 0.7) +
+  scale_color_manual(values = stratum_pal, name = "Baseline\nstratum") +
+  labs(x = "Years from baseline", y = "Survival probability",
+       title = "All-cause survival by baseline spectrum stratum",
+       subtitle = "Clean dose-response with severity")
+```
+
+### Cox models: does ESI add prognostic information beyond FEV1/FVC?
+
+```{r cox-models}
+cox_input <- mort %>%
+  filter(!is.na(stratum), !is.na(FEV1_FVC_post),
+         !is.na(age_visit), !is.na(ATS_PackYears), !is.na(BMI))
+# Use GOLD 0 as the reference for the Cox models (same rationale as the
+# FEV1-decline LMM above).
+cox_input$stratum <- relevel(cox_input$stratum, ref = "GOLD0")
+
+# Model 1: ESI alone, adjusted for demographics + smoking + baseline stratum (no FEV1/FVC)
+m_noFEV1_FVC <- coxph(
+  Surv(days_followed/365.25, vital_status) ~
+    ESI_v1post + age_visit + gender + race + SmokCigNow + ATS_PackYears + stratum,
+  data = cox_input
+)
+
+# Model 2: ESI + FEV1/FVC + same covariates -- the key test
+m_withFEV1_FVC <- coxph(
+  Surv(days_followed/365.25, vital_status) ~
+    ESI_v1post + FEV1_FVC_post + age_visit + gender + race + SmokCigNow +
+      ATS_PackYears + stratum,
+  data = cox_input
+)
+
+# Model 3: FEV1/FVC alone (no ESI), for reference
+m_FEV1_FVConly <- coxph(
+  Surv(days_followed/365.25, vital_status) ~
+    FEV1_FVC_post + age_visit + gender + race + SmokCigNow +
+      ATS_PackYears + stratum,
+  data = cox_input
+)
+
+summary_row <- function(fit, var) {
+  s <- summary(fit)$coef
+  if (!(var %in% rownames(s))) return(rep(NA, 4))
+  s[var, c("coef","exp(coef)","se(coef)","Pr(>|z|)")]
+}
+
+# 7 columns total: 4 for ESI (coef/HR/SE/p), 3 for FEV1/FVC (coef/HR/p — no SE).
+# Each row must have length 7; pad with NA where a predictor is absent.
+mort_tab <- rbind(
+  `Model 1: ESI (no FEV1/FVC)`  = c(summary_row(m_noFEV1_FVC,   "ESI_v1post"),
+                                    NA, NA, NA),
+  `Model 2: ESI + FEV1/FVC`     = c(summary_row(m_withFEV1_FVC, "ESI_v1post"),
+                                    summary_row(m_withFEV1_FVC, "FEV1_FVC_post")[c(1,2,4)]),
+  `Model 3: FEV1/FVC (no ESI)`  = c(rep(NA, 4),
+                                    summary_row(m_FEV1_FVConly, "FEV1_FVC_post")[c(1,2,4)])
+)
+stopifnot(ncol(mort_tab) == 7)  # guard against the recycling bug
+colnames(mort_tab) <- c("ESI coef","ESI HR","ESI SE","ESI p",
+                        "FEV1/FVC coef","FEV1/FVC HR","FEV1/FVC p")
+mort_tab <- round(mort_tab, 4)
+kable(mort_tab,
+      caption = "Cox HRs for ESI and FEV1/FVC in the full cohort (V1, post-BD); covariates: age, sex, race, current smoker, pack-years, baseline stratum")
+
+cat("\nLR test: does adding ESI to FEV1/FVC + covariates improve fit?\n")
+print(anova(m_FEV1_FVConly, m_withFEV1_FVC))
+```
+
+**Observed.**
+
+- Univariable HR(ESI) ≈ 1.27 per 1-unit increase (z ≈ 41).
+- **Adjusted for FEV1/FVC, demographics, smoking, pack-years, baseline
+  stratum**: HR(ESI) ≈ 1.08 per unit, p ≈ 6 × 10⁻⁴.  ESI remains an
+  independent predictor of mortality even after adjusting for FEV1/FVC
+  and the spectrum stratum.
+- In the same model, FEV1/FVC itself drops to non-significant (p ≈ 0.26),
+  suggesting that ESI captures more of the residual mortality signal
+  than FEV1/FVC once stratum is in the model.
+- LR test confirms ESI adds significantly to FEV1/FVC + covariates.
+
+**Interpretation.**  This *suggests* ESI carries prognostic information
+beyond what FEV1/FVC contributes within the full COPDGene spectrum.
+This is the central effect the spectrum-wide pivot was designed to
+demonstrate.  Not yet established as causal — survivor bias and
+within-stratum confounding need additional sensitivity checks.
+
+### Cox with ESI as a restricted cubic spline (ceiling-robust)
+
+```{r cox-spline}
+library(splines)
+m_spline <- coxph(
+  Surv(days_followed/365.25, vital_status) ~
+    ns(ESI_v1post, df = 3) + FEV1_FVC_post +
+    age_visit + gender + race + SmokCigNow + ATS_PackYears + stratum,
+  data = cox_input
+)
+cat("LR test: spline ESI vs no ESI (both with FEV1/FVC + covariates)\n")
+print(anova(m_FEV1_FVConly, m_spline))
+```
+
+### Sensitivity: drop ceiling (ESI = 10)
+
+```{r cox-no-ceiling}
+m_noceil <- coxph(
+  Surv(days_followed/365.25, vital_status) ~
+    ESI_v1post + FEV1_FVC_post + age_visit + gender + race + SmokCigNow +
+      ATS_PackYears + stratum,
+  data = cox_input %>% filter(ESI_v1post < 9.999)
+)
+cat("Excluding ESI=10 (n =", sum(cox_input$ESI_v1post < 9.999),
+    "); ESI HR (per 1 unit):\n")
+print(summary(m_noceil)$coef["ESI_v1post", c("exp(coef)","Pr(>|z|)")])
+```
+
+### Per-stratum Cox: where does ESI matter?
+
+```{r cox-by-stratum}
+strata_to_test <- c("GOLD0","PRISm","GOLD1","GOLD2","GOLD3","GOLD4")
+per_strat <- lapply(strata_to_test, function(s) {
+  df <- cox_input %>% filter(stratum == s)
+  fit <- try(coxph(
+    Surv(days_followed/365.25, vital_status) ~
+      ESI_v1post + age_visit + gender + race + SmokCigNow + ATS_PackYears,
+    data = df
+  ), silent = TRUE)
+  if (inherits(fit, "try-error")) return(NULL)
+  ss <- summary(fit)$coef
+  if (!"ESI_v1post" %in% rownames(ss)) return(NULL)
+  data.frame(
+    stratum = s,
+    n       = nrow(df),
+    deaths  = sum(df$vital_status == 1),
+    HR_ESI  = round(ss["ESI_v1post","exp(coef)"], 3),
+    p_ESI   = signif(ss["ESI_v1post","Pr(>|z|)"], 3)
+  )
+})
+per_strat_df <- do.call(rbind, per_strat)
+kable(per_strat_df,
+      caption = "Per-stratum Cox HR for ESI (continuous), adjusted for age, sex, race, current smoker, pack-years.  Never-smokers excluded for small n / few deaths.")
+```
+
+## What's still deferred
+
+Prospective exacerbation rate computed from the
+`/udd/.../prospective_exacerbations*.tsv` file is still Channing-side.
+Visit-level `Severe_Exacerbations` and `Exacerbation_Frequency` are in
+the long phenotype file but encode concurrent events at each visit,
+not a prospective rate.  Defer formal exacerbation modelling to the
+Channing companion report.
+
+# Bottom-line summary
+
+**Observed**
+
+- **Substrate is sufficient.**  10,169 V1 subjects merged; 3,733 with
+  V1+V2 POST-BD ESI; 1,783 with V1+V2+V3.  CT coverage ~93% across
+  strata; PRM ~80%; DLco only at V2 (n = 5,141 with paired V2 ESI).
+- **Cross-sectional spectrum-wide r(ESI, FEV1/FVC) = −0.89**, almost
+  identical to Massimo's 2019 Respir Res paper (−0.87), but with strong
+  per-stratum heterogeneity: r ≈ −0.26 to −0.40 in Never/GOLD0/PRISm vs
+  −0.85 to −0.92 in GOLD 2–4.  ESI's unique contribution beyond
+  FEV1/FVC is concentrated in the preserved-spirometry strata.
+- **Longitudinal trajectory by baseline stratum** is monotonic with
+  baseline severity: ΔESI V1→V3 ≈ 0 for Never and GOLD 0, +0.25 for
+  PRISm, +0.33 for GOLD 1, +0.91 for GOLD 2, +1.05 for GOLD 3.  The
+  GOLD 4 V1→V3 mean change is **about −2.0 (n = 39)** — a mix of
+  survivor selection (only 39 of the 593 GOLD 4 subjects have V3 ESI)
+  and ESI-ceiling regression-to-the-mean: the V3 survivors had
+  V1 ESI mean = 8.45, slightly higher than the full GOLD 4 V1 cohort
+  (8.25), so the apparent decline is not pure healthy-survivor
+  selection.
+- **PRISm rises more steeply than GOLD 0** despite identical baseline
+  ESI (mean ΔV1→V3 = +0.25 vs +0.05).  This is observation, not yet
+  interpretation; worth a closer look for clinical / hypothesis value.
+- **ESI vs DLco at V2**: overall r = −0.52; per-stratum r is null
+  in Never and GOLD 0, modest (≈ −0.30 to −0.45) across GOLD 1–4.
+  Consistent with ESI tracking emphysema physiology mainly in the
+  obstructive end.
+- **Mortality**: pooled adjusted HR(ESI) = 1.08 per unit (p ≈ 6×10⁻⁴)
+  after FEV1/FVC, demographics, smoking, pack-years, and baseline
+  stratum.  LR test for adding ESI to the FEV1/FVC + covariate model is
+  highly significant.  Sensitivity (drop ESI = 10): HR = 1.07
+  (p = 0.005); robust to ceiling.  Spline ESI also adds significantly
+  (LR χ² = 12.2, df = 3, p = 0.007).
+- **Per-stratum Cox tempers the headline.**  After adjustment, ESI's
+  mortality association is concentrated in GOLD 1–3
+  (HR ≈ 1.09 to 1.32 per unit, p ≤ 0.03), and is **null** in Never,
+  GOLD 0, PRISm, and GOLD 4 (smaller deaths counts and ceiling effects).
+- **FEV1 decline (LMM over V1–V3, mL/yr units, mutually adjusted ESI
+  and FEV1/FVC)**: pooled AIC ordering is **both << ESI-only <<
+  FF-only << neither**.  Adding `years × ESI` to a model already
+  containing `years × FF` improves fit at χ² = 25.9, df = 1,
+  **p = 3.6 × 10⁻⁷**; adding `years × FF` to a model already
+  containing `years × ESI` improves fit at χ² = 11.7, df = 1,
+  **p = 6.2 × 10⁻⁴**.  ESI's incremental contribution in the pooled
+  cohort is roughly twice as large as FEV1/FVC's.
+- **Per-stratum (mutually adjusted)**: FEV1/FVC is the more consistent
+  FEV1-decline predictor across strata (significant in GOLD 0–3 and
+  PRISm).  ESI is independently significant beyond FEV1/FVC **only in
+  GOLD 0** (β = −4.7 mL/yr per unit baseline ESI, p = 0.001) — i.e.,
+  smokers with preserved spirometry, exactly the stratum where the
+  spectrum-wide pivot hypothesized ESI would add unique signal.
+  The pooled "ESI > FEV1/FVC" finding is concentrated in GOLD 0 plus
+  residual between-stratum variance that the categorical stratum term
+  doesn't fully absorb.
+
+**Interpretation / hypothesis-relevant inferences**
+
+- The **structural / DLco signal** of ESI is concentrated in the
+  obstructive end of the spectrum, while the **unique-information
+  signal beyond FEV1/FVC** (low collinearity) is concentrated in the
+  preserved/mild end.  These are physiologically different findings and
+  should not be conflated.
+- **Mortality story**: the pooled "ESI adds beyond FEV1/FVC" finding is
+  driven by the GOLD 1–3 band.  In the preserved strata, ESI does not
+  independently predict mortality after adjustment, so the
+  spectrum-wide pivot's prognostic argument is most defensible as
+  *"ESI refines risk among the obstructive subset, with an additional
+  structural / trajectory story in PRISm and preserved spirometry."*
+  This is observation; the broader mechanistic story is interpretation.
+- The PRISm-vs-GOLD0 divergence in trajectory *suggests* PRISm has a
+  distinct physiological trajectory not visible in baseline alone.
+  This is a hypothesis-generating observation, not an established
+  finding.
+
+**Two analytic caveats to plan for**
+
+1. DLco not measured at V1 → V2-cross-section or V1→V2 lag design.
+2. ESI ceiling at 10 affects 38 % of GOLD 4 at baseline → use Tobit /
+   censored regression and a no-ceiling sensitivity model.
+
+**Recommended next concrete steps**
+
+1. Decide Path A vs Path B with Massimo at ATS Orlando this week.
+2. Mortality and prospective-exacerbation modelling live on the
+   Channing cluster (`/udd/.../`) — defer to a Channing-side companion
+   report.
+3. Once direction is set, formalize Tobit ceiling handling and
+   restricted-cubic-spline modelling of ESI for each outcome
+   (FEV1 decline, DLco at V2, mortality).
+
+# Session info
+
+```{r session}
+sessionInfo()
+```

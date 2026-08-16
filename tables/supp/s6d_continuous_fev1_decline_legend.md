@@ -1,0 +1,5 @@
+**Supplementary Table S6d. Continuous ESI vs FEV1/FVC as predictors of FEV1 decline (mL/yr), stratified by baseline lung-function stratum.**
+
+Linear mixed-effects models of longitudinal FEV1 with a random intercept per participant are fit within each baseline stratum (GOLD 0, PRISm) and pooled across the full analytic cohort, in each case with continuous ESI alone and jointly with FEV₁/FVC. Slopes estimate the change in the annual FEV1 rate per one-unit increase in ESI (or FEV₁/FVC); slopes with parenthetical "SE" indicate the standard error. Adjustment covariates are age at baseline, sex, race, current smoking status, pack-years, and baseline height, matching the anthropometric-adjustment convention used for FEV1-decline modelling in Supplementary Table S5.
+
+**Abbreviations:** ESI, Emphysema Severity Index; FEV₁, forced expiratory volume in one second; FVC, forced vital capacity; SE, standard error; GOLD, Global Initiative for Chronic Obstructive Lung Disease; PRISm, preserved-ratio impaired-spirometry.

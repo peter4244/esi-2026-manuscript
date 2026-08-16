@@ -1,0 +1,3 @@
+n_paired=10160
+mean_delta=-0.0888
+sd_delta=0.8598

@@ -1,0 +1,90 @@
+# ===========================================================================
+# ESI_2024 .gitignore
+#
+# Whitelist orientation: git the code (R, Py, Rmd, md) and the aggregated
+# summary CSVs under manuscript_assets/. Everything else — individual-level
+# data, rendered deliverables, caches, archived directories — stays local.
+#
+# INDIVIDUAL-LEVEL SUBJECT DATA MUST NEVER BE COMMITTED.
+# Patterns below block the specific COPDGene extract and any file whose
+# name hints at raw subject data.
+# ===========================================================================
+
+# ---- Individual-level subject data — NEVER COMMIT --------------------------
+copdgene_esi_randid_*.csv
+*rand_id*.csv
+*_randid.csv
+copdgene_raw*
+raw_data/
+data/raw/
+
+# ---- Cached R objects (large, regeneratable) -------------------------------
+*.rds
+*.RData
+*.rda
+manuscript_assets/_cache/
+
+# ---- Python caches ---------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ---- macOS / OS clutter ----------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ---- Word / Office lock files ----------------------------------------------
+~$*
+.~lock.*
+
+# ---- Rendered deliverables (regenerable from code) -------------------------
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.pdf
+*.xlsx
+*.xls
+*.html
+*.epub
+
+# ---- Rendered figures at project root (build artifacts) --------------------
+/*.png
+/*.jpg
+/*.jpeg
+/*.tif
+/*.tiff
+/*.svg
+/*.eps
+IMG_*.jpg
+
+# ---- Historical / archival directories -------------------------------------
+OLD/
+Old/
+old/
+TEMP/
+Temp/
+tmp/
+background/
+FIGURES/
+
+# ---- Build logs / one-off outputs ------------------------------------------
+build_log_*.txt
+*.log
+
+# ---- Backup files ----------------------------------------------------------
+*.bak
+*.bak_*
+*.orig
+*.tmp
+*~
+
+# ---- Editor / IDE ----------------------------------------------------------
+.vscode/
+.idea/
+.Rproj.user/
+.Rhistory
+*.swp
+*.swo
+*.OLD

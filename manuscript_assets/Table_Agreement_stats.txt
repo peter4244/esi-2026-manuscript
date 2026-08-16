@@ -1,0 +1,5 @@
+agreement=0.9099
+kappa=0.8198
+sensitivity=0.8798
+specificity=0.9445
+n_cohort=9463

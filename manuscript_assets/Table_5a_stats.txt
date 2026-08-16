@@ -1,0 +1,6 @@
+LR_addESI_chisq=25.87
+LR_addESI_p=3.646e-07
+LR_addFF_chisq=11.71
+LR_addFF_p=6.229e-04
+lmm_rows=18893
+lmm_subj=10109

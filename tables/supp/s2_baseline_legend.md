@@ -1,0 +1,5 @@
+**Supplementary Table S2. Baseline characteristics of the analytic cohort by GOLD-stage stratum.**
+
+Continuous variables are reported as mean (standard deviation); binary variables as percent. Strata are defined by the standard GOLD spirometric criteria: Never = never-smokers with normal spirometry; GOLD0 = ever-smokers with normal spirometry; PRISm = preserved-ratio impaired-spirometry (FEV₁/FVC ≥ 0.70 and FEV₁ %pred < 80); GOLD1–4 = increasing airflow limitation among participants with FEV₁/FVC < 0.70. The Overall row summarizes the full analytic cohort (n = 9,463).
+
+**Abbreviations:** GOLD, Global Initiative for Chronic Obstructive Lung Disease; PRISm, preserved-ratio impaired-spirometry; FEV₁, forced expiratory volume in one second; %pred, percent of predicted; FVC, forced vital capacity; ESI, Emphysema Severity Index; LAA-950HU, low-attenuation area with attenuation below −950 Hounsfield units; mMRC, modified Medical Research Council dyspnea scale; SGRQ, St. George's Respiratory Questionnaire.

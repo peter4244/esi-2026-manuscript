@@ -1,0 +1,5 @@
+**Supplementary Table S6c. Continuous ESI vs FEV1/FVC as predictors of exacerbation counts.**
+
+Negative-binomial regression models estimate the per-unit incidence-rate ratio for continuous ESI predicting prospective exacerbation counts, fit three ways: continuous ESI alone, FEV₁/FVC alone as a comparator, and both variables jointly. A natural-logarithm follow-up-time offset is included. The rightmost column reports the likelihood-ratio test statistic and p-value for the null hypothesis that adding continuous ESI to a model already containing FEV₁/FVC does not improve fit. Adjustment covariates are age, sex, race, current smoking status, pack-years, and GOLD-stratum indicators; the GOLD-stratum block replaces body mass index because the continuous-ESI analysis spans the full spectrum of airflow obstruction.
+
+**Abbreviations:** ESI, Emphysema Severity Index; FEV₁, forced expiratory volume in one second; FVC, forced vital capacity; IRR, incidence-rate ratio; CI, confidence interval; LR, likelihood ratio; GOLD, Global Initiative for Chronic Obstructive Lung Disease.

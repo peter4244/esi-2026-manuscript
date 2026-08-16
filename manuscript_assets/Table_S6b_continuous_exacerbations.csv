@@ -1,0 +1,4 @@
+"outcome","model","ESI_IRR","ESI_p","FEV1FVC_IRR","FEV1FVC_p","LR_vs_FEV1FVC_only"
+"exacerbations","ESI only","1.11 (1.08-1.15)","<0.001","-","-","-"
+"exacerbations","FEV1/FVC only","-","-","0.79 (0.74-0.84)","<0.001","-"
+"exacerbations","ESI + FEV1/FVC","1.01 (0.96-1.07)","0.647","0.80 (0.73-0.88)","<0.001","chi2=0.20, df=1, p=0.651"

@@ -1,0 +1,5 @@
+**Supplementary Table S5. FEV1 decline (mL/yr) by Bhatt-framework diagnostic category under both frameworks.**
+
+Linear mixed-effects models of longitudinal FEV1 (in mL) as a function of years-from-baseline, with a random intercept per participant, are used to estimate the incremental annual decline attributable to each Bhatt-framework category relative to the noCOPD reference; p-values are Wald tests on the between-group slope contrasts. Adjustment covariates are age at baseline, sex, race, current smoking status, pack-years, and baseline height. Body mass index is intentionally not included in this model class because baseline height is the standard anthropometric adjustment for volume-scaled lung-function outcomes and captures the relevant between-person variation. Category totals (Bhatt-framework, at risk): AFL-only-noCOPD n = 170, COPD-minor n = 1,099, COPD-major n = 3,969.
+
+**Abbreviations:** FEV₁, forced expiratory volume in one second; SE, standard error; AFL, airflow limitation; CT, computed tomography; ESI, Emphysema Severity Index.

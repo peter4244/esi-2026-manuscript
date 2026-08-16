@@ -1,0 +1,5 @@
+**Supplementary Table S6a. Continuous ESI vs FEV1/FVC as predictors of all-cause mortality.**
+
+Cox proportional-hazards models estimate the per-unit hazard ratio for continuous ESI predicting all-cause mortality, fit three ways: continuous ESI alone, FEV₁/FVC alone as a comparator, and both variables jointly. The rightmost column reports the likelihood-ratio test statistic and p-value for the null hypothesis that adding continuous ESI to a model already containing FEV₁/FVC does not improve fit; a significant test indicates that continuous ESI provides independent prognostic information beyond FEV₁/FVC. Adjustment covariates are age, sex, race, current smoking status, pack-years, and GOLD-stratum indicators; the GOLD-stratum block replaces body mass index because the continuous-ESI analysis spans the full spectrum of airflow obstruction.
+
+**Abbreviations:** ESI, Emphysema Severity Index; FEV₁, forced expiratory volume in one second; FVC, forced vital capacity; HR, hazard ratio; CI, confidence interval; LR, likelihood ratio; GOLD, Global Initiative for Chronic Obstructive Lung Disease.

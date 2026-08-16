@@ -1,0 +1,5 @@
+**Supplementary Table S8b. Paired-bootstrap test of category-level equivalence between frameworks for exacerbations (ΔlogIRR).**
+
+Formal test of framework equivalence at the diagnostic-category level for exacerbations. For each Bhatt category (COPD-minor, COPD-major), the paired-bootstrap procedure resamples participants with replacement (n = 1,000 replicates) and refits the negative-binomial exacerbation-rate model under both frameworks; the mean between-framework difference on the log-incidence-rate-ratio scale (ΔlogIRR) and its 95% percentile interval are reported alongside the point-estimate IRR under each framework. The two-sided p-value tests the null hypothesis of equal log-incidence-rate-ratios between frameworks. Adjustment covariates within each bootstrap replicate match the Table 1 covariate set (age, sex, race, current smoking status, pack-years, body mass index) with an offset for follow-up years.
+
+**Abbreviations:** IRR, incidence-rate ratio; ΔlogIRR, difference in log-incidence-rate-ratio between the CT-based and ESI-based frameworks; CI, confidence interval; CT, computed tomography; ESI, Emphysema Severity Index.
