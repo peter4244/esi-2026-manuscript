@@ -90,10 +90,8 @@ SUPP_TABLES = [
     "s6c_continuous_exacerbations",
     "s6d_continuous_fev1_decline",
     "s7_esi_trajectory",
-    "s8_hr_bootstrap",
-    "s8b_irr_bootstrap",
-    "s9a_pairwise_mortality",
-    "s9b_pairwise_exac",
+    "s8_bootstrap",
+    "s9_pairwise",
 ]
 
 # ============================================================================
