@@ -8,7 +8,7 @@ from tables import docx_helpers as dh
 from manifest import ASSETS
 
 TABLE_NUM = "S5"
-TITLE = ("FEV1 decline (mL/yr) by Bhatt-framework diagnostic category under "
+TITLE = ("FEV1 decline (mL/yr) by MD-COPD diagnostic category under "
          "both frameworks")
 
 

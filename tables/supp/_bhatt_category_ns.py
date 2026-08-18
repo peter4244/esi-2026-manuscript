@@ -30,4 +30,4 @@ def at_risk_sentence(include_noCOPD=False):
     else:
         cats = ["AFL-only-noCOPD", "COPD-minor", "COPD-major"]
     parts = [f"{c} n={_fmt(BHATT_CATEGORY_NS[c])}" for c in cats]
-    return "Category totals (Bhatt-framework, at risk): " + ", ".join(parts) + "."
+    return "Category totals (MD-COPD, at risk): " + ", ".join(parts) + "."

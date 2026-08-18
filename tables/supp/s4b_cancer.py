@@ -5,7 +5,7 @@ from tables.supp._cause_specific_common import (
 )
 
 TABLE_NUM = "S4b"
-TITLE = ("Cancer-specific mortality by Bhatt-framework diagnostic category "
+TITLE = ("Cancer-specific mortality by MD-COPD diagnostic category "
          "under both frameworks")
 
 

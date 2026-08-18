@@ -25,7 +25,7 @@ from tables import docx_helpers as dh
 from manifest import ASSETS
 
 TABLE_NUM = "1"
-TITLE = ("Associations of Bhatt-framework diagnostic categories with mortality "
+TITLE = ("Associations of MD-COPD diagnostic categories with mortality "
          "and exacerbation outcomes, under the original CT-based and the "
          "reformulated ESI-based framework")
 
