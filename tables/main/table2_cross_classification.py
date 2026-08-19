@@ -1,6 +1,6 @@
 """Table 2 — Outcomes in the four cross-classification groups defined by
 whether a participant meets COPD under each framework: Both-noCOPD (reference),
-Bhatt-only COPD (ESI missed), ESI-only COPD (Bhatt missed), Both-COPD.
+CT-only COPD (ESI missed), ESI-only COPD (Bhatt missed), Both-COPD.
 
 Cols: Classification group | N | All-cause mortality HR (95% CI)
       | Respiratory mortality HR (95% CI) | Exacerbation IRR (95% CI)
@@ -90,7 +90,7 @@ def _compute_letters(pw_rows):
     for r in pw_rows:
         by_outcome.setdefault(r["outcome"], []).append(r)
 
-    groups_expected = {"Bhatt-only-COPD", "Both-COPD", "ESI-only-COPD"}
+    groups_expected = {"CT-only-COPD", "Both-COPD", "ESI-only-COPD"}
     letters_by_outcome = {}
     for outcome, rows in by_outcome.items():
         p_of = {}
@@ -105,7 +105,7 @@ def _compute_letters(pw_rows):
             g_seen.update(pair)
         assert g_seen == groups_expected, (
             f"outcome {outcome!r}: contrast groups {g_seen} != {groups_expected}")
-        g1, g2, g3 = "Bhatt-only-COPD", "Both-COPD", "ESI-only-COPD"
+        g1, g2, g3 = "CT-only-COPD", "Both-COPD", "ESI-only-COPD"
         letters_by_outcome[outcome] = _cld_three_groups(
             g1, g2, g3,
             p_of[frozenset([g1, g2])],
@@ -128,8 +128,8 @@ def build(doc):
     # (display_label, src_key_for_hr/irr, key_used_in_pairwise_CSV)
     ordered_groups = [
         ("Both-noCOPD",                    "Reference",       None),
-        ("Bhatt-only-COPD (ESI missed)",   "Bhatt-only COPD", "Bhatt-only-COPD"),
-        ("ESI-only-COPD (Bhatt missed)",   "ESI-only COPD",   "ESI-only-COPD"),
+        ("CT-only-COPD (ESI missed)",   "CT-only-COPD", "CT-only-COPD"),
+        ("ESI-only-COPD (Bhatt missed)",   "ESI-only-COPD",   "ESI-only-COPD"),
         ("Both-COPD",                       "Both-COPD",      "Both-COPD"),
     ]
 

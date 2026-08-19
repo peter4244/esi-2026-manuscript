@@ -1,4 +1,4 @@
-"""Shared row-builder for cause-specific mortality tables S4a/b/c.
+"""Shared row-builder for cause-specific mortality Supplemental Tables 6, 7, and 8.
 
 All three (CVD, cancer, other) use the same source CSV
 (Table_CauseSpecific_byClass.csv) filtered by cause. This helper factors out
@@ -60,4 +60,4 @@ def build_rows(cause):
 
 HEADERS = ["Category", "CT events", "CT HR (95% CI)", "CT p",
            "ESI events", "ESI HR (95% CI)", "ESI p"]
-COL_WIDTHS = [1.5, 0.7, 1.35, 0.5, 0.7, 1.3, 0.45]
+COL_WIDTHS = [1.15, 0.75, 1.25, 0.60, 0.80, 1.25, 0.60]

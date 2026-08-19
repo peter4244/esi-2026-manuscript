@@ -4,7 +4,7 @@ Sourced from manuscript_assets/Table_6.csv row sums (Bhatt is the row axis of
 Table 6, so row-sums are Bhatt-framework participant counts). Totals verified
 to sum to 9,463 (the analytic-cohort N).
 
-Used by S4a/S4b/S4c and S5 legends to state at-risk denominators without
+Used by the cause-specific and sensitivity table legends to state at-risk denominators without
 repeating the numbers in each legend .md.
 """
 BHATT_CATEGORY_NS = {

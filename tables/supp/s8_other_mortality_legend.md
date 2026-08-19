@@ -1,0 +1,5 @@
+**ST8. Other-cause mortality by MD-COPD diagnostic category under both frameworks.**
+
+Cause-specific Cox proportional-hazards models estimate the hazard ratio for other-cause mortality relative to the noCOPD reference under each framework, with deaths from cardiovascular disease and cancer treated as censored. Adjustment covariates are age, sex, race, current smoking status, pack-years, and body mass index. Category totals (MD-COPD, at risk): AFL-only-noCOPD n = 170, COPD-minor n = 1,099, COPD-major n = 3,969.
+
+**Abbreviations:** CT, computed tomography; ESI, Emphysema Severity Index; MD-COPD, multidimensional COPD; AFL, airflow limitation; HR, hazard ratio; CI, confidence interval.

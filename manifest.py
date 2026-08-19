@@ -77,21 +77,22 @@ SUPP_PROSE_ORDER = [
 # Rendered in this exact order; TOC labels drawn from each module's TABLE_NUM/TITLE.
 SUPP_TABLES = [
     "s1_thresholds",
-    "s2_baseline",
-    "s3a_esi10_excluded",
-    "s3b_alt_framework",
-    "s3c_severe_exac",
-    "s4a_cvd",
-    "s4b_cancer",
-    "s4c_other",
-    "s5_fev1_decline",
-    "s6a_continuous_mortality_all",
-    "s6b_continuous_mortality_resp",
-    "s6c_continuous_exacerbations",
-    "s6d_continuous_fev1_decline",
-    "s7_esi_trajectory",
-    "s8_bootstrap",
-    "s9_pairwise",
+    "s2_bootstrap",
+    "s3_pairwise",
+    "s4_baseline",
+    "s5_esi_ct_correlations",
+    "s6_cvd_mortality",
+    "s7_cancer_mortality",
+    "s8_other_mortality",
+    "s9_fev1_decline",
+    "s10_cindex_equivalence",
+    "s11_esi10_excluded",
+    "s12_alt_framework",
+    "s13_severe_exac",
+    "s14_continuous_categorical",
+    "s15_continuous_fev1_decline",
+    "s16_esi_trajectory",
+    "s17_bronchodilator_delta_esi",
 ]
 
 # ============================================================================
@@ -102,9 +103,9 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 ASSETS       = os.path.join(PROJECT_ROOT, "manuscript_assets")
 FIGURES_DIR  = os.path.join(PROJECT_ROOT, "figures")
 MANUSCRIPT_OUT = os.path.join(PROJECT_ROOT, "manuscript",
-                              "ESI manuscript draft v9 2026.7.19_PJC.docx")
+                              "ESI manuscript draft v9 2026.8.14_PJC.docx")
 SUPPLEMENT_OUT = os.path.join(PROJECT_ROOT, "manuscript",
-                              "ESI manuscript supplement v9 2026.7.19_PJC.docx")
+                              "ESI manuscript supplement v9 2026.8.16_PJC.docx")
 BUILD_LOG          = os.path.join(PROJECT_ROOT, "build_log_v9.txt")
 BUILD_LOG_MAIN     = os.path.join(PROJECT_ROOT, "build_log_v9_main.txt")
 BUILD_LOG_SUPP     = os.path.join(PROJECT_ROOT, "build_log_v9_supp.txt")

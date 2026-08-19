@@ -1,8 +1,7 @@
-"""Shared builder for S9a/S9b pairwise-contrast tables.
+"""Shared builder for the pairwise-contrast table (Supplemental Table 3).
 
-Both source their rows from Table_2_pairwise_contrasts.csv filtered by outcome.
-S9a is respiratory mortality (log HR contrasts); S9b is exacerbations (log IRR
-contrasts).
+Rows come from Table_2_pairwise_contrasts.csv, filtered by outcome (all-cause
+mortality, respiratory mortality, exacerbations).
 """
 import csv
 import os
@@ -20,12 +19,8 @@ def _fmt_p(p):
     if p < 0.001:
         return "<0.001"
     if p >= 1:
-        return "1.00"
-    # Small p-values (< 0.01) need 3 decimals so 0.005 doesn't round to 0.00
-    # under a naive .2f format (Phase M4 visual-QA fix).
-    if p < 0.01:
-        return f"{p:.3f}"
-    return f"{p:.2f}"
+        return "1.000"
+    return f"{p:.3f}"
 
 
 def _fmt(x, prec=3):
@@ -35,7 +30,7 @@ def _fmt(x, prec=3):
 def build_rows(outcome_label):
     rows = load_contrasts(outcome_label)
     # The source CSV uses " - " to join the two contrast members, but the
-    # category names themselves contain hyphens ("Both-COPD - Bhatt-only-COPD"),
+    # category names themselves contain hyphens ("Both-COPD - CT-only-COPD"),
     # which is visually ambiguous. Use " / " as the contrast separator instead.
     return [
         [r["contrast"].replace(" - ", " / "),

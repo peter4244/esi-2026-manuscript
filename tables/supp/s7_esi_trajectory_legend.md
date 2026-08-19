@@ -1,5 +1,0 @@
-**Supplementary Table S7. ESI trajectory by baseline lung-function stratum, follow-up visits 2 and 3.**
-
-Change in ESI (ΔESI = follow-up − baseline) is summarized as mean and median within the GOLD 0 and PRISm baseline strata at follow-up visits 2 and 3. N is the number of participants with a valid ESI value at each follow-up visit. Positive ΔESI values indicate emphysema progression; negative values indicate apparent regression, most commonly attributable to scanner-to-scanner variability or measurement noise. Despite similar baseline ESI values, PRISm participants show larger longitudinal increases than GOLD 0 participants, consistent with a gradual accumulation of emphysema not captured by baseline FEV₁/FVC alone.
-
-**Abbreviations:** ESI, Emphysema Severity Index; ΔESI, change in ESI from baseline; GOLD, Global Initiative for Chronic Obstructive Lung Disease; PRISm, preserved-ratio impaired-spirometry; FEV₁, forced expiratory volume in one second; FVC, forced vital capacity.

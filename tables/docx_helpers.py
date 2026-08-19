@@ -132,6 +132,25 @@ def add_table(doc, headers, rows, col_widths_in=None,
         for row in tbl.rows:
             for j, w in enumerate(col_widths_in):
                 row.cells[j].width = Inches(w)
+        # Also update the tblGrid gridCol widths — LibreOffice (and some
+        # newer Word versions) honor tblGrid over per-cell width. Without
+        # this, all columns render at the default equal width regardless
+        # of what we asked for. Widths in tblGrid are in twips (1/1440 in).
+        tblGrid = tbl._element.find(qn("w:tblGrid"))
+        if tblGrid is not None:
+            existing = tblGrid.findall(qn("w:gridCol"))
+            for gc, w in zip(existing, col_widths_in):
+                gc.set(qn("w:w"), str(int(round(w * 1440))))
+                gc.set(qn("w:type"), "dxa")
+        # Also disable "Automatically resize to fit contents" so the
+        # widths we set actually stick when Word re-lays out the table.
+        tblPr = tbl._element.find(qn("w:tblPr"))
+        if tblPr is not None:
+            tblLayout = tblPr.find(qn("w:tblLayout"))
+            if tblLayout is None:
+                tblLayout = OxmlElement("w:tblLayout")
+                tblPr.append(tblLayout)
+            tblLayout.set(qn("w:type"), "fixed")
 
     # Header
     for j, h in enumerate(headers):
@@ -164,16 +183,32 @@ def begin_landscape(doc):
     US-Letter (11" wide × 8.5" tall). Returns the new section object.
 
     Use for wide tables (e.g. S2 baseline) that don't fit in portrait 6.5".
-    Pair with `end_landscape(doc)` after the wide content."""
+    Pair with `end_landscape(doc)` after the wide content.
+
+    Idempotent: if the current section is already landscape, does nothing —
+    prevents redundant new-page section breaks when back-to-back tables both
+    call begin_landscape (which would otherwise leave a blank portrait page
+    between them from the intervening end_landscape)."""
+    if doc.sections and doc.sections[-1].orientation == WD_ORIENT.LANDSCAPE:
+        return doc.sections[-1]
     section = doc.add_section(WD_SECTION.NEW_PAGE)
     section.orientation = WD_ORIENT.LANDSCAPE
     section.page_width = Inches(11)
     section.page_height = Inches(8.5)
+    # Narrower left/right margins in landscape than in portrait — landscape
+    # is used only for wide tables (ST1, ST2), so pushing text closer to
+    # the page edge is fine and gains 1.30" of usable content width for
+    # multi-column tables.
+    section.left_margin = Inches(0.35)
+    section.right_margin = Inches(0.35)
     return section
 
 
 def end_landscape(doc):
-    """Insert a section break and revert to portrait US-Letter (8.5" × 11")."""
+    """Insert a section break and revert to portrait US-Letter (8.5" × 11").
+    Idempotent — see begin_landscape."""
+    if doc.sections and doc.sections[-1].orientation == WD_ORIENT.PORTRAIT:
+        return doc.sections[-1]
     section = doc.add_section(WD_SECTION.NEW_PAGE)
     section.orientation = WD_ORIENT.PORTRAIT
     section.page_width = Inches(8.5)
@@ -181,7 +216,7 @@ def end_landscape(doc):
     return section
 
 
-LANDSCAPE_CONTENT_WIDTH_IN = 10.0  # 11" page − 0.5" margins each side
+LANDSCAPE_CONTENT_WIDTH_IN = 10.30  # 11" page − 0.35" margins each side
 
 
 # ---- Body helpers ---------------------------------------------------------
@@ -293,9 +328,16 @@ def body_toc(doc, entries):
     for entry in entries:
         p = doc.add_paragraph()
         p.paragraph_format.left_indent = Inches(0.5)
-        # Table-number column (e.g. "S3a") — bold, right-padded to a stable
-        # 5-char width so titles line up.
-        r1 = p.add_run(f"{entry['num']:>5}  |  ")
+        # Compact "STN" label for the TOC (e.g. "S3" → "ST3"); leaves the
+        # long form "Supplemental Table N" for prose and legend usage.
+        num = entry['num']
+        if num.startswith("S") and not num.startswith("ST"):
+            num_display = f"ST{num[1:]}"
+        else:
+            num_display = num
+        # Table-number column — bold, right-padded to a stable width so
+        # titles line up.
+        r1 = p.add_run(f"{num_display:>5}  |  ")
         r1.font.size = Pt(BODY_FS); r1.font.name = FONT_NAME; r1.bold = True
         # Title as an internal hyperlink
         add_internal_hyperlink(p, entry["anchor"], entry["title"])
@@ -313,7 +355,7 @@ def render_supp_table(doc, table_num, title, body_text, headers, rows,
     indices to vertically merge post-population.
     """
     bookmark = f"tbl_{table_num.replace('.', '_')}"
-    H1(doc, f"Supplementary Table {table_num} — {title}", bookmark_id=bookmark)
+    H1(doc, f"Supplemental Table {table_num} — {title}", bookmark_id=bookmark)
     body(doc, body_text, indent=False)
     tbl = add_table(doc, headers, rows, col_widths_in=col_widths_in)
     if vmerge_cols:
@@ -336,14 +378,17 @@ import importlib
 def format_label(table_num):
     """Turn a bare token into a display label.
     '1' or '2'   → 'Table 1' / 'Table 2'
-    'S3'         → 'Supplementary Table S3'
-    'S6a.1'      → 'Supplementary Table S6a.1'
+    'S3'         → 'Supplemental Table S3'
+    'S6a.1'      → 'Supplemental Table S6a.1'
     'F1'         → 'Figure 1'
     """
     if table_num.startswith("F"):
         return f"Figure {table_num[1:]}"
     if table_num.startswith("S"):
-        return f"Supplementary Table {table_num}"
+        # Long form drops the "S" prefix ("S6" → "Supplemental Table 6");
+        # the compact form ("ST6") is emitted only by the section-style
+        # legend prefix below.
+        return f"Supplemental Table {table_num[1:]}"
     return f"Table {table_num}"
 
 
@@ -380,11 +425,18 @@ def add_legend(doc, legend_body, table_or_fig_num, title=None, abbreviations=Non
         prefix = f"{label}." if title is None else f"{label}. {title}."
         r_bold = p.add_run(prefix + " ")
     else:  # section
-        # Compact form (e.g. "S1 — Title.") because the supp artifact no
-        # longer has an H1 heading above it; the legend itself carries the
-        # table number + title.
-        prefix = (f"{table_or_fig_num}." if title is None
-                  else f"{table_or_fig_num} — {title}.")
+        # Compact form "STN. Title." for supp tables ("S1" → "ST1"; "F1"
+        # would map to "SF1" but figures rarely use section style here).
+        # The supp artifact no longer has an H1 heading above it; the legend
+        # itself carries the table number + title.
+        if table_or_fig_num.startswith("S"):
+            compact = f"ST{table_or_fig_num[1:]}"
+        elif table_or_fig_num.startswith("F"):
+            compact = f"F{table_or_fig_num[1:]}"
+        else:
+            compact = table_or_fig_num
+        prefix = (f"{compact}." if title is None
+                  else f"{compact}. {title}.")
         r_bold = p.add_run(prefix + " ")
     r_bold.bold = True
     r_bold.font.name = FONT_NAME
@@ -425,8 +477,8 @@ def add_legend(doc, legend_body, table_or_fig_num, title=None, abbreviations=Non
 # Grammar (see v9_rebuild_plan_v2 §"Marker grammar"):
 #   {{TABLE:N}}           → hyperlinked "Table N"
 #   {{FIGURE:N}}          → hyperlinked "Figure N"
-#   {{REF:Sn}}            → hyperlinked "Supplementary Table Sn"
-#   {{REFS:Sa,Sb,Sc}}     → "Supplementary Tables Sa, Sb, and Sc" (Oxford)
+#   {{REF:Sn}}            → hyperlinked "Supplemental Table Sn"
+#   {{REFS:Sa,Sb,Sc}}     → "Supplemental Tables Sa, Sb, and Sc" (Oxford)
 #   {{INSERT:tableN}}     → deferred to callback (table.build(doc))
 #   {{INSERT:figureN}}    → deferred to callback (image embed)
 #
@@ -485,12 +537,12 @@ def _resolve_one(kind, arg, insertion_registry):
         tokens = [t.strip() for t in arg.split(",")]
         if len(tokens) == 1:
             return (format_label(tokens[0]), f"tbl_{tokens[0].replace('.', '_')}", None)
-        # Oxford join: "Supplementary Tables A, B, and C"
+        # Oxford join: "Supplemental Tables A, B, and C"
         if len(tokens) == 2:
             joined = f"{tokens[0]} and {tokens[1]}"
         else:
             joined = ", ".join(tokens[:-1]) + f", and {tokens[-1]}"
-        return (f"Supplementary Tables {joined}", None, None)
+        return (f"Supplemental Tables {joined}", None, None)
     if kind == "INSERT":
         if arg not in insertion_registry:
             raise ValueError(f"{{{{INSERT:{arg}}}}} references unknown artifact.")
@@ -896,8 +948,9 @@ def parse_legend_md(md_text):
         if title is None and stripped.startswith("**") and stripped.endswith("**"):
             inner = stripped[2:-2]
             # Strip leading "Figure N." / "Table N." (with optional space)
-            m = re.match(r"^(?:Figure|Table|Supplementary Table)\s+[\w.]+\.\s*(.*?)\.?$",
-                         inner, re.IGNORECASE)
+            m = re.match(
+                r"^(?:Figure\s+|Table\s+|Supplemental Table\s+|ST|F)[\w.]+\.\s*(.*?)\.?$",
+                inner, re.IGNORECASE)
             if m:
                 title = m.group(1)
             else:

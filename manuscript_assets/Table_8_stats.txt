@@ -1,7 +1,7 @@
 bhatt_cindex_all=0.703
 esi_cindex_all=0.700
-bhatt_cindex_resp=0.822
-esi_cindex_resp=0.819
+bhatt_cindex_resp=0.853
+esi_cindex_resp=0.851
 n_cohort=9400
 n_deaths_all=2613
-n_deaths_resp=1068
+n_deaths_resp=622

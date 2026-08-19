@@ -1,7 +1,7 @@
 """Supplement title + auto-generated TOC.
 
 Takes toc_entries collected by build_supplement.collect_toc_entries and emits
-the "Supplementary Material" title, subtitle, and body-text TOC linked to
+the "Supplemental Material" title, subtitle, and body-text TOC linked to
 each supplement table's legend bookmark.
 """
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
@@ -10,7 +10,7 @@ from docx.shared import Pt
 from tables.docx_helpers import FONT_NAME, BODY_FS, body_toc
 
 
-TITLE = "Supplementary Material"
+TITLE = "Supplemental Material"
 SUBTITLE = ("The Emphysema Severity Index: A Spirometric Representation of "
             "CT-Defined Structural Abnormalities in a Multidimensional COPD "
             "Framework")

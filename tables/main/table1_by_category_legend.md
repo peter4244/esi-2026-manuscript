@@ -1,5 +1,0 @@
-**Table 1. Associations of MD-COPD diagnostic categories with mortality and exacerbation outcomes under the CT-based and ESI-based frameworks.**
-
-Cox proportional-hazards (mortality) and negative-binomial (exacerbations) models estimate the hazard ratio (HR) or incidence-rate ratio (IRR) for each MD-COPD category relative to the noCOPD reference. Adjustment covariates are age, sex, race, current smoking status, pack-years, and body mass index; 95% confidence intervals are shown. The CT vs ESI column reports a two-sided p-value for the difference in effect estimate between the CT-based and ESI-based framework fits for the same category (see Methods). Per-category effect-difference details are reported in Supplementary Table S8. The AFL-only-noCOPD category was omitted from this display because its point estimates were near unity and non-significant across all three outcomes under both frameworks (Supplementary Tables S4a–c).
-
-**Abbreviations:** CT, computed tomography; ESI, Emphysema Severity Index; HR, hazard ratio; IRR, incidence-rate ratio; CI, confidence interval; BMI, body mass index; AFL, airflow limitation; COPD, chronic obstructive pulmonary disease.

@@ -1,4 +1,4 @@
-"""Supplementary Table S1 — sensitivity of the ESI-based COPD definition to
+"""Supplemental Table S1 — sensitivity of the ESI-based COPD definition to
 choice of low/high ESI thresholds and minor-criteria thresholding.
 
 Rows: 10 candidate variants; the training-derived variant used in all
@@ -11,6 +11,7 @@ unresolved placeholder.
 """
 import csv
 import os
+import re
 
 from tables import docx_helpers as dh
 from manifest import ASSETS
@@ -23,25 +24,58 @@ TITLE = ("Threshold sensitivity: agreement and diagnostic performance of "
 
 _SELECTED_MARKER = "[SELECTED]"
 
+# Display transforms for the Variant column. The source CSV uses two
+# different styles across rows ("4-crit, ESI cutoff X, threshold >=Y-of-Z"
+# vs "5-crit, T_low=X / T_high=Y"). We standardize to a single style at
+# display time: "N criteria" (not "N-crit"), and consistent "= " spacing
+# around numeric parameters, while keeping the 4-crit single-cutoff form
+# distinguishable from the 5-crit dual-threshold form.
+_VARIANT_TRANSFORMS = [
+    (re.compile(r"^(\d)-crit,"),     r"\1 criteria,"),
+    (re.compile(r">=\s*(\d+)-of-(\d+)"), r"≥\1 of \2 minor"),
+    (re.compile(r"ESI cutoff (\d)"), r"ESI cutoff = \1"),
+    (re.compile(r"T_low=\s*"),       r"T_low = "),
+    (re.compile(r"T_high=\s*"),      r"T_high = "),
+    (re.compile(r"\s*/\s*T_high"),   r", T_high"),
+]
+
+
+def _display_variant(v):
+    for pat, repl in _VARIANT_TRANSFORMS:
+        v = pat.sub(repl, v)
+    return v
+
 
 def build(doc):
     with open(os.path.join(ASSETS, "Supp_Table_Thresholds.csv")) as f:
         rows = list(csv.DictReader(f))
 
-    headers = ["Variant", "N COPD", "Sensitivity", "Specificity", "κ",
-               "Selected"]
+    # "N" (the count of participants classified as COPD by this candidate
+    # definition) is short enough that a wider header column would waste
+    # space; abbreviation is defined in the legend's Abbreviations block.
+    headers = ["Variant", "N", "Sensitivity", "Specificity", "κ", "Selected"]
     body_rows = []
     for r in rows:
         variant = r["variant"]
         is_selected = _SELECTED_MARKER in variant
         variant_clean = variant.replace(_SELECTED_MARKER, "").strip()
         body_rows.append([
-            variant_clean, r["n_COPD"],
+            _display_variant(variant_clean), r["n_COPD"],
             f"{float(r['sens']):.3f}",
             f"{float(r['spec']):.3f}",
             f"{float(r['kappa']):.3f}",
             "✓" if is_selected else "",
         ])
+    # Landscape section so the wide Variant column ("4 criteria, ESI cutoff
+    # = 2.0, threshold ≥3 of 4 minor" ~53 chars) and the full-word data
+    # headers ("Sensitivity", "Specificity", "Selected") all fit on one
+    # line without wrapping.
+    # begin_landscape is idempotent (no-op if already landscape). We do NOT
+    # call end_landscape here because the next table (ST2 baseline) also
+    # needs landscape — the last consecutive landscape table is the one
+    # that switches back to portrait via end_landscape.
+    dh.begin_landscape(doc)
     dh.add_table(doc, headers, body_rows,
-                 col_widths_in=[2.6, 0.60, 0.85, 0.85, 0.75, 0.85])
+                 col_widths_in=[4.20, 0.65, 1.15, 1.15, 0.60, 0.85],
+                 max_width_in=dh.LANDSCAPE_CONTENT_WIDTH_IN)
     dh.add_legend_from_sibling(doc, __file__, TABLE_NUM)

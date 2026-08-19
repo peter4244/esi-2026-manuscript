@@ -142,6 +142,35 @@ vs      <- read.csv(VS_PATH, stringsAsFactors = FALSE);        vs$rand_id      <
 cod     <- read.csv(COD_PATH, stringsAsFactors = FALSE);       cod$rand_id     <- as.character(cod$rand_id.x)
 ex_raw  <- read.csv(EX_PATH, stringsAsFactors = FALSE);        ex_raw$rand_id  <- as.character(ex_raw$rand_id)
 
+# ---- Cause of death: TORCH adjudicated UNDERLYING cause --------------------
+# Changed 2026-08-18. Previously these analyses used the CCOD_* indicators,
+# which flag whether a cause CONTRIBUTED to death and are therefore NOT
+# mutually exclusive: 947 of 2,101 adjudicated deaths carried more than one
+# CCOD flag (e.g. 358 were flagged both cardiovascular and respiratory). That
+# breaks the competing-risks framing these models use, in which a death from
+# any other cause is censored — a multi-flagged death was an event in several
+# cause-specific models at once, and the cause-specific event counts did not
+# partition total mortality.
+#
+# Torch_Group_Basic is the adjudicated underlying cause and IS mutually
+# exclusive (counts sum exactly to the 2,101 adjudicated deaths):
+#   1 Respiratory 704 | 2 Cardiovascular 391 | 3 Cancer 497
+#   4 Other 385       | 5 Unknown 124
+# Unknown (5) is an event for no cause, so those deaths are censored in every
+# cause-specific model, exactly as any other competing death is.
+ucd <- suppressWarnings(as.integer(cod$Torch_Group_Basic))
+cod$UCD_Resp   <- as.integer(!is.na(ucd) & ucd == 1L)
+cod$UCD_CVD    <- as.integer(!is.na(ucd) & ucd == 2L)
+cod$UCD_Cancer <- as.integer(!is.na(ucd) & ucd == 3L)
+cod$UCD_Other  <- as.integer(!is.na(ucd) & ucd == 4L)
+stopifnot(
+  # exclusivity is the whole point of the switch — assert it, don't assume it
+  max(cod$UCD_Resp + cod$UCD_CVD + cod$UCD_Cancer + cod$UCD_Other) <= 1L
+)
+cat(sprintf("TORCH underlying cause: resp=%d cvd=%d cancer=%d other=%d\n",
+            sum(cod$UCD_Resp), sum(cod$UCD_CVD),
+            sum(cod$UCD_Cancer), sum(cod$UCD_Other)))
+
 # Baseline (Visit 1) post-bronchodilator ESI, one row per subject
 esi_v1 <- esi_raw %>%
   filter(visitnum == 1, PrePost == 1) %>%
@@ -212,12 +241,12 @@ d_b$esi_copd <- d_b$esi_cls %in% c("COPD-major", "COPD-minor")
 # Cross-classification cell
 d_b$discord <- with(d_b, case_when(
   bhatt_copd  &  esi_copd ~ "Both-COPD",
-  bhatt_copd  & !esi_copd ~ "Bhatt-only-COPD",
+  bhatt_copd  & !esi_copd ~ "CT-only-COPD",
   !bhatt_copd &  esi_copd ~ "ESI-only-COPD",
   TRUE                    ~ "Both-noCOPD"
 ))
 d_b$discord <- factor(d_b$discord,
-                      levels = c("Both-noCOPD", "Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD"))
+                      levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD"))
 
 # Ordered factor for the four diagnostic categories
 ord <- c("noCOPD", "AFL-only-NoCOPD", "COPD-minor", "COPD-major")
@@ -515,7 +544,7 @@ preserved <- d_b %>% filter(!major_criterion)
 disc_summary <- preserved %>%
   filter(discord != "Both-noCOPD") %>%
   mutate(grp_5 = case_when(
-    discord == "Bhatt-only-COPD" ~ "Bhatt-only-COPD (ESI missed)",
+    discord == "CT-only-COPD" ~ "CT-only-COPD (ESI missed)",
     discord == "ESI-only-COPD"   ~ "ESI-only-COPD (Bhatt missed)",
     TRUE                         ~ as.character(discord)
   )) %>%
@@ -544,7 +573,7 @@ kable(disc_summary, caption = "Baseline descriptors of the three discordant pres
 
 ## Section 5b — Discordance pairwise tests (Figure 2 significance annotations)
 
-All three pairwise contrasts (Bhatt-only vs Both, Both vs ESI-only, Bhatt-only
+All three pairwise contrasts (CT-only vs Both, Both vs ESI-only, CT-only
 vs ESI-only) across the seven Figure-2 descriptors. Wilcoxon rank-sum for the
 continuous descriptors (ESI, %LAA-950HU); chi-square (2×2) for the binary
 descriptors (visual emph %, visual wall %, mMRC≥2 %, SGRQ≥25 %, chronic
@@ -555,7 +584,7 @@ Figure 2, not a formal multiple-testing framework.
 disc_dat <- preserved %>%
   filter(discord != "Both-noCOPD") %>%
   mutate(group = case_when(
-    discord == "Bhatt-only-COPD" ~ "Bhatt-only",
+    discord == "CT-only-COPD" ~ "CT-only",
     discord == "Both-COPD"       ~ "Both",
     discord == "ESI-only-COPD"   ~ "ESI-only"),
     ESI    = ESI_v1post,
@@ -565,8 +594,8 @@ disc_dat <- preserved %>%
     CB     = as.integer(cb_yn)) %>%
   dplyr::select(group, ESI, LAA950, emph, wall, mMRC2p, SGRQ25p, CB)
 
-pairs <- list(c("Bhatt-only","Both"), c("Both","ESI-only"),
-              c("Bhatt-only","ESI-only"))
+pairs <- list(c("CT-only","Both"), c("Both","ESI-only"),
+              c("CT-only","ESI-only"))
 cont_vars <- c("ESI","LAA950")
 bin_vars  <- c("emph","wall","mMRC2p","SGRQ25p","CB")
 
@@ -626,8 +655,8 @@ Reproduces `Table_8_allcause.csv`, `Table_8_resp.csv`, `Table_8_stats.txt`,
 ```{r by-category-mortality}
 mort_b <- d_b %>%
   inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, CCOD_COPD_resp), by = "rand_id") %>%
-  mutate(event_resp = ifelse(vital_status == 1 & !is.na(CCOD_COPD_resp) & CCOD_COPD_resp == 1, 1, 0)) %>%
+  left_join(cod %>% select(rand_id, UCD_Resp), by = "rand_id") %>%
+  mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0)) %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
 cox_bhatt_all  <- coxph(Surv(days_followed/365.25, vital_status) ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_b)
@@ -827,32 +856,57 @@ if (file.exists(CACHE_PATH)) {
     store[[paste(o, m, sep = "_")]] <- matrix(NA_real_, nrow = B_BOOTSTRAP, ncol = length(cats),
                                               dimnames = list(NULL, cats))
   }
-  B_effective <- 0L
+  log_hr <- function(fit, term) {
+    co <- summary(fit)$coef
+    if (!term %in% rownames(co)) return(NA_real_)
+    unname(co[term, "coef"])
+  }
+  # Fit each OUTCOME in its own tryCatch. Previously all four models shared a
+  # single tryCatch that also caught warnings, so one warning from the
+  # respiratory fit discarded the (valid) all-cause fits for that resample as
+  # well. Under the TORCH underlying-cause definition respiratory has 704
+  # events with very few in the noCOPD reference, so the respiratory fit warns
+  # often — that silently cut the SHARED effective sample to 416/1000 and moved
+  # the all-cause interval even though all-cause data were unchanged. The
+  # dropped resamples are not missing at random (they are the ones with sparse
+  # respiratory events), so isolating failures per outcome is required for the
+  # all-cause interval to be unbiased, and B_effective is now tracked per
+  # outcome so the respiratory sample size is reported rather than hidden.
+  fit_pair <- function(dat, ev_col) tryCatch({
+    rhs <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
+    lhs <- paste0("Surv(days_followed/365.25, ", ev_col, ")")
+    list(
+      ct  = coxph(as.formula(paste(lhs, "~ bhatt_grp +", rhs)), data = dat),
+      esi = coxph(as.formula(paste(lhs, "~ esi_grp   +", rhs)), data = dat)
+    )
+  }, error = function(e) NULL, warning = function(w) NULL)
+
+  B_effective   <- 0L
+  B_eff_outcome <- c(all = 0L, resp = 0L)
   for (b in seq_len(B_BOOTSTRAP)) {
     idx <- sample.int(n, size = n, replace = TRUE)
     dat <- mort_b[idx, ]
-    fits <- tryCatch({
-      list(
-        all_b  = coxph(Surv(days_followed/365.25, vital_status) ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = dat),
-        all_e  = coxph(Surv(days_followed/365.25, vital_status) ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = dat),
-        resp_b = coxph(Surv(days_followed/365.25, event_resp)   ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = dat),
-        resp_e = coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = dat)
-      )
-    }, error = function(e) NULL, warning = function(w) NULL)
-    if (is.null(fits)) next
-    log_hr <- function(fit, term) {
-      co <- summary(fit)$coef
-      if (!term %in% rownames(co)) return(NA_real_)
-      unname(co[term, "coef"])
+    fa <- fit_pair(dat, "vital_status")
+    fr <- fit_pair(dat, "event_resp")
+    if (is.null(fa) && is.null(fr)) next
+    if (!is.null(fa)) {
+      for (cat_ in cats) {
+        store[["all_bhatt"]][b, cat_] <- log_hr(fa$ct,  paste0("bhatt_grp", cat_))
+        store[["all_esi"]][b, cat_]   <- log_hr(fa$esi, paste0("esi_grp",   cat_))
+      }
+      B_eff_outcome["all"] <- B_eff_outcome["all"] + 1L
     }
-    for (cat_ in cats) {
-      store[["all_bhatt"]][b, cat_]  <- log_hr(fits$all_b,  paste0("bhatt_grp", cat_))
-      store[["all_esi"]][b, cat_]    <- log_hr(fits$all_e,  paste0("esi_grp",   cat_))
-      store[["resp_bhatt"]][b, cat_] <- log_hr(fits$resp_b, paste0("bhatt_grp", cat_))
-      store[["resp_esi"]][b, cat_]   <- log_hr(fits$resp_e, paste0("esi_grp",   cat_))
+    if (!is.null(fr)) {
+      for (cat_ in cats) {
+        store[["resp_bhatt"]][b, cat_] <- log_hr(fr$ct,  paste0("bhatt_grp", cat_))
+        store[["resp_esi"]][b, cat_]   <- log_hr(fr$esi, paste0("esi_grp",   cat_))
+      }
+      B_eff_outcome["resp"] <- B_eff_outcome["resp"] + 1L
     }
     B_effective <- B_effective + 1L
   }
+  cat(sprintf("Bootstrap effective resamples: all-cause = %d, respiratory = %d (of %d)\n",
+              B_eff_outcome[["all"]], B_eff_outcome[["resp"]], B_BOOTSTRAP))
 
   # Assemble per (outcome, category) results
   rows <- list()
@@ -1063,14 +1117,14 @@ CT-based × ESI-based frameworks (reference: Both-noCOPD).  Reproduces
 ```{r cross-class-mortality}
 mort_disc <- mort_b %>% filter(!major_criterion)
 mort_disc$discord <- factor(mort_disc$discord,
-                            levels = c("Both-noCOPD", "Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD"))
+                            levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD"))
 
 cox_disc_all  <- coxph(Surv(days_followed/365.25, vital_status) ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_disc)
 cox_disc_resp <- coxph(Surv(days_followed/365.25, event_resp)   ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_disc)
 
 # Retain the "(ESI missed)" / "(Bhatt missed)" naming used by build_revisions_v2
 label_map <- c("Both-COPD"        = "Both-COPD",
-               "Bhatt-only-COPD" = "Bhatt-only-COPD (ESI missed)",
+               "CT-only-COPD" = "CT-only-COPD (ESI missed)",
                "ESI-only-COPD"   = "ESI-only-COPD (Bhatt missed)")
 
 t_grp_mort <- data.frame(
@@ -1096,18 +1150,18 @@ kable(t_grp_mort, digits = 2, caption = "Cross-classification mortality outcomes
 covs <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
 d_pres <- d_b %>%
   inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, CCOD_CVD, CCOD_Cancer, CCOD_Other, CCOD_COPD_resp), by = "rand_id") %>%
+  left_join(cod %>% select(rand_id, UCD_CVD, UCD_Cancer, UCD_Other, UCD_Resp), by = "rand_id") %>%
   filter(!major_criterion,
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
-causes       <- c("CCOD_CVD", "CCOD_Cancer", "CCOD_Other")
+causes       <- c("UCD_CVD", "UCD_Cancer", "UCD_Other")
 cause_labels <- c("CVD",       "Cancer",       "Other")
 
 t_cs_disc <- list()
 for (i in seq_along(causes)) {
   ev  <- mk_event(d_pres, causes[i])
   fit <- coxph(as.formula(paste("Surv(days_followed/365.25, ev) ~ discord +", covs)), data = d_pres)
-  for (g in c("Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD")) {
+  for (g in c("Both-COPD", "CT-only-COPD", "ESI-only-COPD")) {
     hr <- cox_row(fit, paste0("discord", g))
     t_cs_disc[[length(t_cs_disc) + 1]] <- data.frame(
       cause = cause_labels[i], group = g,
@@ -1124,7 +1178,7 @@ kable(t_cs_disc, digits = 2, caption = "Cause-specific mortality by cross-classi
 ```{r cross-class-exac}
 ex_disc <- ex_b %>% filter(!major_criterion)
 ex_disc$discord <- factor(ex_disc$discord,
-                          levels = c("Both-noCOPD", "Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD"))
+                          levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD"))
 nb_disc <- glm.nb(Total_Exacerbations ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_disc)
 
 t_disc_ex <- data.frame(group = unname(label_map),
@@ -1141,7 +1195,7 @@ kable(t_disc_ex, digits = 2, caption = "Exacerbation IRRs by cross-classificatio
 
 ## Section 7b — Table 2 pairwise contrasts (item 4)
 
-Three comparisons among Both-COPD / Bhatt-only-COPD / ESI-only-COPD, using a
+Three comparisons among Both-COPD / CT-only-COPD / ESI-only-COPD, using a
 **hand-built 3 × k contrast matrix** so `multcomp::glht`'s single-step
 adjustment is calibrated over exactly the three reported contrasts (finding 1
 from the second plan-agent review — `mcp("Tukey")` would compute the correction
@@ -1152,7 +1206,7 @@ over 6 pairs and leave the reported p-values miscalibrated).
 
 ```{r pairwise-contrasts-table2}
 # Three coefficient names — same in cox_disc_all / cox_disc_resp / nb_disc
-target_terms <- c("discordBoth-COPD", "discordBhatt-only-COPD", "discordESI-only-COPD")
+target_terms <- c("discordBoth-COPD", "discordCT-only-COPD", "discordESI-only-COPD")
 
 make_K <- function(fit) {
   cn <- names(coef(fit))
@@ -1161,9 +1215,9 @@ make_K <- function(fit) {
   k <- length(cn)
   row <- function(a, b) { r <- numeric(k); r[i[a]] <- 1; r[i[b]] <- -1; names(r) <- cn; r }
   K <- rbind(
-    "Both-COPD - Bhatt-only-COPD"       = row(1, 2),
+    "Both-COPD - CT-only-COPD"       = row(1, 2),
     "Both-COPD - ESI-only-COPD"         = row(1, 3),
-    "Bhatt-only-COPD - ESI-only-COPD"   = row(2, 3)
+    "CT-only-COPD - ESI-only-COPD"   = row(2, 3)
   )
   K
 }
@@ -1200,7 +1254,7 @@ kable(t_pw %>% mutate(est_logHR = round(est_logHR, 3),
 ```{r cross-class-fev1-decline}
 base_pres <- d_pres %>% transmute(
   rand_id,
-  discord         = factor(discord, levels = c("Both-noCOPD", "Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD")),
+  discord         = factor(discord, levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD")),
   Height_CM       = as.numeric(Height_CM),
   gender_baseline = factor(gender),
   race_baseline   = factor(race)
@@ -1212,9 +1266,9 @@ lmm_disc <- lmer(FEV1_post_mL ~ years_from_baseline * discord + Height_CM +
                    ATS_PackYears + (1 | rand_id), data = decline_d)
 
 t_dec_disc <- data.frame(
-  group = c("Both-COPD", "Bhatt-only-COPD", "ESI-only-COPD"),
+  group = c("Both-COPD", "CT-only-COPD", "ESI-only-COPD"),
   n_subj = c(sum(decline_d$discord == "Both-COPD"        & !duplicated(decline_d$rand_id)),
-             sum(decline_d$discord == "Bhatt-only-COPD" & !duplicated(decline_d$rand_id)),
+             sum(decline_d$discord == "CT-only-COPD" & !duplicated(decline_d$rand_id)),
              sum(decline_d$discord == "ESI-only-COPD"   & !duplicated(decline_d$rand_id)))
 )
 for (g in t_dec_disc$group) {
@@ -1231,7 +1285,7 @@ kable(t_dec_disc, digits = 2, caption = "FEV1 decline slope contrasts by cross-c
 ```{r cause-specific-by-class}
 d_all_cat <- d_b %>%
   inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, CCOD_CVD, CCOD_Cancer, CCOD_Other), by = "rand_id") %>%
+  left_join(cod %>% select(rand_id, UCD_CVD, UCD_Cancer, UCD_Other), by = "rand_id") %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
 t_by_bhatt <- list(); t_by_esi <- list()
@@ -1353,8 +1407,8 @@ the Results.
 
 d_cont <- d %>%
   inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, CCOD_COPD_resp), by = "rand_id") %>%
-  mutate(event_resp = ifelse(vital_status == 1 & !is.na(CCOD_COPD_resp) & CCOD_COPD_resp == 1, 1, 0)) %>%
+  left_join(cod %>% select(rand_id, UCD_Resp), by = "rand_id") %>%
+  mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0)) %>%
   filter(!is.na(stratum), !is.na(FEV1_FVC_post), !is.na(age_visit),
          !is.na(ATS_PackYears), !is.na(BMI))
 d_cont$stratum <- relevel(d_cont$stratum, ref = "GOLD0")
@@ -1600,14 +1654,14 @@ disc_num <- disc %>% mutate(
   mMRC2p  = pct_of(pct_mMRC2p), SGRQ25p = pct_of(pct_SGRQ25p),
   CB      = pct_of(pct_CB)
 )
-lvl <- c("Bhatt-only-COPD (ESI missed)", "Both-COPD", "ESI-only-COPD (Bhatt missed)")
+lvl <- c("CT-only-COPD (ESI missed)", "Both-COPD", "ESI-only-COPD (Bhatt missed)")
 disc_num$grp_5 <- factor(disc_num$grp_5, levels = lvl)
 disc_num$grp_short <- recode(as.character(disc_num$grp_5),
-  "Bhatt-only-COPD (ESI missed)" = sprintf("Bhatt-only\n(n=%d)", disc_num$n[1]),
+  "CT-only-COPD (ESI missed)" = sprintf("CT-only\n(n=%d)", disc_num$n[1]),
   "Both-COPD"                    = sprintf("Both\n(n=%d)",       disc_num$n[2]),
   "ESI-only-COPD (Bhatt missed)" = sprintf("ESI-only\n(n=%d)",   disc_num$n[3]))
 disc_num$grp_short <- factor(disc_num$grp_short,
-  levels = c(sprintf("Bhatt-only\n(n=%d)", disc_num$n[1]),
+  levels = c(sprintf("CT-only\n(n=%d)", disc_num$n[1]),
              sprintf("Both\n(n=%d)",       disc_num$n[2]),
              sprintf("ESI-only\n(n=%d)",   disc_num$n[3])))
 
@@ -1705,14 +1759,14 @@ checks <- list(
   selfcheck("GOLD 0 ESI-slope (mL/yr)",   esi_int["est"],                         -4.7, tol = 0.5),
   selfcheck("COPD-major all-cause HR (CT)",  t8_all$bhatt_HR[t8_all$group == "COPD-major"], 2.59, tol = 0.02),
   selfcheck("COPD-major all-cause HR (ESI)", t8_all$esi_HR[t8_all$group == "COPD-major"],   2.39, tol = 0.02),
-  selfcheck("COPD-major resp HR (CT)",       t8_resp$bhatt_HR[t8_resp$group == "COPD-major"], 13.93, tol = 0.10),
-  selfcheck("COPD-major resp HR (ESI)",      t8_resp$esi_HR[t8_resp$group == "COPD-major"],   11.85, tol = 0.10),
+  selfcheck("COPD-major resp HR (CT)",       t8_resp$bhatt_HR[t8_resp$group == "COPD-major"], 36.27, tol = 0.25),
+  selfcheck("COPD-major resp HR (ESI)",      t8_resp$esi_HR[t8_resp$group == "COPD-major"],   30.95, tol = 0.25),
   selfcheck("COPD-major exac IRR (CT)",      t_bhatt_ex$bhatt_IRR[t_bhatt_ex$group == "COPD-major"], 5.07, tol = 0.05),
   selfcheck("COPD-major exac IRR (ESI)",     t_bhatt_ex$esi_IRR[t_bhatt_ex$group == "COPD-major"],   4.47, tol = 0.05),
   selfcheck("Both-COPD all-cause HR",  t_grp_mort$all_HR[t_grp_mort$group  == "Both-COPD"],                    2.02, tol = 0.02),
-  selfcheck("Bhatt-only all-cause HR", t_grp_mort$all_HR[t_grp_mort$group  == "Bhatt-only-COPD (ESI missed)"], 1.53, tol = 0.02),
+  selfcheck("CT-only all-cause HR", t_grp_mort$all_HR[t_grp_mort$group  == "CT-only-COPD (ESI missed)"], 1.53, tol = 0.02),
   selfcheck("ESI-only all-cause HR",   t_grp_mort$all_HR[t_grp_mort$group  == "ESI-only-COPD (Bhatt missed)"], 1.26, tol = 0.03),
-  selfcheck("ESI-only CVD HR",         t_cs_disc$HR[t_cs_disc$cause == "CVD" & t_cs_disc$group == "ESI-only-COPD"], 2.74, tol = 0.05),
+  selfcheck("ESI-only CVD HR",         t_cs_disc$HR[t_cs_disc$cause == "CVD" & t_cs_disc$group == "ESI-only-COPD"], 2.29, tol = 0.05),
   selfcheck("Both-COPD exac IRR",      t_disc_ex$IRR[t_disc_ex$group == "Both-COPD"],                              3.17, tol = 0.05)
 )
 selfcheck_tbl <- do.call(rbind, checks)
@@ -1825,8 +1879,8 @@ cs_reg <- data.frame()
 # --- datasets (reuse mort_b / ex_b / d_cont from earlier sections when in scope) ---
 cs_mort <- d_b %>%
   inner_join(vs %>% dplyr::select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% dplyr::select(rand_id, CCOD_COPD_resp, CCOD_CVD, CCOD_Cancer, CCOD_Other), by = "rand_id") %>%
-  mutate(event_resp = ifelse(vital_status == 1 & !is.na(CCOD_COPD_resp) & CCOD_COPD_resp == 1, 1, 0))
+  left_join(cod %>% dplyr::select(rand_id, UCD_Resp, UCD_CVD, UCD_Cancer, UCD_Other), by = "rand_id") %>%
+  mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0))
 cs_mortF <- cs_mort %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 cs_mortM <- cs_mort %>% filter(complete.cases(age_visit, gender, race))
 cs_ex <- d_b %>%
@@ -1836,7 +1890,7 @@ cs_exF <- cs_ex %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, A
 cs_exM <- cs_ex %>% filter(complete.cases(age_visit, gender, race))
 
 groups3 <- c("AFL-only-NoCOPD","COPD-minor","COPD-major")
-discords <- c("Both-COPD","Bhatt-only-COPD","ESI-only-COPD")
+discords <- c("Both-COPD","CT-only-COPD","ESI-only-COPD")
 
 # Table 1
 cB_a_F <- coxph(Surv(days_followed/365.25, vital_status) ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = cs_mortF)
@@ -1901,7 +1955,7 @@ for (g in groups3) {
 
 # S4a/b/c: cause-specific mortality
 cs_mk <- function(df, col) ifelse(df$vital_status == 1 & !is.na(df[[col]]) & df[[col]] == 1, 1, 0)
-cause_cols <- c("CCOD_CVD","CCOD_Cancer","CCOD_Other")
+cause_cols <- c("UCD_CVD","UCD_Cancer","UCD_Other")
 cause_labs <- c("S4a CVD","S4b Cancer","S4c Other")
 for (i in seq_along(cause_cols)) {
   ev_F <- cs_mk(cs_mortF, cause_cols[i]); ev_M <- cs_mk(cs_mortM, cause_cols[i])
@@ -1919,8 +1973,8 @@ for (i in seq_along(cause_cols)) {
 cs_dcont <- d_b %>% mutate(FF_per_0_1 = FEV1_FVC_post / 0.1)
 cs_mortC <- cs_dcont %>%
   inner_join(vs %>% dplyr::select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% dplyr::select(rand_id, CCOD_COPD_resp), by = "rand_id") %>%
-  mutate(event_resp = ifelse(vital_status == 1 & !is.na(CCOD_COPD_resp) & CCOD_COPD_resp == 1, 1, 0))
+  left_join(cod %>% dplyr::select(rand_id, UCD_Resp), by = "rand_id") %>%
+  mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0))
 cs_mortCF <- cs_mortC %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears))
 cs_mortCM <- cs_mortC %>% filter(complete.cases(age_visit, gender, race))
 cs_exC <- cs_dcont %>%

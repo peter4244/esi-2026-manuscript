@@ -97,22 +97,31 @@ stratum_baseline (the stratification variable).
 ## 7. Software and reproducibility
 
 All analyses in R 4.5.2 with packages survival, MASS, lme4, lmerTest, dplyr,
-tidyr, ggplot2.  Build scripts in
-`~/claude_projects/projects/ESI_2024/`:
+tidyr, ggplot2.
 
-- `build_revisions_2026.6.22.R` — initial spectrum-wide + Bhatt subset
-- `build_revisions_v2_2026.6.25.R` — Bhatt threshold sensitivity, discordance
-- `build_exacerbations_2026.6.25.R` — LFU exacerbation analyses
-- `build_causespecific_2026.6.25.R` — cause-specific mortality (continuous ESI)
-- `build_subgroup_2026.6.25.R` — subgroup analyses for v4 §3.3
-- `build_figure3_2026.6.25.R` — Figure 3 forest plot
-- `build_outline_v4.py` — assembles the v4 Word docx
+**Single canonical analysis script** (as of 2026-08-18):
+`~/claude_projects/projects/ESI_2024/esi_manuscript_analysis_2026.7.17.Rmd`.
+It writes every result CSV consumed by the manuscript and supplement into
+`manuscript_assets/`. The earlier per-topic `build_*.R` / `validation_*.R`
+scripts were superseded by it and were deleted on 2026-08-18 (recoverable from
+git history); they still used the retired CCOD cause-of-death definition and
+would have produced numbers contradicting the paper if re-run.
 
-All validation logs:
-- `validation_log_2026.5.17.md` (106/106)
-- `validation_revisions_2026.6.22.md` (36/36)
-- `validation_revisions_v2_2026.6.25.md` (28/28)
-- `validation_exacerbations_2026.6.25.md` (27/27)
-- `validation_causespecific_2026.6.25.md` (21/21)
-- `validation_subgroup_2026.6.25.md` (19/19)
-- `validation_v4_outline_2026.6.25.md` (this log; comprehensive v4 pass)
+The manuscript and supplement .docx are produced separately:
+- Supplement — `build_supplement.py` renders each `tables/supp/s<N>_*.py`
+  module with its sibling `_legend.md`.
+- Manuscript — the .docx is the source of truth and is edited directly;
+  `build_manuscript.py` is retired and guarded against being run.
+
+### Cause of death
+
+Cause-specific mortality uses the TORCH adjudicated **underlying** cause
+(`Torch_Group_Basic`), which is mutually exclusive:
+Respiratory 704, Cardiovascular 391, Cancer 497, Other 385, Unknown 124
+(sum = 2,101 adjudicated deaths). Unknown deaths are an event for no cause and
+are therefore censored in every cause-specific model, as any competing death is.
+
+This replaced the `CCOD_*` indicators on 2026-08-18. Those flag whether a cause
+*contributed* to death and are not mutually exclusive — 947 of 2,101 deaths
+carried more than one (358 were flagged both cardiovascular and respiratory) —
+which is incompatible with the competing-risks framing these models use.

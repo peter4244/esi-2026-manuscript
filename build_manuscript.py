@@ -242,6 +242,25 @@ def make_figure_callback(alias_key, module_path, log):
 # Main
 # ---------------------------------------------------------------------------
 def main():
+    # ---- RETIRED 2026-08-18 -------------------------------------------------
+    # The manuscript .docx is now the source of truth: Pete edits it directly
+    # in Word, and its prose .md sources were deleted because they had drifted
+    # (the Methods section in the .docx cites two supplemental tables that
+    # 04_methods.md never had). Edit the .docx surgically with python-docx
+    # instead of rebuilding.
+    #
+    # This guard exists because main() swallows per-section failures into red
+    # "BUILD FAILED" paragraphs and then saves over MANUSCRIPT_OUT
+    # unconditionally — running it would destroy the manuscript rather than
+    # error out. Do not remove without restoring prose/02..07*.md,
+    # tables/main/*_legend.md and figures/*/*_legend.md first.
+    raise SystemExit(
+        "build_manuscript.py is retired — the .docx is the source of truth.\n"
+        "Its prose/legend .md sources were deleted; running this would "
+        "overwrite\n" + MANUSCRIPT_OUT + "\nwith an empty BUILD FAILED "
+        "document. Edit the .docx directly (python-docx) instead.\n"
+        "Backups of the deleted .md sources: see the session scratchpad."
+    )
     log = BuildLog(BUILD_LOG_MAIN)
     doc = init_document()
 
