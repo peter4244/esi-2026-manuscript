@@ -1,2 +1,2 @@
-n_cohort=8393
-n_total_exac=23102
+n_cohort=8338
+n_total_exac=22821

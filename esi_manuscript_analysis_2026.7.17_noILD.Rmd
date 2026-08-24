@@ -138,6 +138,33 @@ mk_event <- function(df, cause_col) {
 esi_raw <- read.csv(ESI_PATH, stringsAsFactors = FALSE);       esi_raw$rand_id <- as.character(esi_raw$rand_id)
 phe_raw <- read.csv(PHE_PATH, stringsAsFactors = FALSE, na.strings = c("", "NA"))
 phe_raw$rand_id <- as.character(phe_raw$rand_id)
+
+# ---- Exclude the ILD/Bronchiectasis recruitment cohort ---------------------
+# Added 2026-08-24 (noILD variant of the analysis).
+#
+# COPDGene's phenotype table carries three recruitment cohorts in `cohort`:
+# "Smoker", "Never smoked" and "ILD/Brnch". The ILD/Bronchiectasis cohort is
+# removed here, at the single point where the phenotype table is loaded, so the
+# exclusion propagates to every downstream dataset: v1 -> d -> d_b -> mort_b and
+# ex_b, and fev1_long for the decline models. Filtering anywhere later would
+# leave one of those populations out of step.
+#
+# Two reasons. (1) ESI is computed from the expiratory flow-volume curve, and
+# ILD produces restrictive physiology with a different curve morphology, so
+# these subjects sit outside the intended target population for an ESI-based
+# COPD classification. (2) Retaining them made the longitudinal analyses
+# disagree on their population: the vital-status file covers only the SM and NS
+# cohorts, so ILD/Brnch subjects were already absent from the mortality models
+# (0 of 61 in the analytic cohort) while still present in the exacerbation (55)
+# and FEV1-decline (61) models. Excluding them makes all four consistent.
+is_ild  <- !is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"
+n_ild   <- length(unique(phe_raw$rand_id[is_ild]))
+n_row0  <- nrow(phe_raw)
+phe_raw <- phe_raw[!is_ild, ]
+stopifnot(!any(!is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"))
+cat(sprintf("Excluded ILD/Bronchiectasis cohort: %d subjects, %d rows removed (%d -> %d). Cohorts retained: %s\n",
+            n_ild, n_row0 - nrow(phe_raw), n_row0, nrow(phe_raw),
+            paste(sort(unique(trimws(phe_raw$cohort))), collapse = ", ")))
 vs      <- read.csv(VS_PATH, stringsAsFactors = FALSE);        vs$rand_id      <- as.character(vs$rand_id)
 cod     <- read.csv(COD_PATH, stringsAsFactors = FALSE);       cod$rand_id     <- as.character(cod$rand_id.x)
 ex_raw  <- read.csv(EX_PATH, stringsAsFactors = FALSE);        ex_raw$rand_id  <- as.character(ex_raw$rand_id)

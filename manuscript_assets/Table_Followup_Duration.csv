@@ -1,0 +1,4 @@
+"analysis","source_file","quantity","n","median_yr","q1_yr","q3_yr","min_yr","max_yr"
+"All-cause and respiratory mortality","COPDGene_VitalStatus_SM_NS_Sep23_randid.csv","time at risk (days_followed / 365.25)",9400,10.8829568788501,5.50308008213552,13.0130047912389,0,15.2388774811773
+"Exacerbations","LFU_SidLevel_Comorbd_randid.csv","exposure time (Years_Followed, model offset)",8338,10.4,5.1,11.8,0.2,13.8
+"FEV1 decline (participants with >=1 follow-up visit)","COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24_randid.csv","baseline to last observed visit",5545,9.69,5.401779603,10.48,3.5811088296,14.85
