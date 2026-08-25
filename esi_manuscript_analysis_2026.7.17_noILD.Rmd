@@ -106,6 +106,7 @@ cat(sprintf("survival: %s\nmultcomp: %s\nMASS: %s\nlme4: %s\n",
 
 # ---- Seed for A2 fallback bootstrap + A3 per-category bootstrap ----------
 BOOTSTRAP_SEED <- 20260717
+PAIRWISE_SEED  <- 20260717   # multcomp single-step Monte Carlo integration
 
 # Shared plot theme
 theme_set(
@@ -1450,6 +1451,12 @@ pairwise_rows <- function(fit, outcome_label, df_override = NULL) {
   K  <- make_K(fit)
   tk <- if (is.null(df_override)) glht(fit, linfct = K)
         else                       glht(fit, linfct = K, df = df_override)
+  # multcomp's single-step adjustment integrates the multivariate normal by
+  # Monte Carlo, so the adjusted p-values are not reproducible unless the RNG
+  # is fixed. Unseeded, a re-run moved the smallest of them by ~10% relative
+  # (0.00554 -> 0.00496) - enough for a reader reproducing this analysis to get
+  # different numbers from the ones printed in the paper.
+  set.seed(PAIRWISE_SEED)
   s  <- summary(tk)$test  # single-step adjustment over the 3 reported contrasts
   data.frame(
     outcome    = outcome_label,
