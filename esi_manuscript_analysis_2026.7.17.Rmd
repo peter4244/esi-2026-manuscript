@@ -1,5 +1,5 @@
 ---
-title: "ESI multidimensional-COPD reformulation: analysis report accompanying the manuscript"
+title: "[RETIRED] ESI multidimensional-COPD reformulation: analysis report accompanying the manuscript"
 author: "Peter J. Castaldi"
 date: "2026-07-17"
 output:
@@ -10,6 +10,39 @@ output:
     df_print: paged
     code_folding: show
 ---
+
+> # ⚠ RETIRED — DO NOT RUN
+>
+> Superseded on 2026-08-24 by
+> **`esi_manuscript_analysis_2026.7.17_noILD.Rmd`**, which excludes COPDGene's
+> ILD/Bronchiectasis recruitment cohort. This file still *includes* that cohort
+> and therefore reproduces the pre-exclusion analytic cohort (n = 9,463 rather
+> than 9,402).
+>
+> It is guarded rather than deleted because it is the provenance record for
+> every number in the manuscript prior to the ILD exclusion. Recover it from git
+> history if you need to re-run it, and redirect `OUT_DIR` first.
+
+```{r retired-guard, include=FALSE}
+stop(
+  "\n\n",
+  "==================================================================\n",
+  " esi_manuscript_analysis_2026.7.17.Rmd is RETIRED (2026-08-24).\n",
+  "==================================================================\n",
+  " Superseded by esi_manuscript_analysis_2026.7.17_noILD.Rmd, which\n",
+  " excludes the ILD/Bronchiectasis cohort. This file INCLUDES it and\n",
+  " would reproduce the pre-exclusion cohort (n = 9,463 vs 9,402).\n\n",
+  " It writes the SAME CSVs into manuscript_assets/ as the noILD Rmd,\n",
+  " so running it would silently replace the current results with\n",
+  " ILD-inclusive numbers and desynchronise the manuscript and the\n",
+  " supplement from the analysis that produced them. That is not\n",
+  " hypothetical: on 2026-08-24 a throwaway verification script sourced\n",
+  " this analysis and overwrote 15 result CSVs exactly that way.\n\n",
+  " To re-run it deliberately: recover from git history and set OUT_DIR\n",
+  " to a scratch directory BEFORE knitting.\n",
+  "==================================================================\n"
+)
+```
 
 <!--
 Single reproducible analysis report that produces every result, table, and figure
