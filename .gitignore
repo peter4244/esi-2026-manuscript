@@ -67,7 +67,11 @@ TEMP/
 Temp/
 tmp/
 background/
-FIGURES/
+# NOTE: do NOT re-add a bare 'FIGURES/' rule here. This filesystem is
+# case-insensitive and core.ignorecase=true, so 'FIGURES/' also matches the
+# live lowercase figures/ directory and silently excluded ALL figure source
+# code from the repo. The legacy artefacts under figures/OLD/ are already
+# covered by the OLD/ rule above.
 
 # ---- Build logs / one-off outputs ------------------------------------------
 build_log_*.txt
