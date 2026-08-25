@@ -879,22 +879,29 @@ cindex_equiv_bootstrap <- function(surv_time, surv_event, lp_ct, lp_esi, outcome
 res_all  <- cindex_equiv(cox_bhatt_all,  cox_esi_all,  "all-cause")
 res_resp <- cindex_equiv(cox_bhatt_resp, cox_esi_resp, "respiratory")
 
-# Fallback if the multi-fit dispatch didn't work
+# Fall back per outcome. The respiratory fit is the sparse one and can fail on
+# its own; keying the fallback off the all-cause result let a NULL respiratory
+# result through, yielding a silently one-row table.
 if (is.null(res_all)) {
-  message("A2 primary path unavailable; using Harrell's-C bootstrap fallback.")
-  lp_bhatt_a <- predict(cox_bhatt_all,  type = "lp")
-  lp_esi_a   <- predict(cox_esi_all,   type = "lp")
-  lp_bhatt_r <- predict(cox_bhatt_resp, type = "lp")
-  lp_esi_r   <- predict(cox_esi_resp,   type = "lp")
-  res_all  <- cindex_equiv_bootstrap(
+  message("A2 primary path unavailable for all-cause; using Harrell's-C bootstrap fallback.")
+  res_all <- cindex_equiv_bootstrap(
     mort_b$days_followed / 365.25, mort_b$vital_status,
-    lp_bhatt_a, lp_esi_a, "all-cause")
+    predict(cox_bhatt_all, type = "lp"), predict(cox_esi_all, type = "lp"),
+    "all-cause")
+}
+if (is.null(res_resp)) {
+  message("A2 primary path unavailable for respiratory; using Harrell's-C bootstrap fallback.")
   res_resp <- cindex_equiv_bootstrap(
     mort_b$days_followed / 365.25, mort_b$event_resp,
-    lp_bhatt_r, lp_esi_r, "respiratory")
+    predict(cox_bhatt_resp, type = "lp"), predict(cox_esi_resp, type = "lp"),
+    "respiratory")
 }
 
 cindex_tbl <- rbind(res_all, res_resp)
+# Both outcomes must be present; a dropped row would otherwise reach Table 1
+# as a missing equivalence result rather than an error.
+stopifnot(nrow(cindex_tbl) == 2,
+          setequal(cindex_tbl$outcome, c("all-cause", "respiratory")))
 write.csv(cindex_tbl, file.path(OUT_DIR, "Table_1_Cindex_Equivalence.csv"), row.names = FALSE)
 
 kable(cindex_tbl %>%
@@ -943,10 +950,20 @@ CACHE_DIR   <- file.path(OUT_DIR, "_cache")
 CACHE_PATH  <- file.path(CACHE_DIR, "bootstrap_hr_diff.rds")
 if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
 
-if (file.exists(CACHE_PATH)) {
-  boot_res <- readRDS(CACHE_PATH)
-  cat(sprintf("Loaded cached bootstrap: B_effective = %d / %d\n",
-              boot_res$B_effective, boot_res$B_total))
+.want <- list(n = nrow(mort_b),
+              deaths = sum(mort_b$vital_status == 1),
+              resp_events = sum(mort_b$event_resp == 1),
+              B = B_BOOTSTRAP)
+.cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
+if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
+  message("Bootstrap cache does not match the current data; recomputing.")
+  .cached <- NULL
+}
+if (!is.null(.cached)) {
+  boot_res <- .cached
+  cat(sprintf("Loaded cached bootstrap: B_effective = %d / %d (all-cause %s, respiratory %s)\n",
+              boot_res$B_effective, boot_res$B_total,
+              format(boot_res$B_eff_all), format(boot_res$B_eff_resp)))
 } else {
   set.seed(BOOTSTRAP_SEED)
   n <- nrow(mort_b)
@@ -1051,6 +1068,16 @@ if (file.exists(CACHE_PATH)) {
     table = do.call(rbind, rows),
     B_total = B_BOOTSTRAP,
     B_effective = B_effective,
+    B_eff_all  = B_eff_outcome[["all"]],
+    B_eff_resp = B_eff_outcome[["resp"]],
+    # Fingerprint of the data this cache was computed from, so a cache carried
+    # over from a different cohort or event definition is detected rather than
+    # silently reused. Both have changed here: the cause-of-death switch and
+    # the ILD exclusion.
+    fingerprint = list(n = nrow(mort_b),
+                       deaths = sum(mort_b$vital_status == 1),
+                       resp_events = sum(mort_b$event_resp == 1),
+                       B = B_BOOTSTRAP),
     seed = BOOTSTRAP_SEED
   )
   saveRDS(boot_res, CACHE_PATH)
@@ -1062,6 +1089,8 @@ write.csv(boot_res$table, file.path(OUT_DIR, "Supp_Table_HR_Difference_Bootstrap
           row.names = FALSE)
 writeLines(c(sprintf("B_total=%d",     boot_res$B_total),
              sprintf("B_effective=%d", boot_res$B_effective),
+             sprintf("B_effective_all_cause=%s",   format(boot_res$B_eff_all)),
+             sprintf("B_effective_respiratory=%s", format(boot_res$B_eff_resp)),
              sprintf("seed=%d",        boot_res$seed)),
            file.path(OUT_DIR, "Table_S8_bootstrap_diagnostics.txt"))
 
@@ -1781,9 +1810,9 @@ s6c <- do.call(rbind, s6c_rows)
 write.csv(s6c, file.path(OUT_DIR, "Table_S6c_continuous_fev1_decline.csv"), row.names = FALSE)
 kable(s6c, caption = "Supp Table S6c — Continuous ESI as a longitudinal FEV1-decline predictor. Effect metric: mL per year per 1-unit ESI (or per 0.1-unit FEV1/FVC).")
 
-# Retire the old GOLD-0 sidecar
-old_gold0 <- file.path(OUT_DIR, "Supp_Table_Continuous_FEV1Decline_GOLD0.txt")
-if (file.exists(old_gold0)) file.rename(old_gold0, paste0(old_gold0, ".OLD"))
+# (Removed 2026-08-25: this block renamed the GOLD-0 sidecar to ".OLD", but
+# that file is written earlier in this same chunk, so every run retired its own
+# current output and the second run overwrote the previous ".OLD".)
 ```
 
 # Section 10 — Bronchodilator ΔESI

@@ -1,0 +1,4 @@
+gold0_esi_est=-4.73
+gold0_esi_se=1.471
+gold0_esi_p=1.307e-03
+gold0_n_subj=4054
