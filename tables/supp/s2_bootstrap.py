@@ -37,7 +37,7 @@ def build(doc):
     }
 
     headers = ["Outcome", "Metric", "Category", "CT", "ESI",
-               "Absolute diff", "Mean Δlog", "95% CI (Δlog)", "Two-sided p"]
+               "Difference (CT − ESI)", "Mean Δlog", "95% CI (Δlog)", "Two-sided p"]
 
     body = []
     def add(rows, ct_col, esi_col, absdiff_col, mean_col, cilo_col, cihi_col):

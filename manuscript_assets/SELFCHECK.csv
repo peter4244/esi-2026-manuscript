@@ -12,7 +12,7 @@
 "kappa","0.821","0.820","PASS"
 "sensitivity (%)","88.049","88.000","PASS"
 "specificity (%)","94.443","94.000","PASS"
-"r(ESI, LAA-950) all-strata","0.773","0.770","PASS"
+"r(ESI, LAA-950) all-strata","0.779","0.770","PASS"
 "r(ESI, LAA-950) GOLD 0","0.080","0.080","PASS"
 "r(ESI, LAA-950) GOLD 3","0.577","0.580","PASS"
 "ΔESI (post-pre) mean","-0.089","-0.090","PASS"
