@@ -1,0 +1,30 @@
+# Site-local input/output locations for the ESI analysis.
+#
+# Copy to `config_paths.R` and fill in for the machine you are running on.
+# `config_paths.R` is git-ignored by design: no dataset path or filename is
+# committed to this repository.
+#
+# All five inputs are COPDGene analysis files supplied through your own
+# institutional data agreement. Point each variable at the corresponding file
+# in your local COPDGene area.
+
+# Emphysema Severity Index values, one row per participant-visit.
+ESI_PATH <- "<ESI values file>"
+
+# COPDGene longitudinal phenotype file (Phases 1-3): spirometry, CT visual
+# scores, symptoms, and the recruitment-cohort column used to exclude the
+# ILD/Bronchiectasis cohort.
+PHE_PATH <- "<longitudinal phenotype file>"
+
+# Vital status and days of follow-up.
+VS_PATH  <- "<vital status file>"
+
+# Adjudicated cause of death (supplies the TORCH underlying-cause grouping).
+COD_PATH <- "<adjudicated cause of death file>"
+
+# Long-term follow-up exacerbation counts and follow-up years.
+EX_PATH  <- "<longitudinal follow-up exacerbations file>"
+
+# Where result CSVs are written. Must match ASSETS in manifest.py, which the
+# supplement build reads. Relative paths resolve from the repository root.
+OUT_DIR  <- "manuscript_assets"

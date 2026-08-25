@@ -33,18 +33,40 @@ one long-term follow-up exacerbations file.  Each section writes its output
 echoes every canonical value cited in the manuscript prose against the
 expected number so drift can be detected on any re-run.
 
-# PATHS — edit here for cluster portability
+# PATHS — supplied at run time, never committed
+
+Input locations are read from a site-local config file that is deliberately
+kept out of version control, so no dataset path or filename appears anywhere in
+this repository. Copy `config_paths.R.example` to `config_paths.R`, fill in the
+five input locations for the machine you are running on, and knit. Nothing in
+this document needs editing to move between machines.
 
 ```{r paths}
 # ----- Inputs -------------------------------------------------------------
-ESI_PATH <- "/Users/petecastaldi/claude_projects/projects/ESI_2024/copdgene_esi_randid_2026.5.17.csv"
-PHE_PATH <- "/Users/petecastaldi/claude_projects/copdgene/deidentified/COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24_randid.csv"
-VS_PATH  <- "/Users/petecastaldi/claude_projects/copdgene/deidentified/COPDGene_VitalStatus_SM_NS_Sep23_randid.csv"
-COD_PATH <- "/Users/petecastaldi/claude_projects/copdgene/deidentified/COPDGene_Mort_COD_Adj_randid.csv"
-EX_PATH  <- "/Users/petecastaldi/claude_projects/copdgene/deidentified/LFU_SidLevel_Comorbd_randid.csv"
+# Set ESI_CONFIG to use a config file elsewhere, e.g.
+#   Sys.setenv(ESI_CONFIG = "/path/to/config_paths.R")
+CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
+if (!file.exists(CONFIG)) {
+  stop("Missing input-path config: '", CONFIG, "'.\n",
+       "Copy config_paths.R.example to config_paths.R and fill in the five\n",
+       "input locations (ESI_PATH, PHE_PATH, VS_PATH, COD_PATH, EX_PATH) and\n",
+       "OUT_DIR. It is git-ignored by design so that no dataset path is\n",
+       "committed.")
+}
+source(CONFIG, local = FALSE)
 
-# ----- Outputs ------------------------------------------------------------
-OUT_DIR  <- "/Users/petecastaldi/claude_projects/projects/ESI_2024/manuscript_assets"
+.required <- c("ESI_PATH", "PHE_PATH", "VS_PATH", "COD_PATH", "EX_PATH", "OUT_DIR")
+.missing  <- .required[!vapply(.required, exists, logical(1))]
+if (length(.missing)) {
+  stop("config '", CONFIG, "' does not define: ", paste(.missing, collapse = ", "))
+}
+.absent <- Filter(function(v) !file.exists(get(v)),
+                  c("ESI_PATH", "PHE_PATH", "VS_PATH", "COD_PATH", "EX_PATH"))
+if (length(.absent)) {
+  stop("config '", CONFIG, "' points at files that do not exist: ",
+       paste(.absent, collapse = ", "))
+}
+if (!dir.exists(OUT_DIR)) dir.create(OUT_DIR, recursive = TRUE)
 
 # ----- ESI thresholds (fixed by the manuscript's rpart analysis) -----------
 ESI_T_LOW  <- 1.0
@@ -1210,13 +1232,13 @@ decl_fu <- decl$years_from_baseline[decl$visitnum >= 2]
 stopifnot(all(decl_fu > 0))   # a follow-up period of zero is not follow-up
 
 followup_tbl <- rbind(
-  fu_row("All-cause and respiratory mortality", basename(VS_PATH),
+  fu_row("All-cause and respiratory mortality", "vital status",
          "time at risk (days_followed / 365.25)",
          mort_b$days_followed / 365.25),
-  fu_row("Exacerbations", basename(EX_PATH),
+  fu_row("Exacerbations", "long-term follow-up",
          "exposure time (Years_Followed, model offset)",
          ex_b$Years_Followed),
-  fu_row("FEV1 decline (participants with >=1 follow-up visit)", basename(PHE_PATH),
+  fu_row("FEV1 decline (participants with >=1 follow-up visit)", "longitudinal phenotype",
          "baseline to last observed visit",
          decl_fu)
 )
