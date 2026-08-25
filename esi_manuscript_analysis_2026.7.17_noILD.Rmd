@@ -162,6 +162,15 @@ mk_event <- function(df, cause_col) {
 # its name comes from the config (ID_COL) and is normalised here to an internal
 # `pid`. Nothing downstream refers to the site-specific column name. A ".x"/".y"
 # variant is accepted because some source files carry a merge-suffixed copy.
+# Source files are not consistently comma-delimited: some sites supply
+# tab-delimited .txt exports of the same tables. Sniff the header rather than
+# assuming, so a tab-delimited file is not silently read as one wide column.
+read_any <- function(path, ...) {
+  hdr <- readLines(path, n = 1, warn = FALSE)
+  sep <- if (grepl("\t", hdr)) "\t" else ","
+  read.delim(path, sep = sep, stringsAsFactors = FALSE, ...)
+}
+
 bind_pid <- function(df, file_label) {
   cand <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
   hit  <- cand[cand %in% names(df)]
@@ -174,9 +183,8 @@ bind_pid <- function(df, file_label) {
   df
 }
 
-esi_raw <- bind_pid(read.csv(ESI_PATH, stringsAsFactors = FALSE), "ESI_PATH")
-phe_raw <- bind_pid(read.csv(PHE_PATH, stringsAsFactors = FALSE,
-                             na.strings = c("", "NA")), "PHE_PATH")
+esi_raw <- bind_pid(read_any(ESI_PATH), "ESI_PATH")
+phe_raw <- bind_pid(read_any(PHE_PATH, na.strings = c("", "NA")), "PHE_PATH")
 
 # ---- Exclude the ILD/Bronchiectasis recruitment cohort ---------------------
 # Added 2026-08-24 (noILD variant of the analysis).
@@ -204,9 +212,9 @@ stopifnot(!any(!is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"))
 cat(sprintf("Excluded ILD/Bronchiectasis cohort: %d subjects, %d rows removed (%d -> %d). Cohorts retained: %s\n",
             n_ild, n_row0 - nrow(phe_raw), n_row0, nrow(phe_raw),
             paste(sort(unique(trimws(phe_raw$cohort))), collapse = ", ")))
-vs      <- bind_pid(read.csv(VS_PATH,  stringsAsFactors = FALSE), "VS_PATH")
-cod     <- bind_pid(read.csv(COD_PATH, stringsAsFactors = FALSE), "COD_PATH")
-ex_raw  <- bind_pid(read.csv(EX_PATH,  stringsAsFactors = FALSE), "EX_PATH")
+vs      <- bind_pid(read_any(VS_PATH),  "VS_PATH")
+cod     <- bind_pid(read_any(COD_PATH), "COD_PATH")
+ex_raw  <- bind_pid(read_any(EX_PATH),  "EX_PATH")
 
 # ---- Cause of death: TORCH adjudicated UNDERLYING cause --------------------
 # Changed 2026-08-18. Previously these analyses used the CCOD_* indicators,

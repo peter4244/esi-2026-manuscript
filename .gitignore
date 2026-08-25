@@ -22,7 +22,7 @@ data/raw/
 
 # Site-local input locations (see config_paths.R.example). Deliberately not
 # committed so that no dataset path or filename appears in this repository.
-config_paths.R
+config_paths*.R
 
 # ---- Cached R objects (large, regeneratable) -------------------------------
 *.rds
