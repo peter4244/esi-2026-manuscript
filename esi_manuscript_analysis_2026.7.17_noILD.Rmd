@@ -86,6 +86,17 @@ knitr::opts_chunk$set(
   warning = FALSE,
   fig.width = 9, fig.height = 5.5, dpi = 110
 )
+
+# Headless-safe raster device. On a Linux compute node without X11 the default
+# bitmap device is Xlib, which cannot open a connection and makes every png()
+# chunk fail with a warning rather than an error - so the run appears to
+# succeed while silently producing no figure. cairo needs no display. This is
+# deliberately conditional: macOS defaults to quartz, which already works
+# headless, so overriding unconditionally would change local rendering for no
+# reason.
+if (identical(getOption("bitmapType"), "Xlib") && capabilities("cairo")) {
+  options(bitmapType = "cairo")
+}
 suppressPackageStartupMessages({
   library(dplyr); library(tidyr); library(ggplot2); library(scales)
   library(survival); library(MASS)
