@@ -190,12 +190,20 @@ mk_event <- function(df, cause_col) {
 # Data ingest
 
 ```{r ingest}
-esi_raw <- read.csv(ESI_PATH, stringsAsFactors = FALSE);       esi_raw$rand_id <- as.character(esi_raw$rand_id)
-phe_raw <- read.csv(PHE_PATH, stringsAsFactors = FALSE, na.strings = c("", "NA"))
-phe_raw$rand_id <- as.character(phe_raw$rand_id)
-vs      <- read.csv(VS_PATH, stringsAsFactors = FALSE);        vs$rand_id      <- as.character(vs$rand_id)
-cod     <- read.csv(COD_PATH, stringsAsFactors = FALSE);       cod$rand_id     <- as.character(cod$rand_id.x)
-ex_raw  <- read.csv(EX_PATH, stringsAsFactors = FALSE);        ex_raw$rand_id  <- as.character(ex_raw$rand_id)
+bind_pid <- function(df, file_label) {
+  cand <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
+  hit  <- cand[cand %in% names(df)]
+  if (!length(hit)) stop("No identifier column in ", file_label)
+  df$pid <- as.character(df[[hit[1]]])
+  df
+}
+
+esi_raw <- bind_pid(read.csv(ESI_PATH, stringsAsFactors = FALSE), "ESI_PATH")
+phe_raw <- bind_pid(read.csv(PHE_PATH, stringsAsFactors = FALSE,
+                             na.strings = c("", "NA")), "PHE_PATH")
+vs      <- bind_pid(read.csv(VS_PATH,  stringsAsFactors = FALSE), "VS_PATH")
+cod     <- bind_pid(read.csv(COD_PATH, stringsAsFactors = FALSE), "COD_PATH")
+ex_raw  <- bind_pid(read.csv(EX_PATH,  stringsAsFactors = FALSE), "EX_PATH")
 
 # ---- Cause of death: TORCH adjudicated UNDERLYING cause --------------------
 # Changed 2026-08-18. Previously these analyses used the CCOD_* indicators,
@@ -229,7 +237,7 @@ cat(sprintf("TORCH underlying cause: resp=%d cvd=%d cancer=%d other=%d\n",
 # Baseline (Visit 1) post-bronchodilator ESI, one row per subject
 esi_v1 <- esi_raw %>%
   filter(visitnum == 1, PrePost == 1) %>%
-  group_by(rand_id) %>% summarise(ESI_v1post = mean(ESI, na.rm = TRUE), .groups = "drop")
+  group_by(pid) %>% summarise(ESI_v1post = mean(ESI, na.rm = TRUE), .groups = "drop")
 
 # Baseline (Visit 1) phenotype
 v1 <- phe_raw %>% filter(visitnum == 1)
@@ -246,7 +254,7 @@ must also be available at Visit 1.
 stratum_levels <- c("Never", "GOLD0", "PRISm", "GOLD1", "GOLD2", "GOLD3", "GOLD4")
 
 d <- esi_v1 %>%
-  inner_join(v1, by = "rand_id") %>%
+  inner_join(v1, by = "pid") %>%
   mutate(stratum = factor(case_when(
       finalgold_visit == -2 ~ "Never",
       finalgold_visit == -1 ~ "PRISm",
@@ -709,8 +717,8 @@ Reproduces `Table_8_allcause.csv`, `Table_8_resp.csv`, `Table_8_stats.txt`,
 
 ```{r by-category-mortality}
 mort_b <- d_b %>%
-  inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, UCD_Resp), by = "rand_id") %>%
+  inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% select(pid, UCD_Resp), by = "pid") %>%
   mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0)) %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
@@ -855,8 +863,8 @@ kable(cindex_tbl %>%
 
 ```{r by-category-exac}
 ex_b <- d_b %>%
-  inner_join(ex_raw %>% select(rand_id, Total_Exacerbations, Total_Severe_Exacer, Years_Followed),
-             by = "rand_id") %>%
+  inner_join(ex_raw %>% select(pid, Total_Exacerbations, Total_Severe_Exacer, Years_Followed),
+             by = "pid") %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0,
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
@@ -1125,29 +1133,29 @@ kable(boot_irr$table %>%
 ```{r by-category-fev1-decline}
 fev1_long <- phe_raw %>%
   filter(visitnum %in% c(1, 2, 3), !is.na(FEV1_post), !is.na(years_from_baseline)) %>%
-  transmute(rand_id, visitnum, years_from_baseline,
+  transmute(pid, visitnum, years_from_baseline,
             FEV1_post_mL  = FEV1_post * 1000,
             age_visit     = as.numeric(age_visit),
             ATS_PackYears = as.numeric(ATS_PackYears),
             SmokCigNow    = factor(SmokCigNow))
 
 base_b <- d_b %>% transmute(
-  rand_id,
+  pid,
   bhatt_grp = factor(bhatt_cls, levels = ord),
   esi_grp   = factor(esi_cls,   levels = ord),
   Height_CM = as.numeric(Height_CM),
   gender_baseline = factor(gender),
   race_baseline   = factor(race)
 )
-decline_b <- fev1_long %>% inner_join(base_b, by = "rand_id") %>%
+decline_b <- fev1_long %>% inner_join(base_b, by = "pid") %>%
   filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
 
 lmm_bhatt <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + Height_CM +
                     gender_baseline + race_baseline + age_visit + SmokCigNow +
-                    ATS_PackYears + (1 | rand_id), data = decline_b)
+                    ATS_PackYears + (1 | pid), data = decline_b)
 lmm_esi   <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp + Height_CM +
                     gender_baseline + race_baseline + age_visit + SmokCigNow +
-                    ATS_PackYears + (1 | rand_id), data = decline_b)
+                    ATS_PackYears + (1 | pid), data = decline_b)
 
 t_decline <- data.frame(group = groups3,
                         bhatt_est = NA_real_, bhatt_se = NA_real_, bhatt_p = NA_real_,
@@ -1198,10 +1206,10 @@ fu_row <- function(analysis, source_file, quantity, x) {
 # first quartile to 0 and makes the IQR uninterpretable as a follow-up period,
 # so decline follow-up is summarised among participants who contributed at
 # least one follow-up visit, with the baseline-only count reported alongside.
-decl_span <- aggregate(years_from_baseline ~ rand_id, decline_b, max)
-decl_nvis <- aggregate(visitnum ~ rand_id, decline_b, length)
-decl      <- merge(decl_span, decl_nvis, by = "rand_id")
-stopifnot(nrow(decl) == length(unique(decline_b$rand_id)))
+decl_span <- aggregate(years_from_baseline ~ pid, decline_b, max)
+decl_nvis <- aggregate(visitnum ~ pid, decline_b, length)
+decl      <- merge(decl_span, decl_nvis, by = "pid")
+stopifnot(nrow(decl) == length(unique(decline_b$pid)))
 n_baseline_only <- sum(decl$visitnum == 1)
 decl_fu <- decl$years_from_baseline[decl$visitnum >= 2]
 stopifnot(all(decl_fu > 0))   # a follow-up period of zero is not follow-up
@@ -1294,8 +1302,8 @@ kable(t_grp_mort, digits = 2, caption = "Cross-classification mortality outcomes
 ```{r cross-class-causespecific}
 covs <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
 d_pres <- d_b %>%
-  inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, UCD_CVD, UCD_Cancer, UCD_Other, UCD_Resp), by = "rand_id") %>%
+  inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% select(pid, UCD_CVD, UCD_Cancer, UCD_Other, UCD_Resp), by = "pid") %>%
   filter(!major_criterion,
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
@@ -1398,23 +1406,23 @@ kable(t_pw %>% mutate(est_logHR = round(est_logHR, 3),
 
 ```{r cross-class-fev1-decline}
 base_pres <- d_pres %>% transmute(
-  rand_id,
+  pid,
   discord         = factor(discord, levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD")),
   Height_CM       = as.numeric(Height_CM),
   gender_baseline = factor(gender),
   race_baseline   = factor(race)
 )
-decline_d <- fev1_long %>% inner_join(base_pres, by = "rand_id") %>%
+decline_d <- fev1_long %>% inner_join(base_pres, by = "pid") %>%
   filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
 lmm_disc <- lmer(FEV1_post_mL ~ years_from_baseline * discord + Height_CM +
                    gender_baseline + race_baseline + age_visit + SmokCigNow +
-                   ATS_PackYears + (1 | rand_id), data = decline_d)
+                   ATS_PackYears + (1 | pid), data = decline_d)
 
 t_dec_disc <- data.frame(
   group = c("Both-COPD", "CT-only-COPD", "ESI-only-COPD"),
-  n_subj = c(sum(decline_d$discord == "Both-COPD"        & !duplicated(decline_d$rand_id)),
-             sum(decline_d$discord == "CT-only-COPD" & !duplicated(decline_d$rand_id)),
-             sum(decline_d$discord == "ESI-only-COPD"   & !duplicated(decline_d$rand_id)))
+  n_subj = c(sum(decline_d$discord == "Both-COPD"        & !duplicated(decline_d$pid)),
+             sum(decline_d$discord == "CT-only-COPD" & !duplicated(decline_d$pid)),
+             sum(decline_d$discord == "ESI-only-COPD"   & !duplicated(decline_d$pid)))
 )
 for (g in t_dec_disc$group) {
   v <- lmm_row(lmm_disc, paste0("years_from_baseline:discord", g))
@@ -1429,8 +1437,8 @@ kable(t_dec_disc, digits = 2, caption = "FEV1 decline slope contrasts by cross-c
 
 ```{r cause-specific-by-class}
 d_all_cat <- d_b %>%
-  inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, UCD_CVD, UCD_Cancer, UCD_Other), by = "rand_id") %>%
+  inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% select(pid, UCD_CVD, UCD_Cancer, UCD_Other), by = "pid") %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
 t_by_bhatt <- list(); t_by_esi <- list()
@@ -1490,14 +1498,14 @@ for (g in groups3) {
 # Uses the classify_4crit() function defined in Section 3 (threshold-selection).
 d_b$esi_cls_4crit <- classify_4crit(d_b, 1.5, 3)
 mort_b_4c <- mort_b %>%
-  mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(rand_id, d_b$rand_id)],
+  mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(pid, d_b$pid)],
          esi_grp_4crit = factor(esi_cls_4crit, levels = ord))
 cbA4 <- coxph(Surv(days_followed/365.25, vital_status) ~ bhatt_grp        + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_b_4c)
 ceA4 <- coxph(Surv(days_followed/365.25, vital_status) ~ esi_grp_4crit    + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_b_4c)
 cbR4 <- coxph(Surv(days_followed/365.25, event_resp)   ~ bhatt_grp        + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_b_4c)
 ceR4 <- coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp_4crit    + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_b_4c)
 ex_b_4c <- ex_b %>%
-  mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(rand_id, d_b$rand_id)],
+  mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(pid, d_b$pid)],
          esi_grp_4crit = factor(esi_cls_4crit, levels = ord))
 nbB4 <- glm.nb(Total_Exacerbations ~ bhatt_grp     + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
 nbE4 <- glm.nb(Total_Exacerbations ~ esi_grp_4crit + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
@@ -1551,8 +1559,8 @@ the Results.
 # retired.
 
 d_cont <- d %>%
-  inner_join(vs %>% select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% select(rand_id, UCD_Resp), by = "rand_id") %>%
+  inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% select(pid, UCD_Resp), by = "pid") %>%
   mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0)) %>%
   filter(!is.na(stratum), !is.na(FEV1_FVC_post), !is.na(age_visit),
          !is.na(ATS_PackYears), !is.na(BMI))
@@ -1594,7 +1602,7 @@ kable(s6a, caption = "Supp Table S6a — Continuous ESI as a mortality predictor
 
 # ---- S6b — Continuous ESI, exacerbations (negative-binomial IRR) -----------
 ex_cont <- d_cont %>%
-  inner_join(ex_raw %>% select(rand_id, Total_Exacerbations, Years_Followed), by = "rand_id") %>%
+  inner_join(ex_raw %>% select(pid, Total_Exacerbations, Years_Followed), by = "pid") %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0)
 
 nb_esi_ex  <- glm.nb(Total_Exacerbations ~ ESI_v1post + age_visit + gender + race + SmokCigNow + ATS_PackYears + stratum + offset(log(Years_Followed)), data = ex_cont)
@@ -1633,20 +1641,20 @@ if (file.exists(old)) file.rename(old, paste0(old, ".OLD"))
 # Fix item 6 (2026-07-17): restrict source cohort to d_b (Bhatt-analytic, n=9,463)
 # for denominator consistency with the by-category analyses.
 g0 <- fev1_long %>%
-  inner_join(d_b %>% transmute(rand_id, ESI_baseline = ESI_v1post,
+  inner_join(d_b %>% transmute(pid, ESI_baseline = ESI_v1post,
                                FEV1_FVC_baseline = FEV1_FVC_post,
                                stratum_baseline = stratum,
                                Height_CM = as.numeric(Height_CM),
                                gender_baseline = factor(gender),
                                race_baseline   = factor(race)),
-             by = "rand_id") %>%
+             by = "pid") %>%
   filter(stratum_baseline == "GOLD0",
          !is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow),
          !is.na(ESI_baseline), !is.na(FEV1_FVC_baseline))
 
 lmm_g0 <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_baseline + FEV1_FVC_baseline) +
                  Height_CM + age_visit + ATS_PackYears + SmokCigNow +
-                 gender_baseline + race_baseline + (1 | rand_id),
+                 gender_baseline + race_baseline + (1 | pid),
                data = g0)
 esi_int <- lmm_row(lmm_g0, "years_from_baseline:ESI_baseline")
 cat(sprintf("GOLD 0: each 1-unit higher baseline ESI predicts %.1f mL/yr additional FEV1 decline (SE %.2f, p = %s)\n",
@@ -1655,7 +1663,7 @@ cat(sprintf("GOLD 0: each 1-unit higher baseline ESI predicts %.1f mL/yr additio
 writeLines(c(sprintf("gold0_esi_est=%.2f", esi_int["est"]),
              sprintf("gold0_esi_se=%.3f",  esi_int["se"]),
              sprintf("gold0_esi_p=%.3e",   esi_int["p"]),
-             sprintf("gold0_n_subj=%d",    length(unique(g0$rand_id)))),
+             sprintf("gold0_n_subj=%d",    length(unique(g0$pid)))),
            file.path(OUT_DIR, "Supp_Table_Continuous_FEV1Decline_GOLD0.txt"))
 
 # ---- S6c — Continuous ESI, longitudinal FEV1 decline (LME slope, mL/yr) ----
@@ -1667,7 +1675,7 @@ fit_lme_slope <- function(dat, with_ff = TRUE) {
   f <- as.formula(paste0("FEV1_post_mL ~ years_from_baseline * ESI_baseline",
                          rhs_ff,
                          " + Height_CM + age_visit + ATS_PackYears + SmokCigNow +
-                         gender_baseline + race_baseline + (1 | rand_id)"))
+                         gender_baseline + race_baseline + (1 | pid)"))
   lmer(f, data = dat)
 }
 extract_row <- function(fit, term) {
@@ -1679,31 +1687,31 @@ extract_row <- function(fit, term) {
 # Reuse the g0 (GOLD 0, Bhatt-analytic) dataframe built just above.
 # For PRISm we need the analog:
 prism <- fev1_long %>%
-  inner_join(d_b %>% transmute(rand_id, ESI_baseline = ESI_v1post,
+  inner_join(d_b %>% transmute(pid, ESI_baseline = ESI_v1post,
                                FEV1_FVC_baseline = FEV1_FVC_post,
                                stratum_baseline = stratum,
                                Height_CM = as.numeric(Height_CM),
                                gender_baseline = factor(gender),
                                race_baseline   = factor(race)),
-             by = "rand_id") %>%
+             by = "pid") %>%
   filter(stratum_baseline == "PRISm",
          !is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow),
          !is.na(ESI_baseline), !is.na(FEV1_FVC_baseline))
 pooled <- fev1_long %>%
-  inner_join(d_b %>% transmute(rand_id, ESI_baseline = ESI_v1post,
+  inner_join(d_b %>% transmute(pid, ESI_baseline = ESI_v1post,
                                FEV1_FVC_baseline = FEV1_FVC_post,
                                stratum_baseline = stratum,
                                Height_CM = as.numeric(Height_CM),
                                gender_baseline = factor(gender),
                                race_baseline   = factor(race)),
-             by = "rand_id") %>%
+             by = "pid") %>%
   filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow),
          !is.na(ESI_baseline), !is.na(FEV1_FVC_baseline))
 
 s6c_rows <- list()
 for (nm in c("GOLD 0", "PRISm", "pooled")) {
   dat <- switch(nm, "GOLD 0" = g0, "PRISm" = prism, "pooled" = pooled)
-  n_subj <- length(unique(dat$rand_id))
+  n_subj <- length(unique(dat$pid))
   # Two models: (1) ESI-only slope (no FF adjustment), (2) both slopes
   fit1 <- fit_lme_slope(dat, with_ff = FALSE)
   fit2 <- fit_lme_slope(dat, with_ff = TRUE)
@@ -1744,7 +1752,7 @@ measurements at Visit 1 — reproduces the −0.09 value cited in the manuscript
 ```{r bronchodilator-delta}
 esi_pair <- esi_raw %>%
   filter(visitnum == 1, PrePost %in% c(0, 1)) %>%
-  group_by(rand_id, PrePost) %>% summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop") %>%
+  group_by(pid, PrePost) %>% summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = PrePost, values_from = ESI, names_prefix = "ESI_") %>%
   filter(!is.na(ESI_0), !is.na(ESI_1))
 
@@ -1765,14 +1773,14 @@ writeLines(c(sprintf("n_paired=%d",     nrow(esi_pair)),
 ```{r prism-trajectory}
 esi_long <- esi_raw %>%
   filter(visitnum %in% c(1, 2, 3), PrePost == 1) %>%
-  group_by(rand_id, visitnum) %>% summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop")
+  group_by(pid, visitnum) %>% summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop")
 
-esi_baseline <- esi_long %>% filter(visitnum == 1) %>% select(rand_id, ESI_v1 = ESI)
+esi_baseline <- esi_long %>% filter(visitnum == 1) %>% select(pid, ESI_v1 = ESI)
 delta_esi <- esi_long %>%
   filter(visitnum > 1) %>%
-  inner_join(esi_baseline, by = "rand_id") %>%
+  inner_join(esi_baseline, by = "pid") %>%
   mutate(dESI = ESI - ESI_v1) %>%
-  inner_join(d %>% select(rand_id, stratum_baseline = stratum), by = "rand_id") %>%
+  inner_join(d %>% select(pid, stratum_baseline = stratum), by = "pid") %>%
   filter(stratum_baseline %in% c("GOLD0", "PRISm"))
 
 traj_summary <- delta_esi %>%
@@ -2023,13 +2031,13 @@ cs_reg <- data.frame()
 
 # --- datasets (reuse mort_b / ex_b / d_cont from earlier sections when in scope) ---
 cs_mort <- d_b %>%
-  inner_join(vs %>% dplyr::select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% dplyr::select(rand_id, UCD_Resp, UCD_CVD, UCD_Cancer, UCD_Other), by = "rand_id") %>%
+  inner_join(vs %>% dplyr::select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% dplyr::select(pid, UCD_Resp, UCD_CVD, UCD_Cancer, UCD_Other), by = "pid") %>%
   mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0))
 cs_mortF <- cs_mort %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 cs_mortM <- cs_mort %>% filter(complete.cases(age_visit, gender, race))
 cs_ex <- d_b %>%
-  inner_join(ex_raw %>% dplyr::select(rand_id, Total_Exacerbations, Years_Followed), by = "rand_id") %>%
+  inner_join(ex_raw %>% dplyr::select(pid, Total_Exacerbations, Years_Followed), by = "pid") %>%
   filter(!is.na(Total_Exacerbations), !is.na(Years_Followed), Years_Followed > 0)
 cs_exF <- cs_ex %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 cs_exM <- cs_ex %>% filter(complete.cases(age_visit, gender, race))
@@ -2117,13 +2125,13 @@ for (i in seq_along(cause_cols)) {
 # S6a/b/c: continuous ESI
 cs_dcont <- d_b %>% mutate(FF_per_0_1 = FEV1_FVC_post / 0.1)
 cs_mortC <- cs_dcont %>%
-  inner_join(vs %>% dplyr::select(rand_id, vital_status, days_followed), by = "rand_id") %>%
-  left_join(cod %>% dplyr::select(rand_id, UCD_Resp), by = "rand_id") %>%
+  inner_join(vs %>% dplyr::select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% dplyr::select(pid, UCD_Resp), by = "pid") %>%
   mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0))
 cs_mortCF <- cs_mortC %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears))
 cs_mortCM <- cs_mortC %>% filter(complete.cases(age_visit, gender, race))
 cs_exC <- cs_dcont %>%
-  inner_join(ex_raw %>% dplyr::select(rand_id, Total_Exacerbations, Years_Followed), by = "rand_id") %>%
+  inner_join(ex_raw %>% dplyr::select(pid, Total_Exacerbations, Years_Followed), by = "pid") %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0)
 cs_exCF <- cs_exC %>% filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears))
 cs_exCM <- cs_exC %>% filter(complete.cases(age_visit, gender, race))
@@ -2152,34 +2160,34 @@ for (spec in list(
 # S5 + S6d: FEV1-decline LMMs
 cs_fev1 <- phe_raw %>%
   filter(visitnum %in% c(1,2,3), !is.na(FEV1_post), !is.na(years_from_baseline)) %>%
-  transmute(rand_id, visitnum, years_from_baseline, FEV1_post_mL = FEV1_post * 1000,
+  transmute(pid, visitnum, years_from_baseline, FEV1_post_mL = FEV1_post * 1000,
             age_visit = as.numeric(age_visit), ATS_PackYears = as.numeric(ATS_PackYears),
             SmokCigNow = factor(SmokCigNow))
-cs_base <- d_b %>% transmute(rand_id, bhatt_grp = factor(bhatt_cls, levels=ord),
+cs_base <- d_b %>% transmute(pid, bhatt_grp = factor(bhatt_cls, levels=ord),
                              esi_grp = factor(esi_cls, levels=ord),
                              ESI_v1post, FEV1_FVC_baseline = FEV1_FVC_post,
                              Height_CM = as.numeric(Height_CM),
                              gender_baseline = factor(gender),
                              race_baseline = factor(race),
                              stratum_baseline = stratum)
-cs_declF <- cs_fev1 %>% inner_join(cs_base, by = "rand_id") %>%
+cs_declF <- cs_fev1 %>% inner_join(cs_base, by = "pid") %>%
   filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
-cs_declM <- cs_fev1 %>% inner_join(cs_base, by = "rand_id") %>%
+cs_declM <- cs_fev1 %>% inner_join(cs_base, by = "pid") %>%
   filter(!is.na(age_visit))
-lB_F <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow + ATS_PackYears + (1|rand_id), data = cs_declF, REML=TRUE)
-lE_F <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp   + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow + ATS_PackYears + (1|rand_id), data = cs_declF, REML=TRUE)
-lB_M <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + gender_baseline + race_baseline + age_visit + (1|rand_id), data = cs_declM, REML=TRUE)
-lE_M <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp   + gender_baseline + race_baseline + age_visit + (1|rand_id), data = cs_declM, REML=TRUE)
+lB_F <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow + ATS_PackYears + (1|pid), data = cs_declF, REML=TRUE)
+lE_F <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp   + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow + ATS_PackYears + (1|pid), data = cs_declF, REML=TRUE)
+lB_M <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + gender_baseline + race_baseline + age_visit + (1|pid), data = cs_declM, REML=TRUE)
+lE_M <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp   + gender_baseline + race_baseline + age_visit + (1|pid), data = cs_declM, REML=TRUE)
 for (g in groups3) {
   cs_reg <- cs_add(cs_reg, "S5","FEV1 decline CT", g, cs_lmm(lB_F, paste0("years_from_baseline:bhatt_grp",g)), cs_lmm(lB_M, paste0("years_from_baseline:bhatt_grp",g)), scale="mL/yr")
   cs_reg <- cs_add(cs_reg, "S5","FEV1 decline ESI",g, cs_lmm(lE_F, paste0("years_from_baseline:esi_grp",  g)), cs_lmm(lE_M, paste0("years_from_baseline:esi_grp",  g)), scale="mL/yr")
 }
 g0_F <- cs_declF %>% filter(stratum_baseline == "GOLD0", !is.na(ESI_v1post), !is.na(FEV1_FVC_baseline))
 g0_M <- cs_declM %>% filter(stratum_baseline == "GOLD0", !is.na(ESI_v1post), !is.na(FEV1_FVC_baseline))
-la_F <- lmer(FEV1_post_mL ~ years_from_baseline * ESI_v1post + Height_CM + age_visit + ATS_PackYears + SmokCigNow + gender_baseline + race_baseline + (1|rand_id), data = g0_F, REML=TRUE)
-la_M <- lmer(FEV1_post_mL ~ years_from_baseline * ESI_v1post + age_visit + gender_baseline + race_baseline + (1|rand_id), data = g0_M, REML=TRUE)
-lj_F <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_v1post + FEV1_FVC_baseline) + Height_CM + age_visit + ATS_PackYears + SmokCigNow + gender_baseline + race_baseline + (1|rand_id), data = g0_F, REML=TRUE)
-lj_M <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_v1post + FEV1_FVC_baseline) + age_visit + gender_baseline + race_baseline + (1|rand_id), data = g0_M, REML=TRUE)
+la_F <- lmer(FEV1_post_mL ~ years_from_baseline * ESI_v1post + Height_CM + age_visit + ATS_PackYears + SmokCigNow + gender_baseline + race_baseline + (1|pid), data = g0_F, REML=TRUE)
+la_M <- lmer(FEV1_post_mL ~ years_from_baseline * ESI_v1post + age_visit + gender_baseline + race_baseline + (1|pid), data = g0_M, REML=TRUE)
+lj_F <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_v1post + FEV1_FVC_baseline) + Height_CM + age_visit + ATS_PackYears + SmokCigNow + gender_baseline + race_baseline + (1|pid), data = g0_F, REML=TRUE)
+lj_M <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_v1post + FEV1_FVC_baseline) + age_visit + gender_baseline + race_baseline + (1|pid), data = g0_M, REML=TRUE)
 cs_reg <- cs_add(cs_reg, "S6d","cont ESI alone (GOLD 0)","ESI_v1post", cs_lmm(la_F,"years_from_baseline:ESI_v1post"), cs_lmm(la_M,"years_from_baseline:ESI_v1post"), scale="mL/yr")
 cs_reg <- cs_add(cs_reg, "S6d","cont ESI + FEV1/FVC (GOLD 0)","ESI_v1post", cs_lmm(lj_F,"years_from_baseline:ESI_v1post"), cs_lmm(lj_M,"years_from_baseline:ESI_v1post"), scale="mL/yr")
 

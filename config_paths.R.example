@@ -28,3 +28,8 @@ EX_PATH  <- "<longitudinal follow-up exacerbations file>"
 # Where result CSVs are written. Must match ASSETS in manifest.py, which the
 # supplement build reads. Relative paths resolve from the repository root.
 OUT_DIR  <- "manuscript_assets"
+
+# Name of the participant identifier column in YOUR copies of the files above.
+# Files differ by site; set this to whichever identifier your files carry.
+# A ".x"/".y" merge-suffixed variant is detected automatically.
+ID_COL   <- "sid"
