@@ -53,17 +53,29 @@ def build(doc):
     # "N" (the count of participants classified as COPD by this candidate
     # definition) is short enough that a wider header column would waste
     # space; abbreviation is defined in the legend's Abbreviations block.
-    headers = ["Variant", "N", "Sensitivity", "Specificity", "κ", "Selected"]
+    # Each candidate is reported twice: on the full analytic cohort (in-sample
+    # with respect to threshold selection, since the cut-points were derived
+    # from the 80% training split) and on the held-out 20% split. Column
+    # headers carry the population so the two blocks cannot be confused.
+    headers = ["Variant",
+               "Full N", "Full sens.", "Full spec.", "Full κ",
+               "Test N", "Test sens.", "Test spec.", "Test κ",
+               "Selected"]
     body_rows = []
     for r in rows:
         variant = r["variant"]
         is_selected = _SELECTED_MARKER in variant
         variant_clean = variant.replace(_SELECTED_MARKER, "").strip()
         body_rows.append([
-            _display_variant(variant_clean), r["n_COPD"],
+            _display_variant(variant_clean),
+            r["n_COPD"],
             f"{float(r['sens']):.3f}",
             f"{float(r['spec']):.3f}",
             f"{float(r['kappa']):.3f}",
+            r["test_n_COPD"],
+            f"{float(r['test_sens']):.3f}",
+            f"{float(r['test_spec']):.3f}",
+            f"{float(r['test_kappa']):.3f}",
             "✓" if is_selected else "",
         ])
     # Landscape section so the wide Variant column ("4 criteria, ESI cutoff
@@ -76,6 +88,7 @@ def build(doc):
     # that switches back to portrait via end_landscape.
     dh.begin_landscape(doc)
     dh.add_table(doc, headers, body_rows,
-                 col_widths_in=[4.20, 0.65, 1.15, 1.15, 0.60, 0.85],
+                 col_widths_in=[3.95, 0.60, 0.70, 0.70, 0.55,
+                                0.60, 0.70, 0.70, 0.55, 0.95],
                  max_width_in=dh.LANDSCAPE_CONTENT_WIDTH_IN)
     dh.add_legend_from_sibling(doc, __file__, TABLE_NUM)

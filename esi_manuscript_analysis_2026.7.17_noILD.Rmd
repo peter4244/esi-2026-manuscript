@@ -478,18 +478,49 @@ candidates <- list(
   list(type = "5-crit, T_low=1.5 / T_high=3.0",             fn = function(x) classify_5crit(x, 1.5, 3.0)),
   list(type = "5-crit, T_low=2.0 / T_high=3.5",             fn = function(x) classify_5crit(x, 2.0, 3.5))
 )
+# Evaluate every candidate on BOTH the full analytic cohort and the held-out
+# 20% split. Added 2026-08-24: previously only the full-cohort figures were
+# reported, but the cut-points were derived from the 80% training split, so
+# those figures are in-sample with respect to threshold selection. The test
+# split had been created and then never used. The held-out columns are the
+# defensible estimate; reporting both lets a reader see how far the in-sample
+# figures are optimistic.
+metrics <- function(dat, cls_fn) {
+  cls  <- cls_fn(dat); copd <- cls %in% c("COPD-major", "COPD-minor")
+  tp <- sum( dat$bhatt_copd &  copd); fp <- sum(!dat$bhatt_copd &  copd)
+  fn <- sum( dat$bhatt_copd & !copd); tn <- sum(!dat$bhatt_copd & !copd)
+  list(n_COPD = sum(copd),
+       sens = tp / (tp + fn), spec = tn / (tn + fp),
+       kappa = kappa_fn(dat$bhatt_copd, copd))
+}
+# train_idx is sampled without replacement, so d_rp[train_idx, ] and
+# d_rp[-train_idx, ] are disjoint by construction; assert that rather than
+# comparing rownames, which dplyr resets to 1..n on both halves.
+stopifnot(!anyDuplicated(train_idx),
+          nrow(train) + nrow(test) == nrow(d_rp),
+          nrow(test) > 0)
+
 sens_rows <- lapply(candidates, function(c) {
-  cls  <- c$fn(d_b); copd <- cls %in% c("COPD-major", "COPD-minor")
-  tp <- sum( d_b$bhatt_copd &  copd); fp <- sum(!d_b$bhatt_copd &  copd)
-  fn <- sum( d_b$bhatt_copd & !copd); tn <- sum(!d_b$bhatt_copd & !copd)
-  data.frame(variant = c$type, n_COPD = sum(copd),
-             sens = tp / (tp + fn), spec = tn / (tn + fp),
-             kappa = kappa_fn(d_b$bhatt_copd, copd))
+  f <- metrics(d_b,  c$fn)
+  h <- metrics(test, c$fn)
+  data.frame(variant     = c$type,
+             n_COPD      = f$n_COPD, sens      = f$sens,
+             spec        = f$spec,   kappa     = f$kappa,
+             test_n_COPD = h$n_COPD, test_sens = h$sens,
+             test_spec   = h$spec,   test_kappa = h$kappa)
 })
 supp_thresh <- do.call(rbind, sens_rows)
 write.csv(supp_thresh, file.path(OUT_DIR, "Supp_Table_Thresholds.csv"), row.names = FALSE)
+
+cat(sprintf("Threshold grid: full analytic cohort n = %d; held-out test split n = %d (%.1f%%)\n",
+            nrow(d_b), nrow(test), 100 * nrow(test) / nrow(d_rp)))
+sel <- supp_thresh[grepl("SELECTED", supp_thresh$variant), ]
+cat(sprintf("Selected variant  full: sens %.3f spec %.3f kappa %.3f | held-out: sens %.3f spec %.3f kappa %.3f\n",
+            sel$sens, sel$spec, sel$kappa, sel$test_sens, sel$test_spec, sel$test_kappa))
+
 kable(supp_thresh, digits = 3,
-      caption = "Threshold-selection grid: 10 candidate ESI-scoring configurations, evaluated on the full analytic cohort.")
+      caption = paste("Threshold-selection grid: 10 candidate ESI-scoring configurations,",
+                      "evaluated on the full analytic cohort and on the held-out 20% split."))
 ```
 
 # Section 4 — Classifications, cross-tabulation, agreement metrics
