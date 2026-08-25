@@ -30,13 +30,22 @@ REQ <- list(
   EX_PATH  = c("Total_Exacerbations","Total_Severe_Exacer","Years_Followed")
 )
 
+# Use the same delimiter sniffing as the analysis. Reading a tab-delimited
+# export with read.csv yields a single mangled column, which previously made
+# every required column look absent and reported a data problem that was really
+# a checker problem.
+read_hdr <- function(p) {
+  sep <- if (grepl("\t", readLines(p, n = 1, warn = FALSE))) "\t" else ","
+  read.delim(p, sep = sep, nrows = 1, check.names = FALSE)
+}
+
 cat("config:", CONFIG, "\nidentifier column (ID_COL):", ID_COL, "\n\n")
 ok <- TRUE
 for (v in names(REQ)) {
   p <- get(v)
   cat(sprintf("%-9s %s\n", v, p))
   if (!file.exists(p)) { cat("            MISSING\n\n"); ok <- FALSE; next }
-  hdr <- names(read.csv(p, nrows = 1, check.names = FALSE))
+  hdr <- names(read_hdr(p))
   idc <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
   hit <- idc[idc %in% hdr]
   if (length(hit)) cat("            id column:", hit[1], "\n")
@@ -51,7 +60,8 @@ for (v in names(REQ)) {
 # uses different level names the exclusion silently removes nobody, so report
 # its levels explicitly rather than letting that pass unnoticed.
 if (file.exists(PHE_PATH)) {
-  ph <- read.csv(PHE_PATH, stringsAsFactors = FALSE)
+  ph <- read.delim(PHE_PATH, stringsAsFactors = FALSE,
+                   sep = if (grepl("\t", readLines(PHE_PATH, 1, warn = FALSE))) "\t" else ",")
   if ("cohort" %in% names(ph)) {
     cat("cohort levels in the phenotype file:\n")
     print(table(trimws(ph$cohort), useNA = "ifany"))
