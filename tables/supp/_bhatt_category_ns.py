@@ -1,33 +1,50 @@
-"""Shared Bhatt-framework category totals (N at risk).
+"""CT-framework category totals (N at risk), derived from Table_6.csv.
 
-Sourced from manuscript_assets/Table_6.csv row sums (Bhatt is the row axis of
-Table 6, so row-sums are Bhatt-framework participant counts). Totals verified
-to sum to 9,463 (the analytic-cohort N).
+Previously these were hardcoded, with an assertion that compared the hardcoded
+dict to a hardcoded cohort size. Both were stale after the ILD/Bronchiectasis
+exclusion changed the analytic cohort from 9,463 to 9,402, and because the
+assertion only compared one constant to another it could not detect that. The
+legends of ST6-ST9 consequently stated at-risk denominators (1,099 COPD-minor,
+3,969 COPD-major) that no table in the supplement reproduced.
 
-Used by the cause-specific and sensitivity table legends to state at-risk denominators without
-repeating the numbers in each legend .md.
+They are now read from the cross-tabulation the supplement itself publishes, so
+they cannot drift from it again.
 """
-BHATT_CATEGORY_NS = {
-    "noCOPD":            4225,
-    "AFL-only-noCOPD":    170,
-    "COPD-minor":       1_099,
-    "COPD-major":       3_969,
+import csv
+import os
+
+from manifest import ASSETS
+
+_ROW_LABELS = {
+    "noCOPD":          "noCOPD",
+    "AFL-only-NoCOPD": "AFL-only-noCOPD",
+    "COPD-minor":      "COPD-minor",
+    "COPD-major":      "COPD-major",
 }
-assert sum(BHATT_CATEGORY_NS.values()) == 9_463, (
-    "Bhatt-category totals do not sum to analytic-cohort N; check Table_6.csv "
-    "row sums."
-)
+
+
+def _load():
+    path = os.path.join(ASSETS, "Table_6.csv")
+    with open(path) as f:
+        rows = list(csv.DictReader(f))
+    out = {}
+    for r in rows:
+        label = _ROW_LABELS.get(r["Bhatt"])
+        if label is None:
+            raise KeyError(f"Unexpected CT category in Table_6.csv: {r['Bhatt']!r}")
+        out[label] = sum(int(v) for k, v in r.items() if k != "Bhatt")
+    missing = set(_ROW_LABELS.values()) - set(out)
+    if missing:
+        raise KeyError(f"Table_6.csv is missing CT categories: {sorted(missing)}")
+    return out
+
+
+BHATT_CATEGORY_NS = _load()
 
 
 def at_risk_sentence(include_noCOPD=False):
-    """Return a legend-ready sentence enumerating the Bhatt-framework category
-    totals used as at-risk denominators in ST4/ST5. By default lists the three
-    non-reference categories (noCOPD is the reference and rarely quoted)."""
-    def _fmt(n):
-        return f"{n:,}"
+    """Legend-ready sentence enumerating the CT-framework category totals."""
+    keys = ["AFL-only-noCOPD", "COPD-minor", "COPD-major"]
     if include_noCOPD:
-        cats = ["noCOPD", "AFL-only-noCOPD", "COPD-minor", "COPD-major"]
-    else:
-        cats = ["AFL-only-noCOPD", "COPD-minor", "COPD-major"]
-    parts = [f"{c} n={_fmt(BHATT_CATEGORY_NS[c])}" for c in cats]
-    return "Category totals (MD-COPD, at risk): " + ", ".join(parts) + "."
+        keys = ["noCOPD"] + keys
+    return ", ".join(f"{k} n = {BHATT_CATEGORY_NS[k]:,}" for k in keys)
