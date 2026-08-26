@@ -2,7 +2,7 @@
 whether a participant meets COPD under each framework: Both-noCOPD (reference),
 CT-only COPD (ESI missed), ESI-only COPD (Bhatt missed), Both-COPD.
 
-Cols: Classification group | N | All-cause mortality HR (95% CI)
+Cols: Classification group | All-cause mortality HR (95% CI)
       | Respiratory mortality HR (95% CI) | Exacerbation IRR (95% CI)
 
 Superscript letters after each estimate encode a compact-letter display of
@@ -137,7 +137,7 @@ def build(doc):
     for src_key, display_label, pw_group in ordered_groups:
         if display_label == "Reference":
             body_rows.append([
-                "Both-noCOPD", "—",
+                "Both-noCOPD",
                 "Reference", "Reference", "Reference",
             ])
             continue
@@ -148,7 +148,6 @@ def build(doc):
         exac_letter = _sup(letters["exacerbations"][pw_group])
         body_rows.append([
             display_label,
-            str(hr["n"]),
             _fmt(hr["all_HR"],  hr["all_LCI"],  hr["all_UCI"])  + all_letter,
             _fmt(hr["resp_HR"], hr["resp_LCI"], hr["resp_UCI"]) + resp_letter,
             _fmt(irr["IRR"],    irr["LCI"],     irr["UCI"])     + exac_letter,
@@ -156,11 +155,10 @@ def build(doc):
 
     headers = [
         "Classification group",
-        "N",
         "All-cause mortality HR (95% CI)",
         "Respiratory mortality HR (95% CI)",
         "Exacerbation IRR (95% CI)",
     ]
     dh.add_table(doc, headers, body_rows,
-                 col_widths_in=[1.4, 0.5, 1.55, 1.55, 1.5])
+                 col_widths_in=[1.7, 1.6, 1.6, 1.6])
     dh.add_legend_from_sibling(doc, __file__, TABLE_NUM)
