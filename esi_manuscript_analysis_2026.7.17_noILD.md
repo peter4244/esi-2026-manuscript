@@ -37,21 +37,18 @@ locations for the machine you are running on, and knit.
 
 ``` r
 # ---- Headless raster device --------------------------------------------
-# This must run in the FIRST chunk, not in `setup`. knitr opens a graphics
-# device for a chunk BEFORE evaluating its code (block_exec -> eng_r ->
-# chunk_device), so on a node whose default bitmapType is Xlib and which has
-# no display, the device for chunk 1 is opened and warns before any code has
-# had a chance to switch it. Measured on a Channing compute node: one
-# "unable to open connection to X11 display" per run, raised before
-# options(warn = 1) could take effect, so it surfaced at the very end of a
-# 68-chunk render with nothing to attribute it to.
+# Sets the device for the chunks that follow. It cannot suppress the one X11
+# warning seen on a headless node: knitr probes the png device during knit()
+# startup, in set_html_dev() -> dev_available("png"), before any chunk runs,
+# so no code in this document is early enough. render_analysis.R sets the
+# option before calling knit() and does prevent it; this block keeps the
+# chunk devices correct for anyone who knits the file directly.
 #
-# `paths` and `setup` also carry fig.keep = "none": neither draws anything,
-# so knitr has no reason to open a device for them at all.
+# `paths` and `setup` carry fig.keep = "none" because neither draws anything.
 #
-# Rescue only values that cannot work headless. Taking cairo unconditionally
-# would switch macOS off quartz and change local figure rendering for no
-# reason.
+# Rescue only a default that cannot work headless. Taking cairo
+# unconditionally would switch macOS off quartz and change local figure
+# rendering for no reason.
 local({
   .bt <- getOption("bitmapType")
   if (capabilities("cairo") &&
