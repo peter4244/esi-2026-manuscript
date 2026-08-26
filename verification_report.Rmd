@@ -459,10 +459,21 @@ for (cc in crit) {
 }
 
 # The manuscript's R version is a property of the run that produced the
-# artifacts, not of whatever interpreter renders this report. Read it off the
+# artifacts, not of whatever interpreter renders this report, so read it off the
 # provenance stamp the analysis writes.
+#
+# Waived like PRO-07 rather than hard-failed. The claim is about the canonical
+# run that produced the published numbers; a reproduction elsewhere legitimately
+# uses a different R (the cluster is 4.3.2, and the README records that the
+# results reproduce there) and that does not falsify the manuscript. This stays
+# visible rather than silent: verify.R names every waived entry on each run.
 reg("MET-06", "Methods, statistical analysis", "all analyses performed in R version 4.5.2",
-    "4.5.2", "PROVENANCE.txt", 'x[["r_version"]]', TOL_EXACT)
+    "4.5.2", "PROVENANCE.txt", 'x[["r_version"]]', TOL_EXACT,
+    local_only = TRUE,
+    note = paste("Waived off the canonical machine. The manuscript's claim is",
+                 "about the run that produced the published numbers. A",
+                 "reproduction on another R shows up here as LOCAL-ONLY with",
+                 "the actual version in the computed column - read it."))
 ```
 
 # Verdict
