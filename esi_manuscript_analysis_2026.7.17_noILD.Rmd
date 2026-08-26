@@ -359,10 +359,10 @@ write.csv(tab_by_stratum, file.path(OUT_DIR, "Table_S2_stratum_counts.csv"), row
 
 ## Section 1b — Supp Table S2: full baseline characteristics by stratum (A6b.1)
 
-Baseline characteristics of the 9,463-subject Bhatt-analytic cohort, by
+Baseline characteristics of the 9,402-subject Bhatt-analytic cohort, by
 GOLD/PRISm/never-smoker stratum. Continuous → `mean (SD)`; dichotomous → `pct%`.
 No across-stratum p-values (skipped per finding 9; would be uniformly
-significant in a 9,463-subject cohort and would not inform the paper's claim).
+significant in a 9,402-subject cohort and would not inform the paper's claim).
 
 ```{r s2-baseline}
 fmt_msd <- function(x)  sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
@@ -1655,7 +1655,13 @@ the Results.
 # Old CSV Supp_Table_Continuous_AllCause.csv is written with a .OLD suffix and
 # retired.
 
-d_cont <- d %>%
+# Source cohort is d_b, the Bhatt-analytic cohort, matching the sibling
+# continuous table (the GOLD 0 FEV1-decline models below) and every other
+# table in the paper. Until 2026-08-25 this was built from `d`, the
+# pre-completeness merge, which made S6a/S6b the only tables in the
+# manuscript running on a different population (10,043 vs 9,400) with no n
+# column to make that visible.
+d_cont <- d_b %>%
   inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
   left_join(cod %>% select(pid, UCD_Resp), by = "pid") %>%
   mutate(event_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0)) %>%
@@ -1694,6 +1700,7 @@ for (o in c("all-cause", "respiratory")) {
     stringsAsFactors = FALSE)
 }
 s6a <- do.call(rbind, s6a_rows)
+s6a$n_subj <- nrow(d_cont)
 write.csv(s6a, file.path(OUT_DIR, "Table_S6a_continuous_mortality.csv"), row.names = FALSE)
 kable(s6a, caption = "Supp Table S6a — Continuous ESI as a mortality predictor. Effect metric: HR per 1-unit ESI or per 0.1-unit FEV1/FVC.")
 
@@ -1725,6 +1732,7 @@ s6b <- data.frame(
             lr_ex$`LR stat.`[2], fmt_p(lr_ex$`Pr(Chi)`[2]))),
   stringsAsFactors = FALSE
 )
+s6b$n_subj <- nrow(ex_cont)
 write.csv(s6b, file.path(OUT_DIR, "Table_S6b_continuous_exacerbations.csv"), row.names = FALSE)
 kable(s6b, caption = "Supp Table S6b — Continuous ESI as an exacerbation predictor. Effect metric: IRR per 1-unit ESI or per 0.1-unit FEV1/FVC.")
 
@@ -1735,7 +1743,7 @@ if (file.exists(old)) file.rename(old, paste0(old, ".OLD"))
 
 ```{r continuous-esi-fev1-decline-gold0}
 # GOLD 0 subgroup — the 4.7 mL/yr signal
-# Fix item 6 (2026-07-17): restrict source cohort to d_b (Bhatt-analytic, n=9,463)
+# Fix item 6 (2026-07-17): restrict source cohort to d_b (Bhatt-analytic, n=9,402)
 # for denominator consistency with the by-category analyses.
 g0 <- fev1_long %>%
   inner_join(d_b %>% transmute(pid, ESI_baseline = ESI_v1post,
@@ -1993,7 +2001,7 @@ checks <- list(
   selfcheck("n GOLD 0 (d, pre-filter)",          as.integer(n_gold_d["GOLD0"]),   4308),
   selfcheck("n PRISm (d, pre-filter)",           as.integer(n_gold_d["PRISm"]),   1238),
   selfcheck("n GOLD 1-4 (d, pre-filter)",        as.integer(sum(n_gold_d[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4394),
-  # ---- Actual breakdown of the 9,463 analytic cohort (for manuscript fix) --
+  # ---- Actual breakdown of the 9,402 analytic cohort (for manuscript fix) --
   selfcheck("n never-smokers (analytic, correct)", as.integer(n_gold_d_b["Never"]), 106),
   selfcheck("n GOLD 0 (analytic, correct)",        as.integer(n_gold_d_b["GOLD0"]), 4054),
   selfcheck("n PRISm (analytic, correct)",         as.integer(n_gold_d_b["PRISm"]), 1129),
