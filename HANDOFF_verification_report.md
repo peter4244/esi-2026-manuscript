@@ -158,15 +158,38 @@ Two findings from the first run:
 
 Notes for whoever picks this up:
 
-- **The Changit repo is the source of record for the manuscript.**
+- **The Changit repo is the source of record for the manuscript**, and it is
+  **not a mirror of `main`**. `changit/main` is a single root commit on
+  *unrelated history*: a curated 111-file snapshot carrying the analysis, the
+  supplement builder, `manifest.py`, `figures/` and `manuscript_assets/`, and
+  deliberately no `manuscript/` directory, no handoff, no exploration notes and
+  no HTML renders. Pushing `main` there would destroy that boundary and publish
+  the manuscript .docx files.
+
+  Two local branches, one per lineage:
+
+  | branch | tracks | contents |
+  |---|---|---|
+  | `main` | `origin/main` (GitHub) | the full working repo |
+  | `changit-snapshot` | `changit/main` | the curated snapshot |
+
+  To add something to the snapshot, check out `changit-snapshot`, copy the files
+  across from `main`, commit, push. Do not merge or rebase between the two.
+
+- **Pete runs the Changit pushes.** A read (`git ls-remote`) succeeds
+  non-interactively, but a push blocks indefinitely, apparently waiting on
+  something only his session can answer. Do not retry it; hand him the command.
+  GitHub is HTTPS with a credential helper and pushes fine from here.
 - Both `esi_manuscript_analysis_*.html` renders on disk are pre-`7b34c39`
   vintage and still print the superseded S6b values.
-- **Open question for Pete — `PRO-11`.** The limitations sentence pairs
-  "ESI-only-COPD (n=94)" with "AFL-only-noCOPD (n=170)", but 94 is a
-  cross-classification count while 170 is a single-framework category count
-  (the CT-based AFL-only row of `Table_6.csv`, 21 + 149). The ESI-based
-  AFL-only column totals 84. The registry checks 170 as the CT-based figure,
-  which is defensible, but confirm that is what the sentence means.
+- **Settled, do not reopen — `PRO-11`.** The limitations sentence pairs
+  "ESI-only-COPD (n=94)" with "AFL-only-noCOPD (n=170)". These are different
+  kinds of quantity: 94 is an interior cell of `Table_6.csv` (the
+  cross-classification group Table 2 is fit on), while 170 is the CT-based row
+  margin for AFL-only-noCOPD; the ESI-based column margin for that same
+  category is 84. Raised with Pete 2026-08-26 with both numbers on the table.
+  He chose to leave the sentence as written, so `PRO-11` checks 170 against the
+  CT-based row total and the CT-based framework stays the implicit reference.
 - **`SELFCHECK.csv` and this report now disagree by design.** SELFCHECK's
   `expected` column has drifted from the manuscript and its `tol = 0.02` is
   loose enough not to notice: it expects 0.770 for the all-strata correlation
