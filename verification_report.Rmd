@@ -50,7 +50,17 @@ if (!exists("OUT_DIR")) stop("config '", CONFIG, "' does not define OUT_DIR")
 if (!dir.exists(OUT_DIR)) stop("OUT_DIR does not exist: ", OUT_DIR)
 
 MANUSCRIPT_VERSION <- "ESI manuscript draft v12 2026.8.22_PJC.docx"
+MANUSCRIPT_PATH    <- file.path("manuscript", MANUSCRIPT_VERSION)
 ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
+
+# The transcription's trust root. `expected` throughout this registry is a hand
+# transcription of the document named above, made once. If the document changes,
+# the transcription may no longer describe it and the registry must be re-read
+# against it -- so the document is pinned by hash. Editing the manuscript without
+# revisiting this file fails here. The Changit snapshot ships no manuscript/
+# directory, so on the cluster this degrades to NOT-AVAILABLE rather than
+# pretending to check something that is not there.
+MANUSCRIPT_MD5 <- "314428a11ec31f88c3d28f565437f6d2"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
@@ -90,6 +100,11 @@ art <- function(name) {
 # Pull the point estimate / CI bounds out of a "1.01 (0.96-1.06)" cell.
 parse_est <- function(s, which = c("est", "lo", "hi")) {
   which <- match.arg(which)
+  # Guard the row selection here rather than downstream: the caller's length-1
+  # check sees only what this returns, and the "lo"/"hi" paths take the first
+  # element of a strsplit, so an ambiguous selection would collapse to a
+  # passing scalar instead of raising.
+  if (length(s) != 1L) stop("parse_est: selection returned ", length(s), " rows")
   s <- trimws(as.character(s))
   est <- as.numeric(sub("^([0-9.eE+-]+).*$", "\\1", s))
   ci  <- sub("^[^(]*\\(", "", sub("\\).*$", "", s))
@@ -225,19 +240,36 @@ for (i in seq_len(nrow(T1))) {
   }
 }
 
-# The CT vs ESI p column comes from the bootstrap difference tables, whose
-# `two_sided_p_reported` field is the string the manuscript prints.
+# The CT vs ESI p column comes from the bootstrap difference tables. Compare the
+# QUANTITY, not the formatted string: `two_sided_p_reported` is a formatting
+# decision, so a string comparison would verify only that the formatter still
+# formats, and it would also reject a legitimate cluster re-run that landed on
+# 0.71 instead of 0.702 -- exactly the ±0.01 slack TOL_BOOT exists to allow.
+#
+# The two "<0.002" cells are a different claim. There `two_sided_p` is NA,
+# because no resample crossed zero, which is what "<0.002" is asserting. So
+# check that assertion directly: the percentile interval must not span zero.
 t1p_src <- c("all-cause"     = "Supp_Table_HR_Difference_Bootstrap.csv",
              "respiratory"   = "Supp_Table_HR_Difference_Bootstrap.csv",
              "exacerbations" = "Supp_Table_IRR_Difference_Bootstrap.csv")
 for (i in seq_len(nrow(T1))) {
-  r <- T1[i, ]
-  fld <- sprintf('trimws(x$two_sided_p_reported[x$outcome == "%s" & x$category == "%s"])',
-                 r$outcome, r$category)
-  reg(sprintf("T1-p-%s-%s", r$outcome, r$category), "Table 1",
-      sprintf("CT vs ESI p, %s, %s", r$outcome, r$category),
-      r$p, t1p_src[[r$outcome]], fld,
-      if (grepl("^<", r$p)) TOL_EXACT else TOL_BOOT)
+  r   <- T1[i, ]
+  sel <- sprintf('x$outcome == "%s" & x$category == "%s"', r$outcome, r$category)
+  stem <- if (r$outcome == "exacerbations") "logIRR" else "logHR"
+  if (grepl("^<", r$p)) {
+    reg(sprintf("T1-p-%s-%s", r$outcome, r$category), "Table 1",
+        sprintf('CT vs ESI p "%s" (no resample crossed zero), %s, %s',
+                r$p, r$outcome, r$category),
+        TRUE, t1p_src[[r$outcome]],
+        sprintf('{ i <- which(%s); is.na(x$two_sided_p[i]) && x$ci_lo_%s[i] * x$ci_hi_%s[i] > 0 }',
+                sel, stem, stem),
+        TOL_EXACT)
+  } else {
+    reg(sprintf("T1-p-%s-%s", r$outcome, r$category), "Table 1",
+        sprintf("CT vs ESI p, %s, %s", r$outcome, r$category),
+        as.numeric(r$p), t1p_src[[r$outcome]],
+        sprintf('x$two_sided_p[%s]', sel), TOL_BOOT)
+  }
 }
 ```
 
@@ -343,6 +375,29 @@ reg("PRO-11", "Discussion, limitations", "AFL-only-noCOPD subgroup n = 170",
     'sum(as.numeric(x[x$Bhatt == "AFL-only-NoCOPD", -1]))', TOL_EXACT)
 ```
 
+## Results prose — significance claims
+
+Two Results statements are assertions about significance rather than about a
+printed number. They are the kind of claim that flips silently when a model
+changes, so they are checked as claims.
+
+```{r reg-significance}
+for (a in list(list("SIG-01", "all-cause mortality", "Table_8_allcause.csv",   c("bhatt_p", "esi_p")),
+               list("SIG-02", "respiratory mortality", "Table_8_resp.csv",     c("bhatt_p", "esi_p")),
+               list("SIG-03", "exacerbations", "Table_Exacerbations_Bhatt.csv", c("bhatt_p", "esi_p")))) {
+  reg(a[[1]], "Results P4; Discussion P7",
+      sprintf("AFL-only-noCOPD not significantly associated with %s under either framework", a[[2]]),
+      TRUE, a[[3]],
+      sprintf('all(c(x$%s, x$%s)[x$group == "AFL-only-NoCOPD"] > 0.05)', a[[4]][1], a[[4]][2]),
+      TOL_EXACT)
+}
+reg("SIG-04", "Results P5",
+    "AFL-only-noCOPD FEV1 increase is significant under ESI but NOT under the CT framework",
+    TRUE, "Table_BhattDecline.csv",
+    '{ i <- which(x$group == "AFL-only-NoCOPD"); x$esi_p[i] < 0.05 && x$bhatt_p[i] >= 0.05 }',
+    TOL_EXACT)
+```
+
 ## Methods — declared constants and the equivalence margin
 
 ```{r reg-methods}
@@ -388,20 +443,57 @@ for (c1 in const_reg) {
       sprintf('CONSTS[["%s"]]', c1[[5]]), TOL_EXACT)
 }
 
+# The MD-COPD criterion constants define the framework the whole paper is about.
+# They are literals in the analysis, and if one moved, every artifact would move
+# with it -- the tables would stay self-consistent and nothing else in this
+# registry would notice. So they are checked against the source, like the ESI
+# thresholds.
+crit <- list(
+  list("MET-08", "post-bronchodilator FEV1/FVC below 0.70",       0.70,
+       "major_criterion\\s*=\\s*FEV1_FVC_post\\s*<\\s*([0-9.]+)"),
+  list("MET-09", "visual emphysema Fleischner at least mild (>= 1)", 1,
+       "emph_yn\\s*=\\s*CT_Visual_Emph_Severity\\s*>=\\s*([0-9.]+)"),
+  list("MET-10", "airway wall thickening Fleischner definite (== 2)", 2,
+       "wall_yn\\s*=\\s*CT_Visual_Wall_Thickening\\s*==\\s*([0-9.]+)"),
+  list("MET-11", "mMRC dyspnea score of 2 or greater",            2,
+       "dysp_yn\\s*=\\s*MMRCDyspneaScor\\s*>=\\s*([0-9.]+)"),
+  list("MET-12", "SGRQ total score of 25 or greater",             25,
+       "qol_yn\\s*=\\s*SGRQ_scoreTotal\\s*>=\\s*([0-9.]+)"),
+  list("MET-13", "COPD-major: major criterion plus at least 1 of 5 minor", 1,
+       "major_criterion\\s*&\\s*n_minor_b\\s*>=\\s*([0-9.]+)"),
+  list("MET-14", "COPD-minor: at least 3 of 5 minor without the major", 3,
+       "!d_b\\$major_criterion\\s*&\\s*n_minor_b\\s*>=\\s*([0-9.]+)"))
+for (cc in crit) {
+  hit <- grep(cc[[4]], src_lines, value = TRUE)
+  CONSTS[[cc[[1]]]] <- if (length(hit))
+    as.numeric(sub(paste0("^.*", cc[[4]], ".*$"), "\\1", hit[1])) else NA_real_
+  reg(cc[[1]], "Methods, MD-COPD framework", cc[[2]], cc[[3]],
+      "<analysis source>", sprintf('CONSTS[["%s"]]', cc[[1]]), TOL_EXACT)
+}
+
+# The manuscript's R version is a property of the run that produced the
+# artifacts, not of whatever interpreter renders this report. Read it off the
+# provenance stamp the analysis writes.
 reg("MET-06", "Methods, statistical analysis", "all analyses performed in R version 4.5.2",
-    "4.5.2", "<R session>", 'as.character(getRversion())', TOL_EXACT)
+    "4.5.2", "PROVENANCE.txt", 'x[["r_version"]]', TOL_EXACT)
 ```
 
 # Evaluation
 
 ```{r evaluate}
 rows <- lapply(REG, function(e) {
+  # Fields are evaluated in an environment whose parent is baseenv(), NOT the
+  # global environment. If globals were reachable a field could name T1 or T2 --
+  # the transcription itself -- and check the answer key against itself.
   computed <- tryCatch({
-    if (e$artifact %in% c("<analysis source>", "<R session>")) {
-      eval(parse(text = e$field))
+    env <- new.env(parent = baseenv())
+    env$parse_est <- parse_est; env$num_p <- num_p
+    if (e$artifact == "<analysis source>") {
+      env$CONSTS <- CONSTS
     } else {
-      eval(parse(text = e$field), list(x = art(e$artifact)))
+      env$x <- art(e$artifact)
     }
+    eval(parse(text = e$field), env)
   }, error = function(err) structure(NA, msg = conditionMessage(err)))
 
   msg <- attr(computed, "msg")
@@ -410,8 +502,14 @@ rows <- lapply(REG, function(e) {
       "ERROR"
     } else if (length(computed) != 1L) {
       "ERROR"
-    } else if (is.logical(e$expected) || is.logical(computed)) {
-      if (isTRUE(as.logical(computed)) == isTRUE(as.logical(e$expected))) "PASS" else "FAIL"
+    } else if (is.logical(e$expected)) {
+      # Both sides must be logical. Accepting a number here would let a field
+      # that lost its comparison -- `abs(delta_c)` where `abs(delta_c) < 0.02`
+      # was meant -- report PASS on the strength of being non-zero.
+      if (!is.logical(computed)) "ERROR"
+      else if (isTRUE(computed) == isTRUE(e$expected)) "PASS" else "FAIL"
+    } else if (is.logical(computed)) {
+      "ERROR"
     } else if (is.character(e$expected)) {
       if (identical(trimws(as.character(computed)), trimws(e$expected))) "PASS" else "FAIL"
     } else {
@@ -419,7 +517,10 @@ rows <- lapply(REG, function(e) {
       else if (abs(as.numeric(computed) - e$expected) <= e$tolerance) "PASS" else "FAIL"
     }
 
-  if (e$local_only && status != "PASS") status <- "LOCAL-ONLY"
+  # local_only waives the NUMERIC COMPARISON only. An entry that cannot be
+  # evaluated at all is not "verified with a caveat", it is unverified, and it
+  # must stay red.
+  if (e$local_only && status == "FAIL") status <- "LOCAL-ONLY"
 
   data.frame(
     id = e$id, location = e$location, claim = e$claim,
@@ -434,19 +535,56 @@ rows <- lapply(REG, function(e) {
 })
 V <- do.call(rbind, rows)
 
-# The report reads artifacts off disk; it does not recompute them. Warn loudly
-# if an artifact predates the analysis source, which would mean the comparison
-# is being made against a stale run.
-src_mtime <- file.info(ANALYSIS_SRC)$mtime
-arts      <- setdiff(unique(V$artifact), c("<analysis source>", "<R session>"))
-art_mtime <- file.info(file.path(OUT_DIR, arts))$mtime
-STALE     <- arts[!is.na(art_mtime) & art_mtime < src_mtime]
+# --- provenance -------------------------------------------------------------
+# Two trust-root checks, appended as ordinary registry rows so that they reach
+# the gate. File mtimes are not usable for this: a git clone on the cluster
+# stamps every file with checkout time in arbitrary order, so an mtime
+# comparison there is noise. Content hashes are.
+prov_row <- function(id, claim, expected, computed, status, note = "") {
+  data.frame(id = id, location = "provenance", claim = claim,
+             expected = expected, artifact = "PROVENANCE.txt", field = "-",
+             tolerance = 0, computed = computed, status = status, note = note)
+}
+
+src_md5 <- unname(tools::md5sum(ANALYSIS_SRC)[[1]])
+P <- tryCatch(art("PROVENANCE.txt"), error = function(e) NULL)
+V <- rbind(V, if (is.null(P)) {
+  prov_row("PRV-01", "artifacts were produced by the current analysis source",
+           src_md5, "<PROVENANCE.txt absent>", "ERROR",
+           "The analysis has not been run since the provenance stamp was added.")
+} else if (identical(unname(P[["analysis_md5"]]), src_md5)) {
+  prov_row("PRV-01", "artifacts were produced by the current analysis source",
+           src_md5, P[["analysis_md5"]], "PASS")
+} else {
+  prov_row("PRV-01", "artifacts were produced by the current analysis source",
+           src_md5, P[["analysis_md5"]], "FAIL",
+           paste("These artifacts came from a different version of",
+                 ANALYSIS_SRC, "- every number below was reconciled against a",
+                 "stale run. Re-render the analysis."))
+})
+
+V <- rbind(V, if (!file.exists(MANUSCRIPT_PATH)) {
+  prov_row("PRV-02", "registry was transcribed from the pinned manuscript",
+           MANUSCRIPT_MD5, "<manuscript absent>", "NOT-AVAILABLE",
+           "No manuscript/ directory here, so the transcription's trust root cannot be checked.")
+} else {
+  m <- unname(tools::md5sum(MANUSCRIPT_PATH)[[1]])
+  prov_row("PRV-02", "registry was transcribed from the pinned manuscript",
+           MANUSCRIPT_MD5, m,
+           if (identical(m, MANUSCRIPT_MD5)) "PASS" else "FAIL",
+           if (identical(m, MANUSCRIPT_MD5)) "" else
+             paste("The manuscript has changed since the registry was",
+                   "transcribed from it. Re-read the document against the",
+                   "registry, then update MANUSCRIPT_MD5."))
+})
+V$artifact[V$id == "PRV-02"] <- MANUSCRIPT_VERSION
 
 write.csv(V, file.path(OUT_DIR, "VERIFICATION.csv"), row.names = FALSE)
 ```
 
 ```{r summary}
-tally <- table(factor(V$status, levels = c("PASS", "FAIL", "ERROR", "LOCAL-ONLY")))
+tally <- table(factor(V$status,
+                      levels = c("PASS", "FAIL", "ERROR", "LOCAL-ONLY", "NOT-AVAILABLE")))
 knitr::kable(as.data.frame(tally, stringsAsFactors = FALSE),
              col.names = c("status", "n"),
              caption = sprintf("%d registry entries; written to %s",
@@ -456,7 +594,7 @@ knitr::kable(as.data.frame(tally, stringsAsFactors = FALSE),
 ## Entries that did not pass
 
 ```{r failures}
-bad <- V[V$status %in% c("FAIL", "ERROR", "LOCAL-ONLY"), ]
+bad <- V[V$status != "PASS", ]
 if (!nrow(bad)) {
   cat("None.\n")
 } else {
@@ -466,18 +604,6 @@ if (!nrow(bad)) {
   for (i in seq_len(nrow(bad))) if (nzchar(bad$note[i])) {
     cat("\n**", bad$id[i], "** — ", bad$note[i], "\n", sep = "")
   }
-}
-```
-
-## Artifact freshness
-
-```{r freshness}
-if (length(STALE)) {
-  cat("STALE — these artifacts are older than ", ANALYSIS_SRC,
-      ", so the numbers below were not produced by the current analysis:\n\n", sep = "")
-  cat(paste0("  - ", STALE, collapse = "\n"), "\n")
-} else {
-  cat("All artifacts are at least as new as ", ANALYSIS_SRC, ".\n", sep = "")
 }
 ```
 

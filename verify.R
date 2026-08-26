@@ -6,21 +6,47 @@ CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
 if (!file.exists(CONFIG)) stop("Missing input-path config: '", CONFIG, "'")
 source(CONFIG, local = FALSE)
 
-rmarkdown::render("verification_report.Rmd", quiet = TRUE)
+# Coverage is part of the check. Losing registry entries -- an edited loop bound,
+# a chunk turned eval=FALSE, a cached CSV -- reduces what is verified without
+# reducing how green it looks, so the expected count is asserted here rather
+# than merely recorded in a commit message. Raise it when entries are added.
+REGISTRY_N <- 120L
 
 csv <- file.path(OUT_DIR, "VERIFICATION.csv")
+if (file.exists(csv)) invisible(file.remove(csv))   # never gate on a previous run's CSV
+
+rmarkdown::render("verification_report.Rmd", quiet = TRUE)
+
 if (!file.exists(csv)) stop("verification_report.Rmd wrote no VERIFICATION.csv")
 V <- read.csv(csv)
+
+if (nrow(V) != REGISTRY_N) {
+  stop(sprintf(paste("REGISTRY SHRANK OR GREW: %d entries evaluated, %d expected.",
+                     "Coverage changed. Update REGISTRY_N in verify.R if that was intended."),
+               nrow(V), REGISTRY_N))
+}
+
+# LOCAL-ONLY waives a numeric comparison that is known not to reproduce across
+# sites. It is a real hole in coverage, so name the entries rather than counting
+# them: an unnoticed one is a claim nobody is checking.
+lo <- V[V$status == "LOCAL-ONLY", ]
+for (i in seq_len(nrow(lo)))
+  message(sprintf("  LOCAL-ONLY  %-14s %s (expected %s, computed %s)",
+                  lo$id[i], lo$claim[i], lo$expected[i], lo$computed[i]))
+
+na <- V[V$status == "NOT-AVAILABLE", ]
+for (i in seq_len(nrow(na)))
+  message(sprintf("  NOT-AVAIL   %-14s %s", na$id[i], na$claim[i]))
 
 bad <- V[V$status %in% c("FAIL", "ERROR"), ]
 if (nrow(bad)) {
   for (i in seq_len(nrow(bad))) {
-    message(sprintf("  %-24s %-46s expected %-10s computed %s",
-                    bad$id[i], substr(bad$claim[i], 1, 46),
+    message(sprintf("  %-6s %-24s %-46s expected %-10s computed %s",
+                    bad$status[i], bad$id[i], substr(bad$claim[i], 1, 46),
                     bad$expected[i], bad$computed[i]))
   }
   stop(sprintf("VERIFICATION FAILED: %d of %d manuscript claims do not reconcile. See %s",
                nrow(bad), nrow(V), csv))
 }
-message(sprintf("VERIFICATION PASSED: %d claims reconcile (%d local-only). See %s",
-                sum(V$status == "PASS"), sum(V$status == "LOCAL-ONLY"), csv))
+message(sprintf("VERIFICATION PASSED: %d of %d claims reconcile. See %s",
+                sum(V$status == "PASS"), nrow(V), csv))

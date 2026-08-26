@@ -2117,6 +2117,23 @@ if (length(missing) > 0) {
   cat(sprintf("Completeness check PASS: all %d required files present.\n",
               length(required_csvs)))
 }
+
+# ---- Provenance stamp -------------------------------------------------------
+# verification_report.Rmd reconciles the manuscript against these artifacts. It
+# has no way to tell a fresh artifact set from a stale one unless the run that
+# produced it says so. File mtimes cannot serve: a git clone on the cluster
+# stamps every file with checkout time in arbitrary order. So record the hash of
+# the source that produced this set, and the R that ran it.
+.src <- tryCatch(knitr::current_input(), error = function(e) NA_character_)
+writeLines(
+  c(sprintf("analysis_source=%s", if (is.na(.src)) "unknown" else basename(.src)),
+    sprintf("analysis_md5=%s",
+            if (is.na(.src) || !file.exists(.src)) "unknown"
+            else tools::md5sum(.src)[[1]]),
+    sprintf("r_version=%s", as.character(getRversion())),
+    sprintf("rendered_utc=%s", format(Sys.time(), tz = "UTC", "%Y-%m-%dT%H:%M:%SZ"))),
+  file.path(OUT_DIR, "PROVENANCE.txt"))
+cat("Provenance stamp written.\n")
 ```
 
 # Section 12 — Covariate-sensitivity robustness check

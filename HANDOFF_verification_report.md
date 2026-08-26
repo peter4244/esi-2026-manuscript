@@ -96,7 +96,52 @@ Supplement builds 35 OK / 0 FAIL. A code review was acted on in full.
 **The verification report is written** (2026-08-26): `verification_report.Rmd`
 plus the `verify.R` runner, which renders it and then exits non-zero on any
 failure. The gate lives in the runner, not the Rmd, so a failing run still
-leaves a readable HTML document. 107 registry entries, 105 PASS.
+leaves a readable HTML document. 120 registry entries, 116 PASS, 4 ERROR — all
+four pending the next analysis render, none of them a drifted number.
+
+It was reviewed by hand and then adversarially by an independent reviewer, whose
+findings were verified before being acted on. The review found no transcription
+errors and no wrong-cell field expressions; everything it found was in the
+evaluation and gating layer. What changed as a result:
+
+- **The gate now enforces provenance, not mtime.** The analysis writes
+  `PROVENANCE.txt` carrying the md5 of the source that produced the artifact set
+  and the R that ran it; `PRV-01` fails if that does not match the source being
+  verified. mtime cannot do this job on the cluster, where a `git clone` stamps
+  every file with checkout time in arbitrary order.
+- **The manuscript is pinned by hash** (`MANUSCRIPT_MD5`, `PRV-02`). `expected`
+  is a hand transcription made once; if the document changes, the transcription
+  must be re-read against it. Degrades to NOT-AVAILABLE where `manuscript/` is
+  absent rather than pretending to check.
+- **`local_only` waives the numeric comparison only.** It used to absorb ERROR
+  too, so a broken field on a local-only entry read as a benign cross-site
+  difference.
+- **A logical claim requires a logical answer.** `MET-01`/`MET-02` expect TRUE;
+  a field that lost its comparison and returned `0.0033` used to PASS on
+  truthiness alone.
+- **Table 1's `CT vs ESI (p)` is compared as a number,** so `TOL_BOOT` actually
+  applies. It was comparing `two_sided_p_reported` as a string, which verified
+  the formatter rather than the quantity and would have rejected a legitimate
+  cluster re-run landing on 0.71. The two `<0.002` cells assert that no resample
+  crossed zero, so they now check that directly against the percentile interval.
+- **Fields evaluate in an environment parented to `baseenv()`,** so a field
+  cannot reach `T1`/`T2` — the transcription itself — and check the answer key
+  against itself.
+- **Coverage is asserted.** `REGISTRY_N` in `verify.R` fails if entries are lost.
+- **The MD-COPD criterion constants are registered** (`MET-08`..`MET-14`):
+  FEV1/FVC < 0.70, Fleischner emphysema >= 1, wall thickening == 2, mMRC >= 2,
+  SGRQ >= 25, >= 1 and >= 3 of 5 minor criteria. These define the framework the
+  paper is about; if one moved, every artifact would move with it and nothing
+  else in the registry would notice.
+- **Four significance claims are registered** (`SIG-01`..`SIG-04`): the ones
+  asserting AFL-only-noCOPD is not significant, and that the FEV1 increase is
+  significant under ESI but not CT.
+
+The gate was then probe-validated by injecting four deliberate defects (a
+boolean field degraded to a number, a broken field on a local-only entry, a
+bootstrap p drifted past the tolerance, a mis-transcribed CI bound). All four
+were caught. A verification harness that cannot fail is worthless, so do this
+again after any change to the evaluation layer.
 
 Two findings from the first run:
 
@@ -111,9 +156,28 @@ Two findings from the first run:
    The mortality N (5,289) is separately cross-checked against `Table_6.csv`
    and passes today; only 4,635 actually needs the run.
 
-Note for whoever picks this up: the Changit repo is the source of record for
-the manuscript. Both `esi_manuscript_analysis_*.html` renders on disk are
-pre-`7b34c39` vintage and still print the superseded S6b values.
+Notes for whoever picks this up:
+
+- **The Changit repo is the source of record for the manuscript.**
+- Both `esi_manuscript_analysis_*.html` renders on disk are pre-`7b34c39`
+  vintage and still print the superseded S6b values.
+- **Open question for Pete — `PRO-11`.** The limitations sentence pairs
+  "ESI-only-COPD (n=94)" with "AFL-only-noCOPD (n=170)", but 94 is a
+  cross-classification count while 170 is a single-framework category count
+  (the CT-based AFL-only row of `Table_6.csv`, 21 + 149). The ESI-based
+  AFL-only column totals 84. The registry checks 170 as the CT-based figure,
+  which is defensible, but confirm that is what the sentence means.
+- **`SELFCHECK.csv` and this report now disagree by design.** SELFCHECK's
+  `expected` column has drifted from the manuscript and its `tol = 0.02` is
+  loose enough not to notice: it expects 0.770 for the all-strata correlation
+  the paper prints as 0.78, 5.070 for an IRR printed as 5.05, and 3.170 for one
+  printed as 3.15. All three pass there and are checked correctly here. Worth
+  deciding whether SELFCHECK should be retired rather than leaving two
+  mechanisms with different answers.
+- **Known and left alone:** `grab_const` takes the first assignment of a
+  constant (each is currently assigned exactly once); the exacerbation model N
+  of 4,635 has no independent cross-check the way the mortality N does, because
+  no second artifact carries it.
 
 ## Do not reopen
 
