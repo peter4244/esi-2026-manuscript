@@ -1467,6 +1467,16 @@ for (short in names(label_map)) {
 }
 write.csv(t_disc_ex, file.path(OUT_DIR, "Table_Exacerbations_Discordance.csv"), row.names = FALSE)
 kable(t_disc_ex, digits = 2, caption = "Exacerbation IRRs by cross-classification subgroup.")
+
+# ---- Table 2 legend Ns ------------------------------------------------------
+# The Table 2 legend states the sample sizes the two cross-classification models
+# were fit on. Those are model Ns (after the vital-status / exacerbation joins
+# and covariate complete-cases), not the d_b-level subgroup size, so they are
+# read off the fitted objects rather than recomputed from the cross-tab.
+writeLines(
+  c(sprintf("n_mortality_model=%d",     cox_disc_all$n),
+    sprintf("n_exacerbation_model=%d",  nrow(model.frame(nb_disc)))),
+  file.path(OUT_DIR, "Table_2_model_Ns.txt"))
 ```
 
 ## Section 7b — Table 2 pairwise contrasts
@@ -2079,6 +2089,7 @@ required_csvs <- c(
   "Table_CauseSpecific_byDiscord.csv",
   "Table_Exacerbations_Discordance.csv",
   "Table_FEV1Decline_byDiscord.csv",
+  "Table_2_model_Ns.txt",
   # Supplement outputs
   "Table_1_Cindex_Equivalence.csv",             # A2 — Table 1 footnote
   "Supp_Table_HR_Difference_Bootstrap.csv",     # A3 — Supp Table S8

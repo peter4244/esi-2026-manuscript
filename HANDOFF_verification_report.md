@@ -93,6 +93,28 @@ of the line is NOT a failure signal; a failed probe calls `stop()`.
 Analysis renders 68/68, self-check 29 PASS / 0 FAIL on both machines.
 Supplement builds 35 OK / 0 FAIL. A code review was acted on in full.
 
+**The verification report is written** (2026-08-26): `verification_report.Rmd`
+plus the `verify.R` runner, which renders it and then exits non-zero on any
+failure. The gate lives in the runner, not the Rmd, so a failing run still
+leaves a readable HTML document. 107 registry entries, 105 PASS.
+
+Two findings from the first run:
+
+1. The Discussion cited `p=0.647` for continuous ESI adjusted for FEV1/FVC.
+   Commit `7b34c39` moved the S6b model onto the analytic cohort and the value
+   became `0.727`; the supplement was rebuilt, the main text was not. Corrected
+   in the v12 docx (one run edit, text diff confirmed to be that string alone).
+   The IRR of 1.01 did not change and both values are non-significant.
+2. The Table 2 legend Ns had no artifact. A writer now emits
+   `Table_2_model_Ns.txt` from `cox_disc_all$n` and `model.frame(nb_disc)`.
+   **The two entries reading it are ERROR until the analysis is next rendered.**
+   The mortality N (5,289) is separately cross-checked against `Table_6.csv`
+   and passes today; only 4,635 actually needs the run.
+
+Note for whoever picks this up: the Changit repo is the source of record for
+the manuscript. Both `esi_manuscript_analysis_*.html` renders on disk are
+pre-`7b34c39` vintage and still print the superseded S6b values.
+
 ## Do not reopen
 
 **Cause-of-death adjudication gap.** 33.6% of deaths have no assigned cause,

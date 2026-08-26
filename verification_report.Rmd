@@ -1,0 +1,510 @@
+---
+title: "ESI manuscript — verification report"
+author: "Reconciliation of manuscript claims against computed artifacts"
+date: "`r format(Sys.time(), '%Y-%m-%d %H:%M')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    df_print: kable
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+# What this report is
+
+Every number printed in the manuscript is declared here as a **registry entry**
+naming the artifact and the field that produces it. Each entry is compared
+against the artifact as it exists on disk *now*. A number that has drifted —
+because the analysis changed and the prose did not, or the prose was edited by
+hand — fails loudly.
+
+The manuscript is a `.docx` and the Changit snapshot ships no `manuscript/`
+directory, so the report cannot read the document on the cluster. The `claim`
+and `expected` columns are therefore a **transcription** of the printed
+document, made once, by hand, from:
+
+- `manuscript/ESI manuscript draft v12 2026.8.22_PJC.docx`
+
+The transcription is laid out below to mirror the printed tables so a reader can
+check it against the document by eye. Everything downstream of the transcription
+is mechanical.
+
+**Scope.** The main manuscript only. The supplement is machine-built from these
+same artifacts by `build_supplement.py` (see `build_log_v9_supp.txt`), so its
+numbers cannot drift from them. The main document's prose is hand-maintained —
+`manifest.py`'s `MANUSCRIPT_OUT` still points at *v11* while the live document is
+*v12* — which is where drift actually lives.
+
+```{r config}
+CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
+if (!file.exists(CONFIG)) {
+  stop("Missing input-path config: '", CONFIG, "'. ",
+       "Copy config_paths.R.example to config_paths.R.")
+}
+source(CONFIG, local = FALSE)
+if (!exists("OUT_DIR")) stop("config '", CONFIG, "' does not define OUT_DIR")
+if (!dir.exists(OUT_DIR)) stop("OUT_DIR does not exist: ", OUT_DIR)
+
+MANUSCRIPT_VERSION <- "ESI manuscript draft v12 2026.8.22_PJC.docx"
+ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
+
+cat("OUT_DIR:  ", OUT_DIR, "\n",
+    "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
+```
+
+```{r artifact-loader}
+# --- artifact access ---------------------------------------------------------
+# Artifacts are loaded once and cached. `x` inside a registry `field` expression
+# is the loaded artifact: a data.frame for .csv, a named character vector for
+# the key=value .txt sidecars.
+.cache <- new.env(parent = emptyenv())
+
+read_kv <- function(path) {
+  ln <- readLines(path, warn = FALSE)
+  ln <- ln[nzchar(trimws(ln)) & grepl("=", ln, fixed = TRUE)]
+  k  <- trimws(sub("=.*$", "", ln))
+  v  <- trimws(sub("^[^=]*=", "", ln))
+  setNames(v, k)
+}
+
+art <- function(name) {
+  if (!exists(name, envir = .cache)) {
+    p <- file.path(OUT_DIR, name)
+    if (!file.exists(p)) stop("artifact absent: ", name, call. = FALSE)
+    obj <- if (grepl("\\.csv$", name)) {
+      read.csv(p, check.names = FALSE)
+    } else if (grepl("\\.txt$", name)) {
+      read_kv(p)
+    } else {
+      stop("no reader for artifact type: ", name, call. = FALSE)
+    }
+    assign(name, obj, envir = .cache)
+  }
+  get(name, envir = .cache)
+}
+
+# Pull the point estimate / CI bounds out of a "1.01 (0.96-1.06)" cell.
+parse_est <- function(s, which = c("est", "lo", "hi")) {
+  which <- match.arg(which)
+  s <- trimws(as.character(s))
+  est <- as.numeric(sub("^([0-9.eE+-]+).*$", "\\1", s))
+  ci  <- sub("^[^(]*\\(", "", sub("\\).*$", "", s))
+  bd  <- as.numeric(strsplit(ci, "-", fixed = TRUE)[[1]])
+  switch(which, est = est, lo = bd[1], hi = bd[2])
+}
+
+# The analysis writes p-values through fmt_p(), which emits "<0.001" at the
+# floor; strip the "<" so a numeric comparison is possible where the manuscript
+# also prints a bounded value.
+num_p <- function(s) as.numeric(sub("^<", "", trimws(as.character(s))))
+```
+
+```{r registry-builder}
+# --- registry ----------------------------------------------------------------
+REG <- list()
+
+reg <- function(id, location, claim, expected, artifact, field,
+                tolerance, local_only = FALSE, note = "") {
+  REG[[length(REG) + 1]] <<- list(
+    id = id, location = location, claim = claim, expected = expected,
+    artifact = artifact, field = field, tolerance = tolerance,
+    local_only = local_only, note = note)
+  invisible(NULL)
+}
+
+# Tolerances. Two independent machines computing their own bootstraps agree to
+# 1e-8..1e-15 on the headline tables, so the binding constraint is almost always
+# the manuscript's own printed precision, not numerical reproducibility.
+TOL_2DP  <- 0.005    # a value printed to 2 decimal places
+TOL_1DP  <- 0.05     # a value printed to 1 decimal place
+TOL_3DP  <- 0.0005   # a value printed to 3 decimal places
+TOL_BOOT <- 0.01     # bootstrap percentile p: effective resamples differ with
+                     # BLAS (416 vs 412 observed), because which Cox fits warn
+                     # differs and warned resamples are dropped.
+TOL_EXACT <- 0
+```
+
+# Registry
+
+## Cohort and strata
+
+```{r reg-cohort}
+reg("COH-01", "Results P1; Figure 1 legend", "analytic cohort of 9,402 participants",
+    9402, "Table_Agreement_stats.txt", 'as.numeric(x[["n_cohort"]])', TOL_EXACT)
+
+for (s in list(list("COH-02", "Never",  "106 never-smokers",                 106),
+               list("COH-03", "GOLD0",  "4,054 smokers without obstruction", 4054),
+               list("COH-04", "PRISm",  "1,129 with PRISm",                  1129),
+               list("COH-05", "GOLD1-4","4,113 with GOLD 1-4 obstruction",   4113))) {
+  fld <- if (s[[2]] == "GOLD1-4") {
+    'sum(x$n[x$stratum %in% c("GOLD1","GOLD2","GOLD3","GOLD4")])'
+  } else sprintf('x$n[x$stratum == "%s"]', s[[2]])
+  reg(s[[1]], "Results P1", s[[3]], s[[4]], "Table_S2_stratum_counts.csv", fld, TOL_EXACT)
+}
+
+reg("COH-06", "Results P1", "mean ESI 0.83 in never-smokers",
+    0.83, "Table_S2_stratum_counts.csv", 'x$ESI_mean[x$stratum == "Never"]', TOL_2DP)
+reg("COH-07", "Results P1", "mean ESI 8.30 in GOLD 4",
+    8.30, "Table_S2_stratum_counts.csv", 'x$ESI_mean[x$stratum == "GOLD4"]', TOL_2DP)
+```
+
+## ESI versus quantitative CT
+
+```{r reg-correlations}
+reg("COR-01", "Results P2", "r = 0.78 with %LAA-950HU, whole cohort",
+    0.78, "Table_2.csv", 'x$r_LAA[x$stratum == "All strata"]', TOL_2DP)
+reg("COR-02", "Results P2", "r = 0.81 with PRM emphysema, whole cohort",
+    0.81, "Table_2_PRMversion.csv", 'x$r_PRM[x$stratum == "All strata"]', TOL_2DP)
+reg("COR-03", "Results P2", "r = 0.08 in GOLD 0",
+    0.08, "Table_2.csv", 'x$r_LAA[x$stratum == "GOLD0"]', TOL_2DP)
+reg("COR-04", "Results P2", "r = 0.58 in GOLD 3",
+    0.58, "Table_2.csv", 'x$r_LAA[x$stratum == "GOLD3"]', TOL_2DP)
+```
+
+## Classification agreement
+
+```{r reg-agreement}
+agree <- list(
+  list("AGR-01", "91% overall agreement", 0.91,   "agreement"),
+  list("AGR-02", "kappa = 0.82",          0.82,   "kappa"),
+  list("AGR-03", "88% sensitivity",       0.88,   "sensitivity"),
+  list("AGR-04", "94% specificity",       0.94,   "specificity"))
+for (a in agree) {
+  reg(a[[1]], "Abstract; Results P3; Figure 1 legend", a[[2]], a[[3]],
+      "Table_Agreement_stats.txt", sprintf('as.numeric(x[["%s"]])', a[[4]]), TOL_2DP)
+}
+```
+
+## Table 1 — MD-COPD categories versus outcomes
+
+Transcribed to mirror the printed table. `p` is the paired-resample percentile
+p-value for the CT − ESI difference in log effect.
+
+```{r reg-table1}
+T1 <- data.frame(
+  outcome  = c("all-cause",  "all-cause",  "respiratory", "respiratory", "exacerbations", "exacerbations"),
+  category = c("COPD-minor", "COPD-major", "COPD-minor",  "COPD-major",  "COPD-minor",    "COPD-major"),
+  ct_est = c( 1.91,  2.59,  4.80, 36.27, 2.72, 5.05),
+  ct_lo  = c( 1.64,  2.35,  2.14, 20.85, 2.36, 4.59),
+  ct_hi  = c( 2.22,  2.86, 10.76, 63.07, 3.14, 5.56),
+  esi_est= c( 1.94,  2.39,  5.68, 30.95, 2.77, 4.47),
+  esi_lo = c( 1.63,  2.18,  2.43, 18.76, 2.33, 4.07),
+  esi_hi = c( 2.32,  2.63, 13.32, 51.06, 3.30, 4.90),
+  p      = c("0.848", "<0.002", "0.702", "0.293", "0.796", "<0.002"))
+knitr::kable(T1, caption = "Table 1 as printed in the manuscript (transcription).")
+
+t1_src <- c("all-cause"     = "Table_8_allcause.csv",
+            "respiratory"   = "Table_8_resp.csv",
+            "exacerbations" = "Table_Exacerbations_Bhatt.csv")
+t1_pfx <- c("all-cause" = "bhatt_HR", "respiratory" = "bhatt_HR",
+            "exacerbations" = "bhatt_IRR")
+
+for (i in seq_len(nrow(T1))) {
+  r   <- T1[i, ]
+  src <- t1_src[[r$outcome]]
+  # column stems: Table_8_* use bhatt_HR/esi_HR; the exacerbation table uses IRR
+  stem <- if (r$outcome == "exacerbations") "IRR" else "HR"
+  for (fw in c("bhatt", "esi")) {
+    for (part in c("est", "lo", "hi")) {
+      col <- if (part == "est") paste0(fw, "_", stem)
+             else paste0(fw, "_", c(lo = "LCI", hi = "UCI")[[part]])
+      exp_col <- paste0(if (fw == "bhatt") "ct_" else "esi_", part)
+      reg(sprintf("T1-%s-%s-%s-%s", r$outcome, r$category,
+                  if (fw == "bhatt") "CT" else "ESI", part),
+          "Table 1",
+          sprintf("%s, %s, %s-based %s", r$outcome, r$category,
+                  if (fw == "bhatt") "CT" else "ESI", part),
+          r[[exp_col]], src,
+          sprintf('x[["%s"]][x$group == "%s"]', col, r$category),
+          TOL_2DP)
+    }
+  }
+}
+
+# The CT vs ESI p column comes from the bootstrap difference tables, whose
+# `two_sided_p_reported` field is the string the manuscript prints.
+t1p_src <- c("all-cause"     = "Supp_Table_HR_Difference_Bootstrap.csv",
+             "respiratory"   = "Supp_Table_HR_Difference_Bootstrap.csv",
+             "exacerbations" = "Supp_Table_IRR_Difference_Bootstrap.csv")
+for (i in seq_len(nrow(T1))) {
+  r <- T1[i, ]
+  fld <- sprintf('trimws(x$two_sided_p_reported[x$outcome == "%s" & x$category == "%s"])',
+                 r$outcome, r$category)
+  reg(sprintf("T1-p-%s-%s", r$outcome, r$category), "Table 1",
+      sprintf("CT vs ESI p, %s, %s", r$outcome, r$category),
+      r$p, t1p_src[[r$outcome]], fld,
+      if (grepl("^<", r$p)) TOL_EXACT else TOL_BOOT)
+}
+```
+
+## Table 2 — cross-classification subgroups
+
+```{r reg-table2}
+T2 <- data.frame(
+  group = c("CT-only-COPD", "ESI-only-COPD", "Both-COPD"),
+  src   = c("CT-only-COPD (ESI missed)", "ESI-only-COPD (Bhatt missed)", "Both-COPD"),
+  all_est = c(1.53, 1.26, 2.02), all_lo = c(1.25, 0.76, 1.66), all_hi = c( 1.88,  2.07,  2.46),
+  rsp_est = c(2.90, 4.86, 6.10), rsp_lo = c(0.91, 0.62, 2.19), rsp_hi = c( 9.28, 38.02, 16.96),
+  exa_est = c(2.00, 1.62, 3.15), exa_lo = c(1.60, 0.97, 2.52), exa_hi = c( 2.51,  2.68,  3.93))
+knitr::kable(T2[, setdiff(names(T2), "src")],
+             caption = "Table 2 as printed in the manuscript (transcription).")
+
+for (i in seq_len(nrow(T2))) {
+  r <- T2[i, ]
+  # all-cause and respiratory mortality live in one artifact, exacerbations in another
+  for (blk in list(list("all", "Table_BhattOnly_vs_Both.csv", c(est="all_HR",  lo="all_LCI",  hi="all_UCI"),  "all-cause mortality HR"),
+                   list("rsp", "Table_BhattOnly_vs_Both.csv", c(est="resp_HR", lo="resp_LCI", hi="resp_UCI"), "respiratory mortality HR"),
+                   list("exa", "Table_Exacerbations_Discordance.csv", c(est="IRR", lo="LCI", hi="UCI"), "exacerbation IRR"))) {
+    for (part in c("est", "lo", "hi")) {
+      reg(sprintf("T2-%s-%s-%s", r$group, blk[[1]], part), "Table 2",
+          sprintf("%s, %s, %s", r$group, blk[[4]], part),
+          r[[paste0(blk[[1]], "_", part)]], blk[[2]],
+          sprintf('x[["%s"]][x$group == "%s"]', blk[[3]][[part]], r$src),
+          TOL_2DP)
+    }
+  }
+}
+
+# Table 2 legend: pairwise adjusted p-values among the three COPD-positive groups.
+reg("T2-p-both-vs-ct", "Table 2 legend",
+    "Both-COPD vs CT-only exacerbation IRR, p = 0.005", 0.005,
+    "Table_2_pairwise_contrasts.csv",
+    'x$p_adj[x$outcome == "exacerbations" & x$contrast == "Both-COPD - CT-only-COPD"]',
+    TOL_3DP)
+reg("T2-p-both-vs-esi", "Table 2 legend",
+    "Both-COPD vs ESI-only exacerbation IRR, p = 0.037", 0.037,
+    "Table_2_pairwise_contrasts.csv",
+    'x$p_adj[x$outcome == "exacerbations" & x$contrast == "Both-COPD - ESI-only-COPD"]',
+    TOL_3DP)
+
+# Table 2 legend: model sample sizes. These are model Ns, taken off the fitted
+# objects by the `cross-class-exac` chunk. They are NOT the d_b-level subgroup
+# size, which is why the cross-check below is registered separately.
+reg("T2-n-mortality", "Table 2 legend", "mortality models fit on 5,289 participants",
+    5289, "Table_2_model_Ns.txt", 'as.numeric(x[["n_mortality_model"]])', TOL_EXACT)
+reg("T2-n-exacerbation", "Table 2 legend", "exacerbation model fit on 4,635 participants",
+    4635, "Table_2_model_Ns.txt", 'as.numeric(x[["n_exacerbation_model"]])', TOL_EXACT)
+
+# Cross-check: the preserved-spirometry subgroup at the d_b level is the noCOPD
+# and COPD-minor rows of the cross-tab. If this equals the mortality model N,
+# no participant was lost to the vital-status join or covariate completeness.
+reg("T2-n-mortality-xcheck", "Table 2 legend (cross-check)",
+    "preserved-spirometry subgroup size from the cross-tab equals the mortality model N",
+    5289, "Table_6.csv",
+    'sum(as.matrix(x[x$Bhatt %in% c("noCOPD","COPD-minor"), -1]))', TOL_EXACT)
+```
+
+## Results prose — outcomes and secondary analyses
+
+```{r reg-prose}
+reg("PRO-01", "Results P5", "AFL-only-noCOPD FEV1 +10.1 mL/yr under the ESI framework",
+    10.1, "Table_BhattDecline.csv", 'x$esi_est[x$group == "AFL-only-NoCOPD"]', TOL_1DP)
+reg("PRO-02", "Results P5", "AFL-only-noCOPD FEV1 decline p = 0.02",
+    0.02, "Table_BhattDecline.csv", 'x$esi_p[x$group == "AFL-only-NoCOPD"]', TOL_2DP)
+
+# The artifact stores the slope as a signed estimate (-4.73); the manuscript
+# states it as a decline of 4.73 mL/yr. Compare magnitudes and check the sign
+# separately so a sign flip cannot pass silently.
+reg("PRO-03", "Results P6", "GOLD 0: 4.73 mL/yr additional FEV1 decline per 1-unit ESI",
+    4.73, "Supp_Table_Continuous_FEV1Decline_GOLD0.txt",
+    'abs(as.numeric(x[["gold0_esi_est"]]))', TOL_2DP)
+reg("PRO-04", "Results P6", "that GOLD 0 slope is negative, i.e. a decline",
+    -1, "Supp_Table_Continuous_FEV1Decline_GOLD0.txt",
+    'sign(as.numeric(x[["gold0_esi_est"]]))', TOL_EXACT)
+reg("PRO-05", "Results P6", "GOLD 0 FEV1-decline P = 0.001",
+    0.001, "Supp_Table_Continuous_FEV1Decline_GOLD0.txt",
+    'as.numeric(x[["gold0_esi_p"]])', TOL_3DP)
+
+reg("PRO-06", "Results P6; Discussion P3", "mean bronchodilator dESI = -0.09",
+    -0.09, "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["mean_delta"]])', TOL_2DP)
+reg("PRO-07", "Discussion P3", "n = 10,160 paired pre/post-bronchodilator measurements",
+    10160, "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["n_paired"]])', TOL_EXACT,
+    local_only = TRUE,
+    note = paste("Local-only. 10,160 locally, 10,397 on the cluster: the ESI extracts",
+                 "differ OUTSIDE the analytic cohort. d_b is 9,402 in both places, so",
+                 "no analytic-cohort claim is affected. Not reproducible across sites."))
+
+reg("PRO-08", "Discussion P8", "continuous ESI adjusted for FEV1/FVC, IRR = 1.01",
+    1.01, "Table_S6b_continuous_exacerbations.csv",
+    'parse_est(x$ESI_IRR[x$model == "ESI + FEV1/FVC"], "est")', TOL_2DP)
+reg("PRO-09", "Discussion P8", "continuous ESI adjusted for FEV1/FVC, p = 0.727",
+    0.727, "Table_S6b_continuous_exacerbations.csv",
+    'num_p(x$ESI_p[x$model == "ESI + FEV1/FVC"])', TOL_3DP)
+
+reg("PRO-10", "Discussion, limitations", "ESI-only-COPD subgroup n = 94",
+    94, "Table_BhattOnly_vs_Both.csv",
+    'x$n[x$group == "ESI-only-COPD (Bhatt missed)"]', TOL_EXACT)
+reg("PRO-11", "Discussion, limitations", "AFL-only-noCOPD subgroup n = 170",
+    170, "Table_6.csv",
+    'sum(as.numeric(x[x$Bhatt == "AFL-only-NoCOPD", -1]))', TOL_EXACT)
+```
+
+## Methods — declared constants and the equivalence margin
+
+```{r reg-methods}
+reg("MET-01", "Methods, equivalence", "C-index equivalence margin +/-0.02, all-cause",
+    TRUE, "Table_1_Cindex_Equivalence.csv",
+    'abs(x$delta_c[x$outcome == "all-cause"]) < 0.02 && x$equivalent_within_margin[x$outcome == "all-cause"]',
+    TOL_EXACT)
+reg("MET-02", "Methods, equivalence", "C-index equivalence margin +/-0.02, respiratory",
+    TRUE, "Table_1_Cindex_Equivalence.csv",
+    'abs(x$delta_c[x$outcome == "respiratory"]) < 0.02 && x$equivalent_within_margin[x$outcome == "respiratory"]',
+    TOL_EXACT)
+```
+
+Three Methods claims are constants in the analysis source rather than values in
+an artifact: the two ESI thresholds and the bootstrap resample count. They are
+checked by reading the source.
+
+```{r reg-constants}
+src_lines <- readLines(ANALYSIS_SRC, warn = FALSE)
+grab_const <- function(pattern) {
+  hit <- grep(pattern, src_lines, value = TRUE)
+  if (!length(hit)) return(NA_real_)
+  as.numeric(sub("^.*<-\\s*([0-9.]+).*$", "\\1", hit[1]))
+}
+CONSTS <- c(ESI_T_LOW   = grab_const("^ESI_T_LOW\\s*<-"),
+            ESI_T_HIGH  = grab_const("^ESI_T_HIGH\\s*<-"),
+            B_BOOTSTRAP = grab_const("^B_BOOTSTRAP\\s*<-"),
+            RPART_SEED  = grab_const("^RPART_SEED\\s*<-"))
+
+# The training fraction is an argument to sample(), not a named constant.
+train_line  <- grep("train_idx\\s*<-\\s*sample\\(", src_lines, value = TRUE)
+CONSTS[["TRAIN_FRAC"]] <- if (length(train_line))
+  as.numeric(sub("^.*size\\s*=\\s*round\\(([0-9.]+)\\s*\\*.*$", "\\1", train_line[1])) else NA_real_
+
+const_reg <- list(
+  list("MET-03", "Methods, ESI thresholds", "lower threshold ESI = 1",   1.0,  "ESI_T_LOW"),
+  list("MET-04", "Methods, ESI thresholds", "upper threshold ESI = 2.5", 2.5,  "ESI_T_HIGH"),
+  list("MET-05", "Methods, equivalence",    "paired bootstrap B = 1,000", 1000, "B_BOOTSTRAP"),
+  list("MET-07", "Methods, ESI thresholds",
+       "thresholds derived in a randomly selected 80% training cohort", 0.8, "TRAIN_FRAC"))
+for (c1 in const_reg) {
+  reg(c1[[1]], c1[[2]], c1[[3]], c1[[4]], "<analysis source>",
+      sprintf('CONSTS[["%s"]]', c1[[5]]), TOL_EXACT)
+}
+
+reg("MET-06", "Methods, statistical analysis", "all analyses performed in R version 4.5.2",
+    "4.5.2", "<R session>", 'as.character(getRversion())', TOL_EXACT)
+```
+
+# Evaluation
+
+```{r evaluate}
+rows <- lapply(REG, function(e) {
+  computed <- tryCatch({
+    if (e$artifact %in% c("<analysis source>", "<R session>")) {
+      eval(parse(text = e$field))
+    } else {
+      eval(parse(text = e$field), list(x = art(e$artifact)))
+    }
+  }, error = function(err) structure(NA, msg = conditionMessage(err)))
+
+  msg <- attr(computed, "msg")
+  status <-
+    if (!is.null(msg)) {
+      "ERROR"
+    } else if (length(computed) != 1L) {
+      "ERROR"
+    } else if (is.logical(e$expected) || is.logical(computed)) {
+      if (isTRUE(as.logical(computed)) == isTRUE(as.logical(e$expected))) "PASS" else "FAIL"
+    } else if (is.character(e$expected)) {
+      if (identical(trimws(as.character(computed)), trimws(e$expected))) "PASS" else "FAIL"
+    } else {
+      if (is.na(suppressWarnings(as.numeric(computed)))) "ERROR"
+      else if (abs(as.numeric(computed) - e$expected) <= e$tolerance) "PASS" else "FAIL"
+    }
+
+  if (e$local_only && status != "PASS") status <- "LOCAL-ONLY"
+
+  data.frame(
+    id = e$id, location = e$location, claim = e$claim,
+    expected  = as.character(e$expected),
+    artifact  = e$artifact, field = e$field,
+    tolerance = e$tolerance,
+    computed  = if (!is.null(msg)) paste0("<", msg, ">")
+                else if (length(computed) != 1L) paste0("<returned ", length(computed), " values>")
+                else as.character(computed),
+    status    = status,
+    note      = e$note)
+})
+V <- do.call(rbind, rows)
+
+# The report reads artifacts off disk; it does not recompute them. Warn loudly
+# if an artifact predates the analysis source, which would mean the comparison
+# is being made against a stale run.
+src_mtime <- file.info(ANALYSIS_SRC)$mtime
+arts      <- setdiff(unique(V$artifact), c("<analysis source>", "<R session>"))
+art_mtime <- file.info(file.path(OUT_DIR, arts))$mtime
+STALE     <- arts[!is.na(art_mtime) & art_mtime < src_mtime]
+
+write.csv(V, file.path(OUT_DIR, "VERIFICATION.csv"), row.names = FALSE)
+```
+
+```{r summary}
+tally <- table(factor(V$status, levels = c("PASS", "FAIL", "ERROR", "LOCAL-ONLY")))
+knitr::kable(as.data.frame(tally, stringsAsFactors = FALSE),
+             col.names = c("status", "n"),
+             caption = sprintf("%d registry entries; written to %s",
+                               nrow(V), file.path(OUT_DIR, "VERIFICATION.csv")))
+```
+
+## Entries that did not pass
+
+```{r failures}
+bad <- V[V$status %in% c("FAIL", "ERROR", "LOCAL-ONLY"), ]
+if (!nrow(bad)) {
+  cat("None.\n")
+} else {
+  knitr::kable(bad[, c("id", "location", "claim", "expected", "computed",
+                       "tolerance", "artifact", "status")],
+               row.names = FALSE)
+  for (i in seq_len(nrow(bad))) if (nzchar(bad$note[i])) {
+    cat("\n**", bad$id[i], "** — ", bad$note[i], "\n", sep = "")
+  }
+}
+```
+
+## Artifact freshness
+
+```{r freshness}
+if (length(STALE)) {
+  cat("STALE — these artifacts are older than ", ANALYSIS_SRC,
+      ", so the numbers below were not produced by the current analysis:\n\n", sep = "")
+  cat(paste0("  - ", STALE, collapse = "\n"), "\n")
+} else {
+  cat("All artifacts are at least as new as ", ANALYSIS_SRC, ".\n", sep = "")
+}
+```
+
+## Full registry
+
+```{r full-table}
+knitr::kable(V[, c("id", "location", "claim", "expected", "computed",
+                   "tolerance", "artifact", "field", "status")],
+             row.names = FALSE)
+```
+
+# Verdict
+
+```{r gate}
+n_fail <- sum(V$status %in% c("FAIL", "ERROR"))
+if (n_fail > 0) {
+  cat(sprintf("VERIFICATION FAILED: %d of %d manuscript claims do not reconcile.\n",
+              n_fail, nrow(V)))
+} else {
+  cat(sprintf("VERIFICATION PASSED: %d claims reconcile (%d local-only).\n",
+              sum(V$status == "PASS"), sum(V$status == "LOCAL-ONLY")))
+}
+```
+
+The hard gate lives in `verify.R`, not here, so that a failing run still produces
+a readable document. Run the report with:
+
+    Rscript verify.R
+
+which renders this file and then exits non-zero if any entry did not pass.
