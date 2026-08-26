@@ -18,28 +18,21 @@ of CT-Defined Structural Abnormalities in a Multidimensional COPD Framework"
 (Castaldi, Paoletti, Occhipinti, Sorano, Lavorini, Maiorino, Hersh, Silverman,
 Pistolesi).
 
-PORTABILITY.  To run on the Channing cluster, edit ONLY the "PATHS" chunk below to
-point at the corresponding files in the cluster's COPDGene deidentified area, then
-knit the document (or `Rscript -e 'rmarkdown::render(...)'`).  Everything else is
-self-contained.
 -->
 
 # Overview
 
 This report reproduces the numerical claims of the manuscript from four COPDGene
-deidentified source files (ESI, phenotype/CT, vital status, cause of death) plus
+source files (ESI, phenotype/CT, vital status, cause of death) plus
 one long-term follow-up exacerbations file.  Each section writes its output
 (tables as CSV, figures as PNG) into `OUT_DIR`.  A closing self-check block
 echoes every canonical value cited in the manuscript prose against the
 expected number so drift can be detected on any re-run.
 
-# PATHS — supplied at run time, never committed
+# PATHS — supplied at run time
 
-Input locations are read from a site-local config file that is deliberately
-kept out of version control, so no dataset path or filename appears anywhere in
-this repository. Copy `config_paths.R.example` to `config_paths.R`, fill in the
-five input locations for the machine you are running on, and knit. Nothing in
-this document needs editing to move between machines.
+Copy `config_paths.R.example` to `config_paths.R`, fill in the five input
+locations for the machine you are running on, and knit.
 
 ```{r paths}
 # ----- Inputs -------------------------------------------------------------
@@ -50,8 +43,7 @@ if (!file.exists(CONFIG)) {
   stop("Missing input-path config: '", CONFIG, "'.\n",
        "Copy config_paths.R.example to config_paths.R and fill in the five\n",
        "input locations (ESI_PATH, PHE_PATH, VS_PATH, COD_PATH, EX_PATH) and\n",
-       "OUT_DIR. It is git-ignored by design so that no dataset path is\n",
-       "committed.")
+       "OUT_DIR.")
 }
 source(CONFIG, local = FALSE)
 
@@ -170,13 +162,6 @@ mk_event <- function(df, cause_col) {
 # Data ingest
 
 ```{r ingest}
-# The participant identifier column is named differently at different sites, so
-# its name comes from the config (ID_COL) and is normalised here to an internal
-# `pid`. Nothing downstream refers to the site-specific column name. A ".x"/".y"
-# variant is accepted because some source files carry a merge-suffixed copy.
-# Source files are not consistently comma-delimited: some sites supply
-# tab-delimited .txt exports of the same tables. Sniff the header rather than
-# assuming, so a tab-delimited file is not silently read as one wide column.
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 read_any <- function(path, ...) {

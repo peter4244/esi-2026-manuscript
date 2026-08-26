@@ -1,8 +1,7 @@
 # Site-local input/output locations for the ESI analysis.
 #
 # Copy to `config_paths.R` and fill in for the machine you are running on.
-# `config_paths.R` is git-ignored by design: no dataset path or filename is
-# committed to this repository.
+# `config_paths.R` is git-ignored.
 #
 # All five inputs are COPDGene analysis files supplied through your own
 # institutional data agreement. Point each variable at the corresponding file
