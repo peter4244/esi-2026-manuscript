@@ -3,6 +3,23 @@ Incorporates Massimo's comments and the new analyses (respiratory mortality,
 Figure 3 redesign, Figure 6 PRISm/GOLD0 trajectory, CT-substitution diagnostics,
 BD-insensitivity discussion).
 """
+# ---- RETIRED 2026-08-25 -----------------------------------------------------
+# This built the June outline (ESI_manuscript_outline_2026.6.25_v3.docx), which
+# no longer exists and is superseded by the v12 manuscript draft. It is retired
+# for the same reason build_manuscript.py is, plus one of its own: its 13 input
+# CSVs were stale outputs of the ILD-inclusive, CCOD-era analysis (n = 10,043;
+# 1,163 respiratory deaths, more than the entire TORCH respiratory total of
+# 704). Those files were deleted on 2026-08-25 because nothing else read them
+# and they were a silent-drift hazard, so this script can no longer run anyway.
+#
+# Recovering it means regenerating its inputs from the current analysis, not
+# restoring the deleted CSVs: they held superseded numbers.
+raise SystemExit(
+    "build_outline_docx.py is retired. It built the superseded June outline "
+    "from stale ILD-inclusive, CCOD-era CSVs that were deleted on 2026-08-25. "
+    "The v12 manuscript .docx is the source of truth; edit it with python-docx."
+)
+
 import csv, os
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor

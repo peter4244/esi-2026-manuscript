@@ -1,2 +1,0 @@
-n_cohort=10043
-n_all_cause_deaths=2839

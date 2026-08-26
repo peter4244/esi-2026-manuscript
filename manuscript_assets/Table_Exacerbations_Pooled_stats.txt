@@ -1,7 +1,0 @@
-LR_chisq=0.14
-LR_p=7.072e-01
-n_cohort=8898
-n_total_exac=24454
-med_yr=10.3
-sev_ESI_IRR=0.988
-sev_ESI_p=7.223e-01
