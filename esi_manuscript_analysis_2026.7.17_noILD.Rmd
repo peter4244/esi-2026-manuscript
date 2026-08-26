@@ -201,15 +201,6 @@ cod     <- bind_pid(read_any(COD_PATH), "COD_PATH")
 ex_raw  <- bind_pid(read_any(EX_PATH),  "EX_PATH")
 
 # ---- Cause of death: TORCH adjudicated UNDERLYING cause --------------------
-# Changed 2026-08-18. Previously these analyses used the CCOD_* indicators,
-# which flag whether a cause CONTRIBUTED to death and are therefore NOT
-# mutually exclusive: 947 of 2,101 adjudicated deaths carried more than one
-# CCOD flag (e.g. 358 were flagged both cardiovascular and respiratory). That
-# breaks the competing-risks framing these models use, in which a death from
-# any other cause is censored — a multi-flagged death was an event in several
-# cause-specific models at once, and the cause-specific event counts did not
-# partition total mortality.
-#
 # Torch_Group_Basic is the adjudicated underlying cause and IS mutually
 # exclusive (counts sum exactly to the 2,101 adjudicated deaths):
 #   1 Respiratory 704 | 2 Cardiovascular 391 | 3 Cancer 497
