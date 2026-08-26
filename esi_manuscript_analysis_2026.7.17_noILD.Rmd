@@ -992,7 +992,7 @@ if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
               B = B_BOOTSTRAP,
-              table_version = 2L)
+              table_version = 3L)
 .cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("Bootstrap cache does not match the current data; recomputing.")
@@ -1103,9 +1103,15 @@ if (!is.null(.cached)) {
         # that failed to fit were dropped above. Derive the floor from the
         # resamples that actually survived.
         two_sided_p    = if (p_two == 0) NA_real_ else p_two,
+        # Two decimals, not three. The percentile p is a Monte Carlo estimate
+        # with SE = sqrt(p(1-p)/B_effective); at B = 1,000 and p ~ 0.85 that is
+        # ~0.011, so two independent runs differ by ~0.03 and the third decimal
+        # is noise. Observed across two machines: 0.848 vs 0.878 (all-cause,
+        # B = 1,000 both, nothing dropped). The floor stays at three decimals
+        # because it is a bound, not an estimate.
         two_sided_p_reported = ifelse(p_two == 0,
                                       sprintf("<%.3f", 2 / length(diffs)),
-                                      sprintf("%.3f", p_two)),
+                                      sprintf("%.2f", p_two)),
         stringsAsFactors = FALSE
       )
     }
@@ -1164,7 +1170,7 @@ CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 .want_irr <- list(n = nrow(ex_b),
                   total_exac = sum(ex_b$Total_Exacerbations),
                   B = B_BOOTSTRAP,
-                  table_version = 3L)
+                  table_version = 4L)
 .cached_irr <- if (file.exists(CACHE_PATH_IRR)) readRDS(CACHE_PATH_IRR) else NULL
 if (!is.null(.cached_irr) && !identical(.cached_irr$fingerprint, .want_irr)) {
   message("IRR bootstrap cache does not match the current data or table schema; recomputing.")
@@ -1249,9 +1255,10 @@ if (!is.null(.cached_irr)) {
       ci_hi_logIRR   = ci[2],
       IRR_diff_unlogged = obs_irr_ct - obs_irr_esi,
       two_sided_p    = if (p_two == 0) NA_real_ else p_two,
+      # Two decimals; see the note on the HR bootstrap above.
       two_sided_p_reported = ifelse(p_two == 0,
                                     sprintf("<%.3f", 2 / length(diffs)),
-                                    sprintf("%.3f", p_two)),
+                                    sprintf("%.2f", p_two)),
       stringsAsFactors = FALSE
     )
   }

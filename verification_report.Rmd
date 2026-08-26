@@ -61,7 +61,7 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # revisiting this file fails here. The Changit snapshot ships no manuscript/
 # directory, so on the cluster this degrades to NOT-AVAILABLE rather than
 # pretending to check something that is not there.
-MANUSCRIPT_MD5 <- "314428a11ec31f88c3d28f565437f6d2"
+MANUSCRIPT_MD5 <- "7c14813a7d3e9ed9232b690b47a439f5"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
@@ -143,9 +143,23 @@ reg <- function(id, location, claim, expected, artifact, field,
 TOL_2DP  <- 0.005    # a value printed to 2 decimal places
 TOL_1DP  <- 0.05     # a value printed to 1 decimal place
 TOL_3DP  <- 0.0005   # a value printed to 3 decimal places
-TOL_BOOT <- 0.01     # bootstrap percentile p: effective resamples differ with
-                     # BLAS (416 vs 412 observed), because which Cox fits warn
-                     # differs and warned resamples are dropped.
+# Bootstrap percentile p. This tolerance is set from the Monte Carlo error of
+# the statistic, not from a single observed cross-machine difference.
+#
+# The percentile p is an estimate from B_effective resamples, so its SE is
+# sqrt(p(1-p)/B). Two independent runs differ with SE sqrt(2p(1-p)/B): at
+# p ~ 0.85 and B = 1,000 that is 0.016, so a ~3 SE spread is ~0.05.
+#
+# Measured on two machines, laptop vs Channing:
+#   all-cause   COPD-minor    848/1000 vs 878/1000   diff 0.030
+#   respiratory COPD-minor    292/416  vs 300/412    diff 0.026
+#   respiratory COPD-major     61/208  vs  57/206    diff 0.017
+#
+# The all-cause row used all 1,000 resamples on both machines with none
+# dropped, so differing effective resamples cannot explain it; it is sampling
+# variation in the resample draw. An earlier ±0.01 estimate was below the noise
+# floor of the statistic and failed all three of these legitimately.
+TOL_BOOT <- 0.05
 TOL_EXACT <- 0
 ```
 
@@ -206,7 +220,7 @@ T1 <- data.frame(
   esi_est= c( 1.94,  2.39,  5.68, 30.95, 2.77, 4.47),
   esi_lo = c( 1.63,  2.18,  2.43, 18.76, 2.33, 4.07),
   esi_hi = c( 2.32,  2.63, 13.32, 51.06, 3.30, 4.90),
-  p      = c("0.848", "<0.002", "0.702", "0.293", "0.796", "<0.002"))
+  p      = c("0.85", "<0.002", "0.70", "0.29", "0.80", "<0.002"))
 
 t1_src <- c("all-cause"     = "Table_8_allcause.csv",
             "respiratory"   = "Table_8_resp.csv",

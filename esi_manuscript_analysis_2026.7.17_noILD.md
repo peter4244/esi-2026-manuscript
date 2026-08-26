@@ -1062,7 +1062,7 @@ if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
               B = B_BOOTSTRAP,
-              table_version = 2L)
+              table_version = 3L)
 .cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("Bootstrap cache does not match the current data; recomputing.")
@@ -1173,9 +1173,15 @@ if (!is.null(.cached)) {
         # that failed to fit were dropped above. Derive the floor from the
         # resamples that actually survived.
         two_sided_p    = if (p_two == 0) NA_real_ else p_two,
+        # Two decimals, not three. The percentile p is a Monte Carlo estimate
+        # with SE = sqrt(p(1-p)/B_effective); at B = 1,000 and p ~ 0.85 that is
+        # ~0.011, so two independent runs differ by ~0.03 and the third decimal
+        # is noise. Observed across two machines: 0.848 vs 0.878 (all-cause,
+        # B = 1,000 both, nothing dropped). The floor stays at three decimals
+        # because it is a bound, not an estimate.
         two_sided_p_reported = ifelse(p_two == 0,
                                       sprintf("<%.3f", 2 / length(diffs)),
-                                      sprintf("%.3f", p_two)),
+                                      sprintf("%.2f", p_two)),
         stringsAsFactors = FALSE
       )
     }
@@ -1199,7 +1205,8 @@ if (!is.null(.cached)) {
 ```
 
 ```
-## Loaded cached bootstrap: B_effective = 1000 / 1000 (all-cause 1000, respiratory 416)
+## Bootstrap effective resamples: all-cause = 1000, respiratory = 416 (of 1000)
+## Bootstrap complete: B_effective = 1000 / 1000
 ```
 
 ``` r
@@ -1228,10 +1235,10 @@ Table: Paired-bootstrap change in logHR (CT minus ESI). B = 1000; effective resa
 
 |outcome     |category   |  HR_CT| HR_ESI| obs_logHR_diff| mean_logHR_diff| ci_lo_logHR| ci_hi_logHR| HR_diff_unlogged| two_sided_p|two_sided_p_reported |
 |:-----------|:----------|------:|------:|--------------:|---------------:|-----------:|-----------:|----------------:|-----------:|:--------------------|
-|all-cause   |COPD-minor |  1.907|  1.943|         -0.019|          -0.016|      -0.179|       0.135|           -0.036|       0.848|0.848                |
+|all-cause   |COPD-minor |  1.907|  1.943|         -0.019|          -0.016|      -0.179|       0.135|           -0.036|       0.848|0.85                 |
 |all-cause   |COPD-major |  2.591|  2.395|          0.079|           0.079|       0.045|       0.115|            0.197|          NA|<0.002               |
-|respiratory |COPD-minor |  4.804|  5.684|         -0.168|          -0.146|      -1.026|       0.764|           -0.880|       0.702|0.702                |
-|respiratory |COPD-major | 36.266| 30.952|          0.158|           0.163|      -0.182|       0.510|            5.314|       0.293|0.293                |
+|respiratory |COPD-minor |  4.804|  5.684|         -0.168|          -0.146|      -1.026|       0.764|           -0.880|       0.702|0.70                 |
+|respiratory |COPD-major | 36.266| 30.952|          0.158|           0.163|      -0.182|       0.510|            5.314|       0.293|0.29                 |
 
 ## Section 6d — Per-category paired-bootstrap IRR difference (exacerbations)
 
@@ -1252,7 +1259,7 @@ CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 .want_irr <- list(n = nrow(ex_b),
                   total_exac = sum(ex_b$Total_Exacerbations),
                   B = B_BOOTSTRAP,
-                  table_version = 3L)
+                  table_version = 4L)
 .cached_irr <- if (file.exists(CACHE_PATH_IRR)) readRDS(CACHE_PATH_IRR) else NULL
 if (!is.null(.cached_irr) && !identical(.cached_irr$fingerprint, .want_irr)) {
   message("IRR bootstrap cache does not match the current data or table schema; recomputing.")
@@ -1337,9 +1344,10 @@ if (!is.null(.cached_irr)) {
       ci_hi_logIRR   = ci[2],
       IRR_diff_unlogged = obs_irr_ct - obs_irr_esi,
       two_sided_p    = if (p_two == 0) NA_real_ else p_two,
+      # Two decimals; see the note on the HR bootstrap above.
       two_sided_p_reported = ifelse(p_two == 0,
                                     sprintf("<%.3f", 2 / length(diffs)),
-                                    sprintf("%.3f", p_two)),
+                                    sprintf("%.2f", p_two)),
       stringsAsFactors = FALSE
     )
   }
@@ -1358,7 +1366,7 @@ if (!is.null(.cached_irr)) {
 ```
 
 ```
-## Loaded cached IRR bootstrap: B_effective = 1000 / 1000
+## IRR bootstrap complete: B_effective = 1000 / 1000
 ```
 
 ``` r
@@ -1384,7 +1392,7 @@ Table: Paired-bootstrap ΔlogIRR (CT − ESI) — B = 1000, B_effective = 1000.
 
 |outcome       |category   | IRR_CT| IRR_ESI| obs_logIRR_diff| mean_logIRR_diff| ci_lo_logIRR| ci_hi_logIRR| IRR_diff_unlogged| two_sided_p|two_sided_p_reported |
 |:-------------|:----------|------:|-------:|---------------:|----------------:|------------:|------------:|-----------------:|-----------:|:--------------------|
-|exacerbations |COPD-minor |  2.718|   2.774|          -0.020|           -0.020|       -0.167|        0.117|            -0.055|       0.796|0.796                |
+|exacerbations |COPD-minor |  2.718|   2.774|          -0.020|           -0.020|       -0.167|        0.117|            -0.055|       0.796|0.80                 |
 |exacerbations |COPD-major |  5.053|   4.468|           0.123|            0.123|        0.080|        0.166|             0.585|          NA|<0.002               |
 
 
