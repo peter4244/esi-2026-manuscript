@@ -1,3 +1,4 @@
 B_total=1000
 B_effective=1000
+B_warned=0
 seed=20260717

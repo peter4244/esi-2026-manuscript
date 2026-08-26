@@ -37,24 +37,29 @@ def build(doc):
     }
 
     headers = ["Outcome", "Metric", "Category", "CT", "ESI",
-               "Difference (CT − ESI)", "Mean Δlog", "95% CI (Δlog)", "Two-sided p"]
+               "Difference (CT − ESI)", "Observed Δlog", "95% CI (Δlog)", "Two-sided p"]
 
     body = []
-    def add(rows, ct_col, esi_col, absdiff_col, mean_col, cilo_col, cihi_col):
+    def add(rows, ct_col, esi_col, absdiff_col, est_col, cilo_col, cihi_col):
         for r in rows:
             display, metric = outcome_display[r["outcome"]]
             ci = f"({_fmt(r[cilo_col], 3)}, {_fmt(r[cihi_col], 3)})"
             body.append([display, metric, r["category"],
                          _fmt(r[ct_col]), _fmt(r[esi_col]),
                          _fmt(r[absdiff_col]),
-                         _fmt(r[mean_col], 3),
+                         _fmt(r[est_col], 3),
                          ci,
                          r["two_sided_p_reported"]])
 
-    add(hr_rows,  "HR_CT",  "HR_ESI",  "abs_HR_diff",
-        "mean_logHR_diff",  "ci_lo_logHR",  "ci_hi_logHR")
-    add(irr_rows, "IRR_CT", "IRR_ESI", "abs_IRR_diff",
-        "mean_logIRR_diff", "ci_lo_logIRR", "ci_hi_logIRR")
+    # The CI is on the log scale, so the estimate beside it is the OBSERVED
+    # log-scale difference. It was previously `mean_log*_diff`, the mean of the
+    # bootstrap replicates, which carries resampling bias and is not the
+    # quantity the interval brackets. The unlogged difference stays as a
+    # descriptive column; the Metric column says whether it is an HR or an IRR.
+    add(hr_rows,  "HR_CT",  "HR_ESI",  "HR_diff_unlogged",
+        "obs_logHR_diff",  "ci_lo_logHR",  "ci_hi_logHR")
+    add(irr_rows, "IRR_CT", "IRR_ESI", "IRR_diff_unlogged",
+        "obs_logIRR_diff", "ci_lo_logIRR", "ci_hi_logIRR")
 
     # 9 columns with mixed long headers ("Absolute diff", "Mean Δlog",
     # "95% CI (Δlog)", "Two-sided p") won't fit in portrait 6.5" without
