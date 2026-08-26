@@ -1977,27 +1977,27 @@ selfcheck <- function(name, computed, expected, tol = 0.02) {
              stringsAsFactors = FALSE)
 }
 
-# NOTE: v8 manuscript quotes "n = 9,463 analytic cohort ... [with] 107 never,
-# 4,327 GOLD 0, 1,254 PRISm, 4,421 GOLD 1-4".  Those breakdown numbers do NOT
-# describe the 9,463 analytic (Bhatt-complete) cohort — they describe the
-# broader 10,169-subject ESI-merged cohort BEFORE applying the Bhatt-criteria
-# completeness filter.  The two checks below cover both cohorts so the drift
-# is visible.
+# Expectations below are baselined to the ILD/Bronchiectasis-excluded cohort
+# and were confirmed identical on two independent machines (this workstation
+# and the Channing cluster).  Two cohorts are checked separately: the
+# ESI-merged cohort before the Bhatt-criteria completeness filter (d) and the
+# analytic cohort after it (d_b).  The manuscript quotes the d_b values; the
+# d values are carried as drift detectors only.
 n_gold_d   <- d   %>% filter(!is.na(stratum)) %>% count(stratum) %>% tibble::deframe()
 n_gold_d_b <- d_b %>% filter(!is.na(stratum)) %>% count(stratum) %>% tibble::deframe()
 
 checks <- list(
-  selfcheck("n analytic cohort (d_b, Bhatt-complete)", nrow(d_b), 9463),
+  selfcheck("n analytic cohort (d_b, Bhatt-complete)", nrow(d_b), 9402),
   # ---- Manuscript quoted breakdown (matches the pre-filter d cohort) ------
-  selfcheck("n never-smokers (d, pre-filter)",   as.integer(n_gold_d["Never"]),   107),
-  selfcheck("n GOLD 0 (d, pre-filter)",          as.integer(n_gold_d["GOLD0"]),   4327),
-  selfcheck("n PRISm (d, pre-filter)",           as.integer(n_gold_d["PRISm"]),   1254),
-  selfcheck("n GOLD 1-4 (d, pre-filter)",        as.integer(sum(n_gold_d[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4421),
+  selfcheck("n never-smokers (d, pre-filter)",   as.integer(n_gold_d["Never"]),   106),
+  selfcheck("n GOLD 0 (d, pre-filter)",          as.integer(n_gold_d["GOLD0"]),   4308),
+  selfcheck("n PRISm (d, pre-filter)",           as.integer(n_gold_d["PRISm"]),   1238),
+  selfcheck("n GOLD 1-4 (d, pre-filter)",        as.integer(sum(n_gold_d[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4394),
   # ---- Actual breakdown of the 9,463 analytic cohort (for manuscript fix) --
-  selfcheck("n never-smokers (analytic, correct)", as.integer(n_gold_d_b["Never"]), 107),
-  selfcheck("n GOLD 0 (analytic, correct)",        as.integer(n_gold_d_b["GOLD0"]), 4073),
-  selfcheck("n PRISm (analytic, correct)",         as.integer(n_gold_d_b["PRISm"]), 1144),
-  selfcheck("n GOLD 1-4 (analytic, correct)",      as.integer(sum(n_gold_d_b[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4139),
+  selfcheck("n never-smokers (analytic, correct)", as.integer(n_gold_d_b["Never"]), 106),
+  selfcheck("n GOLD 0 (analytic, correct)",        as.integer(n_gold_d_b["GOLD0"]), 4054),
+  selfcheck("n PRISm (analytic, correct)",         as.integer(n_gold_d_b["PRISm"]), 1129),
+  selfcheck("n GOLD 1-4 (analytic, correct)",      as.integer(sum(n_gold_d_b[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4113),
   selfcheck("agreement (%)",           100 * overall_agreement,                  91.0, tol = 0.6),
   selfcheck("kappa",                   kappa_v,                                  0.82, tol = 0.02),
   selfcheck("sensitivity (%)",         100 * sensitivity_v,                      88.0, tol = 1.0),
