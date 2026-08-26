@@ -177,6 +177,8 @@ mk_event <- function(df, cause_col) {
 # Source files are not consistently comma-delimited: some sites supply
 # tab-delimited .txt exports of the same tables. Sniff the header rather than
 # assuming, so a tab-delimited file is not silently read as one wide column.
+`%||%` <- function(a, b) if (is.null(a)) b else a
+
 read_any <- function(path, ...) {
   hdr <- readLines(path, n = 1, warn = FALSE)
   sep <- if (grepl("\t", hdr)) "\t" else ","
@@ -220,7 +222,15 @@ is_ild  <- !is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"
 n_ild   <- length(unique(phe_raw$pid[is_ild]))
 n_row0  <- nrow(phe_raw)
 phe_raw <- phe_raw[!is_ild, ]
-stopifnot(!any(!is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"))
+# The old guard here re-tested the filter that had just run and so could
+# never fail. The failure that can actually happen is the label changing
+# upstream ("ILD/Brnch" -> something else): is_ild would then be all FALSE,
+# nothing would be excluded, and every downstream population would silently
+# revert to the ILD-inclusive cohort. Assert the filter DID something, and
+# that what remains is exactly the two cohorts we expect.
+stopifnot(n_ild > 0)
+.cohorts_left <- sort(unique(trimws(phe_raw$cohort[!is.na(phe_raw$cohort)])))
+stopifnot(identical(.cohorts_left, sort(c("Smoker", "Never smoked"))))
 cat(sprintf("Excluded ILD/Bronchiectasis cohort: %d subjects, %d rows removed (%d -> %d). Cohorts retained: %s\n",
             n_ild, n_row0 - nrow(phe_raw), n_row0, nrow(phe_raw),
             paste(sort(unique(trimws(phe_raw$cohort))), collapse = ", ")))
@@ -249,10 +259,16 @@ cod$UCD_Resp   <- as.integer(!is.na(ucd) & ucd == 1L)
 cod$UCD_CVD    <- as.integer(!is.na(ucd) & ucd == 2L)
 cod$UCD_Cancer <- as.integer(!is.na(ucd) & ucd == 3L)
 cod$UCD_Other  <- as.integer(!is.na(ucd) & ucd == 4L)
-stopifnot(
-  # exclusivity is the whole point of the switch — assert it, don't assume it
-  max(cod$UCD_Resp + cod$UCD_CVD + cod$UCD_Cancer + cod$UCD_Other) <= 1L
-)
+# Exclusivity of the four indicators is guaranteed by construction (they are
+# ucd == 1..4 off a single integer), so asserting it tests arithmetic, not
+# data. What can actually go wrong is the source coding changing: an
+# unexpected level would be silently swept into "no cause" by the ==
+# comparisons above. Assert the source takes only the documented codes, and
+# that the indicators account for every adjudicated row.
+.ucd_levels <- sort(unique(ucd[!is.na(ucd)]))
+stopifnot(all(.ucd_levels %in% 1:5))
+stopifnot(sum(cod$UCD_Resp, cod$UCD_CVD, cod$UCD_Cancer, cod$UCD_Other) ==
+          sum(!is.na(ucd) & ucd %in% 1:4))
 cat(sprintf("TORCH underlying cause: resp=%d cvd=%d cancer=%d other=%d\n",
             sum(cod$UCD_Resp), sum(cod$UCD_CVD),
             sum(cod$UCD_Cancer), sum(cod$UCD_Other)))
@@ -479,7 +495,7 @@ write.csv(t2_prm_out, file.path(OUT_DIR, "Table_2_PRMversion.csv"), row.names = 
 # Correlation among quantitative CT measures (Supp)
 ct_cols <- c("Exp_LAA856_total_Thirona", "Insp_LAA950_total_Thirona",
              "PRM_pct_emphysema_Thirona", "PRM_pct_airtrapping_Thirona", "pctEmph_Thirona")
-ct_cor <- cor(d[, ct_cols], use = "pairwise.complete.obs")
+ct_cor <- cor(d_b[, ct_cols], use = "pairwise.complete.obs")  # d_b: shared denominator
 write.csv(round(ct_cor, 3), file.path(OUT_DIR, "Supp_Table_CT_correlations.csv"))
 
 kable(t2_out, digits = 3,
@@ -563,9 +579,10 @@ metrics <- function(dat, cls_fn) {
 # train_idx is sampled without replacement, so d_rp[train_idx, ] and
 # d_rp[-train_idx, ] are disjoint by construction; assert that rather than
 # comparing rownames, which dplyr resets to 1..n on both halves.
-stopifnot(!anyDuplicated(train_idx),
-          nrow(train) + nrow(test) == nrow(d_rp),
-          nrow(test) > 0)
+# Disjointness and the row count are guaranteed by the indexing itself, so
+# asserting them tests base R. Assert the split FRACTION instead, which is a
+# property of the sample() call and would move if the 0.8 were edited.
+stopifnot(abs(nrow(test) / nrow(d_rp) - 0.2) < 0.01)
 
 sens_rows <- lapply(candidates, function(c) {
   f <- metrics(d_b,  c$fn)
@@ -845,8 +862,10 @@ cindex_equiv <- function(fit_ct, fit_esi, outcome_label) {
   # TOST: two one-sided z-tests
   z_low  <- (delta - (-CINDEX_MARGIN)) / se   # H0: delta <= -margin
   z_high <- ((+CINDEX_MARGIN) - delta) / se   # H0: delta >= +margin
-  p_low  <- 1 - pnorm(z_low)
-  p_high <- 1 - pnorm(z_high)
+  # 1 - pnorm(z) loses all precision for z >~ 8 and returns a literal 0.
+  # Here z is ~10-15, so the upper tail must be asked for directly.
+  p_low  <- pnorm(z_low,  lower.tail = FALSE)
+  p_high <- pnorm(z_high, lower.tail = FALSE)
   data.frame(
     outcome   = outcome_label,
     c_ct      = c_ct,
@@ -920,8 +939,13 @@ if (is.null(res_resp)) {
 cindex_tbl <- rbind(res_all, res_resp)
 # Both outcomes must be present; a dropped row would otherwise reach Table 1
 # as a missing equivalence result rather than an error.
+# Row count and labels are fixed by construction above. The failure worth
+# catching is a fallback that ran and returned a degenerate concordance.
 stopifnot(nrow(cindex_tbl) == 2,
-          setequal(cindex_tbl$outcome, c("all-cause", "respiratory")))
+          all(is.finite(c(cindex_tbl$c_ct, cindex_tbl$c_esi))),
+          all(cindex_tbl$c_ct  > 0.5 & cindex_tbl$c_ct  < 1),
+          all(cindex_tbl$c_esi > 0.5 & cindex_tbl$c_esi < 1),
+          all(is.finite(cindex_tbl$se_delta) & cindex_tbl$se_delta > 0))
 write.csv(cindex_tbl, file.path(OUT_DIR, "Table_1_Cindex_Equivalence.csv"), row.names = FALSE)
 
 kable(cindex_tbl %>%
@@ -970,10 +994,17 @@ CACHE_DIR   <- file.path(OUT_DIR, "_cache")
 CACHE_PATH  <- file.path(CACHE_DIR, "bootstrap_hr_diff.rds")
 if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
 
+# `table_version` is part of the fingerprint because the cache stores the
+# CONSTRUCTED table, not just the resample matrices. Without it, a change to
+# the table's columns (as on 2026-08-25, when the log-scale point estimate was
+# added) is silently skipped on any run that hits the cache, and the run
+# produces the old schema while the code says otherwise. Bump on any change to
+# the columns built below.
 .want <- list(n = nrow(mort_b),
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
-              B = B_BOOTSTRAP)
+              B = B_BOOTSTRAP,
+              table_version = 2L)
 .cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("Bootstrap cache does not match the current data; recomputing.")
@@ -1074,12 +1105,25 @@ if (!is.null(.cached)) {
         category       = cat_,
         HR_CT          = obs_hr_ct,
         HR_ESI         = obs_hr_esi,
-        abs_HR_diff    = obs_hr_ct - obs_hr_esi,
+        # The interval below is on the LOG-HR scale, so the point estimate
+        # reported beside it must be too. `obs_logHR_diff` is the observed
+        # statistic the CI brackets; `mean_logHR_diff` is the mean of the
+        # resamples and carries bootstrap bias, so it is kept only as a
+        # diagnostic. The difference of untransformed HRs is a third scale
+        # again and is retained purely for readers who want it, explicitly
+        # named so it cannot be mistaken for the estimate the CI refers to.
+        obs_logHR_diff  = log(obs_hr_ct) - log(obs_hr_esi),
         mean_logHR_diff = mean(diffs),
         ci_lo_logHR    = ci[1],
         ci_hi_logHR    = ci[2],
+        HR_diff_unlogged = obs_hr_ct - obs_hr_esi,
+        # Resolution of the bootstrap p is 2/length(diffs), not 2/B: resamples
+        # that failed to fit were dropped above. Derive the floor from the
+        # resamples that actually survived.
         two_sided_p    = if (p_two == 0) NA_real_ else p_two,
-        two_sided_p_reported = ifelse(p_two == 0, "<0.002", sprintf("%.3f", p_two)),
+        two_sided_p_reported = ifelse(p_two == 0,
+                                      sprintf("<%.3f", 2 / length(diffs)),
+                                      sprintf("%.3f", p_two)),
         stringsAsFactors = FALSE
       )
     }
@@ -1094,10 +1138,7 @@ if (!is.null(.cached)) {
     # over from a different cohort or event definition is detected rather than
     # silently reused. Both have changed here: the cause-of-death switch and
     # the ILD exclusion.
-    fingerprint = list(n = nrow(mort_b),
-                       deaths = sum(mort_b$vital_status == 1),
-                       resp_events = sum(mort_b$event_resp == 1),
-                       B = B_BOOTSTRAP),
+    fingerprint = .want,
     seed = BOOTSTRAP_SEED
   )
   saveRDS(boot_res, CACHE_PATH)
@@ -1116,8 +1157,12 @@ writeLines(c(sprintf("B_total=%d",     boot_res$B_total),
 
 kable(boot_res$table %>%
         mutate(across(where(is.numeric), ~ round(.x, 3))),
-      caption = sprintf("Paired-bootstrap ΔlogHR (CT − ESI) — B = %d, B_effective = %d.",
-                        boot_res$B_total, boot_res$B_effective))
+      caption = sprintf(paste("Paired-bootstrap change in logHR (CT minus ESI). B = %d;",
+                              "effective resamples %d for all-cause and %d for respiratory.",
+                              "The two differ because resamples whose Cox fit warned were",
+                              "dropped, and those are the sparse-event ones, so the",
+                              "respiratory interval rests on the retained subset."),
+                        boot_res$B_total, boot_res$B_eff_all, boot_res$B_eff_resp))
 ```
 
 ## Section 6d — Per-category paired-bootstrap IRR difference (exacerbations)
@@ -1131,8 +1176,26 @@ distribution. Cached to `manuscript_assets/_cache/bootstrap_irr_diff.rds`.
 ```{r irr-diff-bootstrap}
 CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 
-if (file.exists(CACHE_PATH_IRR)) {
-  boot_irr <- readRDS(CACHE_PATH_IRR)
+# This cache had no validation: it was reused whenever the file existed. That
+# is the same failure the HR cache above is fingerprinted against, and it bites
+# harder here because the cache also stores IRR_CT/IRR_ESI captured when it was
+# written, so a stale cache would print old IRRs beside the current ones in
+# Table_Exacerbations_Bhatt.csv with nothing to flag it. Same schema version as
+# the HR table, and bumped for the same reason.
+# `table_version` covers BOTH the output schema and the resampling logic; the
+# cache stores the finished table, so either change must invalidate it. Bumped
+# to 3 on 2026-08-25 when warnings stopped being fatal in the fit loop.
+.want_irr <- list(n = nrow(ex_b),
+                  total_exac = sum(ex_b$Total_Exacerbations),
+                  B = B_BOOTSTRAP,
+                  table_version = 3L)
+.cached_irr <- if (file.exists(CACHE_PATH_IRR)) readRDS(CACHE_PATH_IRR) else NULL
+if (!is.null(.cached_irr) && !identical(.cached_irr$fingerprint, .want_irr)) {
+  message("IRR bootstrap cache does not match the current data or table schema; recomputing.")
+  .cached_irr <- NULL
+}
+if (!is.null(.cached_irr)) {
+  boot_irr <- .cached_irr
   cat(sprintf("Loaded cached IRR bootstrap: B_effective = %d / %d\n",
               boot_irr$B_effective, boot_irr$B_total))
 } else {
@@ -1147,29 +1210,47 @@ if (file.exists(CACHE_PATH_IRR)) {
                    dimnames = list(NULL, cats))
   )
   B_effective_irr <- 0L
+  B_warned_irr    <- 0L
   for (b in seq_len(B_BOOTSTRAP)) {
     idx <- sample.int(n_ex, size = n_ex, replace = TRUE)
     dat <- ex_b[idx, ]
-    fits <- tryCatch({
-      list(
-        b = MASS::glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race +
-                         SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
-                         data = dat),
-        e = MASS::glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race +
-                         SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
-                         data = dat)
-      )
-    }, error = function(e) NULL, warning = function(w) NULL)
+    # Both fits stay inside one tryCatch on purpose: the statistic is the
+    # PAIRED difference logIRR_CT - logIRR_ESI, so a resample is only usable if
+    # both fits succeeded. Splitting them per fit (as was done for the two
+    # independent OUTCOMES on the Cox side above) would buy nothing here.
+    #
+    # What was wrong was `warning = function(w) NULL`: any warning discarded
+    # the resample outright. glm.nb warns routinely on things that do not
+    # invalidate the coefficients (theta iteration limits, step-halving), and
+    # discarded resamples are not missing at random, so this could shrink the
+    # interval toward the null exactly as it did on the respiratory Cox arm.
+    # Warnings are now recorded and muffled rather than fatal; a resample is
+    # dropped only if a fit errors or returns a non-finite coefficient.
+    warned <- FALSE
+    fits <- tryCatch(
+      withCallingHandlers({
+        list(
+          b = MASS::glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race +
+                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           data = dat),
+          e = MASS::glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race +
+                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           data = dat)
+        )
+      }, warning = function(w) { warned <<- TRUE; invokeRestart("muffleWarning") }),
+      error = function(e) NULL)
     if (is.null(fits)) next
+    if (warned) B_warned_irr <- B_warned_irr + 1L
     log_irr <- function(fit, term) {
       co <- summary(fit)$coefficients
       if (!term %in% rownames(co)) return(NA_real_)
       unname(co[term, "Estimate"])
     }
-    for (cat_ in cats) {
-      store_irr$bhatt[b, cat_] <- log_irr(fits$b, paste0("bhatt_grp", cat_))
-      store_irr$esi[b,   cat_] <- log_irr(fits$e, paste0("esi_grp",   cat_))
-    }
+    vals_b <- vapply(cats, function(cat_) log_irr(fits$b, paste0("bhatt_grp", cat_)), numeric(1))
+    vals_e <- vapply(cats, function(cat_) log_irr(fits$e, paste0("esi_grp",   cat_)), numeric(1))
+    if (!all(is.finite(c(vals_b, vals_e)))) next
+    store_irr$bhatt[b, cats] <- vals_b
+    store_irr$esi[b,   cats] <- vals_e
     B_effective_irr <- B_effective_irr + 1L
   }
 
@@ -1188,12 +1269,18 @@ if (file.exists(CACHE_PATH_IRR)) {
       category       = cat_,
       IRR_CT         = obs_irr_ct,
       IRR_ESI        = obs_irr_esi,
-      abs_IRR_diff   = obs_irr_ct - obs_irr_esi,
+      # Same scale discipline as the HR table above: the CI is on the log-IRR
+      # scale, so the estimate reported beside it is the observed log-scale
+      # difference, not the resample mean and not the difference of IRRs.
+      obs_logIRR_diff  = log(obs_irr_ct) - log(obs_irr_esi),
       mean_logIRR_diff = mean(diffs),
       ci_lo_logIRR   = ci[1],
       ci_hi_logIRR   = ci[2],
+      IRR_diff_unlogged = obs_irr_ct - obs_irr_esi,
       two_sided_p    = if (p_two == 0) NA_real_ else p_two,
-      two_sided_p_reported = ifelse(p_two == 0, "<0.002", sprintf("%.3f", p_two)),
+      two_sided_p_reported = ifelse(p_two == 0,
+                                    sprintf("<%.3f", 2 / length(diffs)),
+                                    sprintf("%.3f", p_two)),
       stringsAsFactors = FALSE
     )
   }
@@ -1201,7 +1288,9 @@ if (file.exists(CACHE_PATH_IRR)) {
     table = do.call(rbind, rows_irr),
     B_total = B_BOOTSTRAP,
     B_effective = B_effective_irr,
-    seed = BOOTSTRAP_SEED
+    B_warned    = B_warned_irr,
+    seed = BOOTSTRAP_SEED,
+    fingerprint = .want_irr
   )
   saveRDS(boot_irr, CACHE_PATH_IRR)
   cat(sprintf("IRR bootstrap complete: B_effective = %d / %d\n",
@@ -1212,6 +1301,9 @@ write.csv(boot_irr$table, file.path(OUT_DIR, "Supp_Table_IRR_Difference_Bootstra
           row.names = FALSE)
 writeLines(c(sprintf("B_total=%d",     boot_irr$B_total),
              sprintf("B_effective=%d", boot_irr$B_effective),
+             # Recorded so that "no resamples were dropped" is an observation
+             # in the artifact rather than an assumption about glm.nb.
+             sprintf("B_warned=%s",    format(boot_irr$B_warned %||% NA)),
              sprintf("seed=%d",        boot_irr$seed)),
            file.path(OUT_DIR, "Table_IRR_Bootstrap_diagnostics.txt"))
 
@@ -1300,7 +1392,10 @@ fu_row <- function(analysis, source_file, quantity, x) {
 decl_span <- aggregate(years_from_baseline ~ pid, decline_b, max)
 decl_nvis <- aggregate(visitnum ~ pid, decline_b, length)
 decl      <- merge(decl_span, decl_nvis, by = "pid")
-stopifnot(nrow(decl) == length(unique(decline_b$pid)))
+# aggregate(... ~ pid) yields one row per pid on both sides, so this equality
+# holds by construction. The merge's real risk is dropping pids, so compare
+# against the input set rather than against the merge's own arithmetic.
+stopifnot(setequal(decl$pid, unique(decline_b$pid)))
 n_baseline_only <- sum(decl$visitnum == 1)
 decl_fu <- decl$years_from_baseline[decl$visitnum >= 2]
 stopifnot(all(decl_fu > 0))   # a follow-up period of zero is not follow-up
@@ -1914,10 +2009,16 @@ disc_num <- disc %>% mutate(
 )
 lvl <- c("CT-only-COPD (ESI missed)", "Both-COPD", "ESI-only-COPD (Bhatt missed)")
 disc_num$grp_5 <- factor(disc_num$grp_5, levels = lvl)
-disc_num$grp_short <- recode(as.character(disc_num$grp_5),
-  "CT-only-COPD (ESI missed)" = sprintf("CT-only\n(n=%d)", disc_num$n[1]),
-  "Both-COPD"                    = sprintf("Both\n(n=%d)",       disc_num$n[2]),
-  "ESI-only-COPD (Bhatt missed)" = sprintf("ESI-only\n(n=%d)",   disc_num$n[3]))
+# Look the n up BY NAME. disc_num arrives in group_by() alphabetical order
+# (Both-COPD, CT-only, ESI-only), not in `lvl` order, so indexing n[1..3]
+# positionally paired each label with the wrong group's count.
+n_of <- setNames(disc_num$n, as.character(disc_num$grp_5))
+stopifnot(setequal(names(n_of), lvl))   # real guard: names come from the data
+lab <- c("CT-only-COPD (ESI missed)"     = "CT-only",
+         "Both-COPD"                     = "Both",
+         "ESI-only-COPD (Bhatt missed)"  = "ESI-only")
+short_of <- setNames(sprintf("%s\n(n=%d)", lab[lvl], n_of[lvl]), lvl)
+disc_num$grp_short <- unname(short_of[as.character(disc_num$grp_5)])
 disc_num$grp_short <- factor(disc_num$grp_short,
   levels = c(sprintf("CT-only\n(n=%d)", disc_num$n[1]),
              sprintf("Both\n(n=%d)",       disc_num$n[2]),
@@ -1977,7 +2078,13 @@ the `expected` column exactly (within rounding).
 
 ```{r self-check}
 selfcheck <- function(name, computed, expected, tol = 0.02) {
-  ok <- if (is.numeric(computed) && is.numeric(expected)) abs(computed - expected) < tol else identical(computed, expected)
+  # A missing lookup (e.g. a stratum that no longer exists) yields NA, and
+  # `abs(NA - x) < tol` is NA, so the row used to render as status NA and the
+  # PASS/FAIL tallies below both printed NA. A check that cannot be evaluated
+  # is a FAIL, not a blank.
+  ok <- if (is.numeric(computed) && is.numeric(expected)) {
+          isTRUE(abs(computed - expected) < tol)
+        } else identical(computed, expected)
   data.frame(check = name,
              computed = if (is.numeric(computed)) sprintf("%.3f", computed) else as.character(computed),
              expected = if (is.numeric(expected)) sprintf("%.3f", expected) else as.character(expected),
