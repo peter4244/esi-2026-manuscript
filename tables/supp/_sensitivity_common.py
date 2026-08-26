@@ -28,6 +28,14 @@ _CAT_DISPLAY = {
 
 
 _OUTCOME_ORDER   = ["all-cause", "respiratory", "exacerbations"]
+
+# The CSV carries the analysis's internal factor levels. Display them with the
+# same labels ST14 uses, so the supplement names each outcome one way.
+_OUTCOME_DISPLAY = {
+    "all-cause":     "All-cause mortality",
+    "respiratory":   "Respiratory mortality",
+    "exacerbations": "Exacerbations",
+}
 _FRAMEWORK_ORDER = ["CT-based", "ESI-based"]
 _CATEGORY_ORDER  = ["AFL-only-NoCOPD", "COPD-minor", "COPD-major"]
 
@@ -58,7 +66,7 @@ def build_rows(sensitivity_label):
     rows.sort(key=_key)
 
     return [[
-        r["outcome"],
+        _OUTCOME_DISPLAY.get(r["outcome"], r["outcome"]),
         r["framework"],
         _CAT_DISPLAY.get(r["group"], r["group"]),
         _fmt_est(r["estimate"], r["LCI"], r["UCI"]),

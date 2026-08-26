@@ -15,7 +15,7 @@ from tables import docx_helpers as dh
 from tables.supp._continuous_esi_common import load_and_filter
 
 TABLE_NUM = "S14"
-TITLE = ("Continuous ESI vs FEV1/FVC as predictors of mortality and "
+TITLE = ("Continuous ESI vs FEV\u2081/FVC as predictors of mortality and "
          "exacerbations, and combined-model likelihood-ratio tests")
 
 
@@ -30,15 +30,15 @@ def build(doc):
     headers = ["Outcome", "Metric", "Model",
                "ESI estimate (95% CI)", "ESI p",
                "FEV₁/FVC estimate (95% CI)", "FEV₁/FVC p",
-               "LR vs FEV₁/FVC only"]
+               "Likelihood-ratio test"]
     body = []
     for display_outcome, metric, csv_name, outcome_label in _OUTCOMES:
         rows = load_and_filter(csv_name, outcome_label=outcome_label,
                                effect_prefix=metric)
         for r in rows:
             # rows are [model, ESI_estimate, ESI_p, FEV1FVC_estimate, FEV1FVC_p, LR_p]
-            body.append([display_outcome, metric, r[0],
-                         r[1], r[2], r[3], r[4], r[5]])
+            body.append([display_outcome, metric, dh.tidy_stats_text(r[0]),
+                         r[1], r[2], r[3], r[4], dh.tidy_stats_text(r[5])])
     # 8 columns with long headers ("ESI estimate (95% CI)", "FEV₁/FVC
     # estimate (95% CI)", "LR vs FEV₁/FVC only") won't fit in portrait 6.5"
     # without heavy header wrap. Landscape gives 10.3" of usable width.

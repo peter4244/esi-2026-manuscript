@@ -108,6 +108,29 @@ def vmerge_col(tbl, col_idx, header_rows=1):
 
 # ---- Table construction ---------------------------------------------------
 
+def _keep_block_together(tbl):
+    """Stop a supplemental table and its legend straddling a page boundary.
+
+    Three separate Word behaviours have to be set; leaving any one of them out
+    still lets the block split:
+      * cantSplit on every row -- a single row never breaks across pages;
+      * tblHeader on the header row -- if a table is genuinely taller than a
+        page, the header repeats rather than leaving orphaned numbers;
+      * keepNext on every cell paragraph -- rows stay with the following row,
+        and the last row stays with the legend paragraph beneath it, so Word
+        moves the whole table-plus-legend unit to the next page rather than
+        breaking it.
+    """
+    for i, row in enumerate(tbl.rows):
+        trPr = row._tr.get_or_add_trPr()
+        cant = OxmlElement("w:cantSplit"); trPr.append(cant)
+        if i == 0:
+            hdr = OxmlElement("w:tblHeader"); trPr.append(hdr)
+        for cell in row.cells:
+            for para in cell.paragraphs:
+                para.paragraph_format.keep_with_next = True
+
+
 def add_table(doc, headers, rows, col_widths_in=None,
               body_fs=None, header_fs=None, max_width_in=None):
     """Create a bordered table with a bold header row + Arial body.
@@ -173,6 +196,7 @@ def add_table(doc, headers, rows, col_widths_in=None,
             r.font.name = FONT_NAME
             set_cell_border(cell)
 
+    _keep_block_together(tbl)
     return tbl
 
 
@@ -414,7 +438,12 @@ def add_legend(doc, legend_body, table_or_fig_num, title=None, abbreviations=Non
     if style == "section":
         # Blank spacer so the legend reads as an independent block, not a
         # subscript of the table/figure above.
-        doc.add_paragraph("")
+        _spacer = doc.add_paragraph("")
+        # The spacer sits between the table and its legend. Without keepNext
+        # here the chain set on the table's last row ends at this empty
+        # paragraph, and the legend is free to fall onto the next page while
+        # the table stays behind (ST17 did exactly that).
+        _spacer.paragraph_format.keep_with_next = True
 
     p = doc.add_paragraph()
     if bookmark_id is not None:
@@ -469,6 +498,10 @@ def add_legend(doc, legend_body, table_or_fig_num, title=None, abbreviations=Non
         r_abb.font.name = FONT_NAME
         r_abb.font.size = Pt(TABLE_BODY_FS)
 
+    # A legend is one paragraph, so keeping its lines together is enough to
+    # stop it straddling a page. Combined with keepNext on the table above,
+    # the table and its legend move to the next page as a unit.
+    p.paragraph_format.keep_together = True
     return p
 
 
@@ -971,3 +1004,22 @@ def parse_legend_md(md_text):
         # Split on semicolons; each entry is "abbr, expansion"
         abbrs = [a.strip() for a in abbr_str.split(";") if a.strip()]
     return title, body, abbrs
+
+
+def tidy_stats_text(s):
+    """Normalise analysis-generated strings for publication display.
+
+    The analysis writes model labels and test summaries in the plain-text form
+    R produces -- "FEV1/FVC" from the column name, "chi2=8.30, df=1, p=0.004"
+    from sprintf. Those are correct in a CSV and wrong in a typeset table, so
+    they are fixed here at render time rather than in the analysis, which keeps
+    the artifacts ASCII and avoids a re-render for a presentation change.
+    """
+    if s is None:
+        return s
+    s = str(s)
+    s = s.replace("FEV1/FVC", "FEV\u2081/FVC")
+    s = s.replace("chi2=", "\u03c7\u00b2 = ")
+    s = s.replace("df=", "df = ")
+    s = s.replace("p=", "p = ")
+    return s

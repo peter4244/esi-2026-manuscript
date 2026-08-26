@@ -29,9 +29,9 @@ def build(doc):
     # Compact headers so all 14 columns fit landscape 10" content width
     # without any cell wrapping. Terms are defined in the legend.
     # "mMRC≥2" and "SGRQ≥25" written without spaces around ≥ so they fit;
-    # "FEV1 %pred" kept spaced-and-readable (needs 0.95" for header).
+    # "FEV\u2081 %pred" kept spaced-and-readable (needs 0.95" for header).
     headers = ["Stratum", "N", "Age", "Female", "Smoker",
-               "BMI", "Pack-yr", "FEV1 %pred", "FEV1/FVC",
+               "BMI", "Pack-yr", "FEV\u2081 %pred", "FEV\u2081/FVC",
                "ESI", "LAA-950HU", "mMRC≥2", "SGRQ≥25",
                "Bronchitis"]
 
@@ -46,7 +46,7 @@ def build(doc):
     # Column widths sized so every header AND every body value renders on
     # ONE line at 9pt. Widest body values are the "X.X (Y.Y)" mean-(SD)
     # formats (Age/BMI/FEV1/FVC/ESI/LAA at ~11 chars, need ≥0.75).
-    # Widest headers are "FEV1 %pred" and "Bronchitis" (10 chars bold,
+    # Widest headers are "FEV\u2081 %pred" and "Bronchitis" (10 chars bold,
     # need ≥0.90). Sum = 9.99, at landscape 10" content width.
     #                Stratum, N,    Age,  Female, Smoker,
     #                BMI,   Pack-yr, FEV1%pd, FEV1/FVC,

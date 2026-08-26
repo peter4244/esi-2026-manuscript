@@ -1,5 +1,5 @@
-"""Supplemental Table S15: continuous ESI vs FEV1/FVC as predictors of
-FEV1 decline (mL/yr), stratified by baseline lung-function stratum
+"""Supplemental Table S15: continuous ESI vs FEV₁/FVC as predictors of
+FEV₁ decline (mL/yr), stratified by baseline lung-function stratum
 (GOLD 0, PRISm, pooled).
 
 Companion table Supplemental Table 14 shows the same analysis for the
@@ -12,7 +12,7 @@ from tables import docx_helpers as dh
 from manifest import ASSETS
 
 TABLE_NUM = "S15"
-TITLE = ("Continuous ESI vs FEV1/FVC as predictors of FEV1 decline (mL/yr), "
+TITLE = ("Continuous ESI vs FEV₁/FVC as predictors of FEV₁ decline (mL/yr), "
          "stratified by baseline lung-function stratum")
 
 
@@ -38,7 +38,7 @@ def build(doc):
     stratum_display = {"pooled": "Pooled"}
     body_rows = [
         [stratum_display.get(r["stratum"], r["stratum"]),
-         r["n_subj"], r["model"],
+         r["n_subj"], dh.tidy_stats_text(r["model"]),
          r["ESI_slope_mL_yr"], r["ESI_p"],
          r["FEV1FVC_slope_mL_yr"], r["FEV1FVC_p"]]
         for r in rows
