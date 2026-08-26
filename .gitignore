@@ -24,6 +24,21 @@ data/raw/
 # committed.
 config_paths*.R
 
+# ---- Per-run stamps, not results -------------------------------------------
+# The reproduction check is `git status --porcelain manuscript_assets` coming
+# back clean after a re-run on another machine. These two legitimately differ
+# per run and per site, so tracking them would put permanent noise into that
+# signal and make it useless.
+#
+# PROVENANCE.txt records the md5 of the analysis source and the wall-clock time
+# of the run that wrote the artifact set beside it. It must describe the run
+# that produced THOSE artifacts, so each machine writes its own.
+#
+# VERIFICATION.csv is the output of verify.R, whose PRV-02 and PRO-07 rows
+# differ by site by design.
+manuscript_assets/PROVENANCE.txt
+manuscript_assets/VERIFICATION.csv
+
 # ---- Cached R objects (large, regeneratable) -------------------------------
 *.rds
 *.RData

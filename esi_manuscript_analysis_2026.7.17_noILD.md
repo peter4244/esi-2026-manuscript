@@ -18,28 +18,21 @@ of CT-Defined Structural Abnormalities in a Multidimensional COPD Framework"
 (Castaldi, Paoletti, Occhipinti, Sorano, Lavorini, Maiorino, Hersh, Silverman,
 Pistolesi).
 
-PORTABILITY.  To run on the Channing cluster, edit ONLY the "PATHS" chunk below to
-point at the corresponding files in the cluster's COPDGene deidentified area, then
-knit the document (or `Rscript -e 'rmarkdown::render(...)'`).  Everything else is
-self-contained.
 -->
 
 # Overview
 
 This report reproduces the numerical claims of the manuscript from four COPDGene
-deidentified source files (ESI, phenotype/CT, vital status, cause of death) plus
+source files (ESI, phenotype/CT, vital status, cause of death) plus
 one long-term follow-up exacerbations file.  Each section writes its output
 (tables as CSV, figures as PNG) into `OUT_DIR`.  A closing self-check block
 echoes every canonical value cited in the manuscript prose against the
 expected number so drift can be detected on any re-run.
 
-# PATHS — supplied at run time, never committed
+# PATHS — supplied at run time
 
-Input locations are read from a site-local config file that is deliberately
-kept out of version control, so no dataset path or filename appears anywhere in
-this repository. Copy `config_paths.R.example` to `config_paths.R`, fill in the
-five input locations for the machine you are running on, and knit. Nothing in
-this document needs editing to move between machines.
+Copy `config_paths.R.example` to `config_paths.R`, fill in the five input
+locations for the machine you are running on, and knit.
 
 
 ``` r
@@ -51,8 +44,7 @@ if (!file.exists(CONFIG)) {
   stop("Missing input-path config: '", CONFIG, "'.\n",
        "Copy config_paths.R.example to config_paths.R and fill in the five\n",
        "input locations (ESI_PATH, PHE_PATH, VS_PATH, COD_PATH, EX_PATH) and\n",
-       "OUT_DIR. It is git-ignored by design so that no dataset path is\n",
-       "committed.")
+       "OUT_DIR.")
 }
 source(CONFIG, local = FALSE)
 
@@ -86,13 +78,6 @@ RPART_SEED <- 42
 
 
 ``` r
-# The participant identifier column is named differently at different sites, so
-# its name comes from the config (ID_COL) and is normalised here to an internal
-# `pid`. Nothing downstream refers to the site-specific column name. A ".x"/".y"
-# variant is accepted because some source files carry a merge-suffixed copy.
-# Source files are not consistently comma-delimited: some sites supply
-# tab-delimited .txt exports of the same tables. Sniff the header rather than
-# assuming, so a tab-delimited file is not silently read as one wide column.
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 read_any <- function(path, ...) {
@@ -117,33 +102,10 @@ esi_raw <- bind_pid(read_any(ESI_PATH), "ESI_PATH")
 phe_raw <- bind_pid(read_any(PHE_PATH, na.strings = c("", "NA")), "PHE_PATH")
 
 # ---- Exclude the ILD/Bronchiectasis recruitment cohort ---------------------
-# Added 2026-08-24 (noILD variant of the analysis).
-#
-# COPDGene's phenotype table carries three recruitment cohorts in `cohort`:
-# "Smoker", "Never smoked" and "ILD/Brnch". The ILD/Bronchiectasis cohort is
-# removed here, at the single point where the phenotype table is loaded, so the
-# exclusion propagates to every downstream dataset: v1 -> d -> d_b -> mort_b and
-# ex_b, and fev1_long for the decline models. Filtering anywhere later would
-# leave one of those populations out of step.
-#
-# Two reasons. (1) ESI is computed from the expiratory flow-volume curve, and
-# ILD produces restrictive physiology with a different curve morphology, so
-# these subjects sit outside the intended target population for an ESI-based
-# COPD classification. (2) Retaining them made the longitudinal analyses
-# disagree on their population: the vital-status file covers only the SM and NS
-# cohorts, so ILD/Brnch subjects were already absent from the mortality models
-# (0 of 61 in the analytic cohort) while still present in the exacerbation (55)
-# and FEV1-decline (61) models. Excluding them makes all four consistent.
 is_ild  <- !is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"
 n_ild   <- length(unique(phe_raw$pid[is_ild]))
 n_row0  <- nrow(phe_raw)
 phe_raw <- phe_raw[!is_ild, ]
-# The old guard here re-tested the filter that had just run and so could
-# never fail. The failure that can actually happen is the label changing
-# upstream ("ILD/Brnch" -> something else): is_ild would then be all FALSE,
-# nothing would be excluded, and every downstream population would silently
-# revert to the ILD-inclusive cohort. Assert the filter DID something, and
-# that what remains is exactly the two cohorts we expect.
 stopifnot(n_ild > 0)
 .cohorts_left <- sort(unique(trimws(phe_raw$cohort[!is.na(phe_raw$cohort)])))
 stopifnot(identical(.cohorts_left, sort(c("Smoker", "Never smoked"))))
@@ -162,15 +124,6 @@ cod     <- bind_pid(read_any(COD_PATH), "COD_PATH")
 ex_raw  <- bind_pid(read_any(EX_PATH),  "EX_PATH")
 
 # ---- Cause of death: TORCH adjudicated UNDERLYING cause --------------------
-# Changed 2026-08-18. Previously these analyses used the CCOD_* indicators,
-# which flag whether a cause CONTRIBUTED to death and are therefore NOT
-# mutually exclusive: 947 of 2,101 adjudicated deaths carried more than one
-# CCOD flag (e.g. 358 were flagged both cardiovascular and respiratory). That
-# breaks the competing-risks framing these models use, in which a death from
-# any other cause is censored — a multi-flagged death was an event in several
-# cause-specific models at once, and the cause-specific event counts did not
-# partition total mortality.
-#
 # Torch_Group_Basic is the adjudicated underlying cause and IS mutually
 # exclusive (counts sum exactly to the 2,101 adjudicated deaths):
 #   1 Respiratory 704 | 2 Cardiovascular 391 | 3 Cancer 497
@@ -182,12 +135,11 @@ cod$UCD_Resp   <- as.integer(!is.na(ucd) & ucd == 1L)
 cod$UCD_CVD    <- as.integer(!is.na(ucd) & ucd == 2L)
 cod$UCD_Cancer <- as.integer(!is.na(ucd) & ucd == 3L)
 cod$UCD_Other  <- as.integer(!is.na(ucd) & ucd == 4L)
-# Exclusivity of the four indicators is guaranteed by construction (they are
-# ucd == 1..4 off a single integer), so asserting it tests arithmetic, not
-# data. What can actually go wrong is the source coding changing: an
-# unexpected level would be silently swept into "no cause" by the ==
-# comparisons above. Assert the source takes only the documented codes, and
-# that the indicators account for every adjudicated row.
+# Exclusivity of the four indicators is guaranteed by construction. What can
+# go wrong is the source coding changing: an unexpected level would be
+# silently swept into "no cause" by the == comparisons above. Assert the
+# source takes only the documented codes, and that the indicators account for
+# every adjudicated row.
 .ucd_levels <- sort(unique(ucd[!is.na(ucd)]))
 stopifnot(all(.ucd_levels %in% 1:5))
 stopifnot(sum(cod$UCD_Resp, cod$UCD_CVD, cod$UCD_Cancer, cod$UCD_Other) ==
@@ -325,11 +277,11 @@ Table: Cohort size and baseline ESI by GOLD/PRISm/never-smoker stratum.
 write.csv(tab_by_stratum, file.path(OUT_DIR, "Table_S2_stratum_counts.csv"), row.names = FALSE)
 ```
 
-## Section 1b — Supp Table S2: full baseline characteristics by stratum (A6b.1)
+## Section 1b — Supp Table S2: full baseline characteristics by stratum
 
 Baseline characteristics of the 9,402-subject Bhatt-analytic cohort, by
 GOLD/PRISm/never-smoker stratum. Continuous → `mean (SD)`; dichotomous → `pct%`.
-No across-stratum p-values (skipped per finding 9; would be uniformly
+No across-stratum p-values (would be uniformly
 significant in a 9,402-subject cohort and would not inform the paper's claim).
 
 
@@ -413,13 +365,6 @@ LAA-950 r = 0.77).
 
 
 ``` r
-# Computed on d_b, the analytic cohort, so these share a denominator with every
-# other table. Previously computed on `d` (the pre-filter ESI-merged cohort),
-# which made the per-stratum Ns exceed their own ST4 stratum totals (GOLD 3:
-# 1054 vs 1053) and the pooled row exceed both the cohort and the sum of its
-# strata (9404 vs 9348), because the pooled row alone did not drop rows with a
-# missing stratum. The pooled row now applies the same stratum filter as the
-# per-stratum rows, so "All strata" equals their sum by construction.
 t2 <- d_b %>%
   filter(!is.na(stratum)) %>%
   group_by(stratum) %>%
@@ -532,7 +477,7 @@ cat(sprintf("Manuscript-selected thresholds: T_low = %.1f, T_high = %.1f\n",
 ```
 
 ``` r
-# Ten-candidate transparency grid (as in build_revisions_v2)
+# Ten-candidate transparency grid
 classify_4crit <- function(df, T, min_count) {
   esi <- df$ESI_v1post >= T
   n_min <- esi + df$dysp_yn + df$qol_yn + df$cb_yn
@@ -559,13 +504,10 @@ candidates <- list(
   list(type = "5-crit, T_low=1.5 / T_high=3.0",             fn = function(x) classify_5crit(x, 1.5, 3.0)),
   list(type = "5-crit, T_low=2.0 / T_high=3.5",             fn = function(x) classify_5crit(x, 2.0, 3.5))
 )
-# Evaluate every candidate on BOTH the full analytic cohort and the held-out
-# 20% split. Added 2026-08-24: previously only the full-cohort figures were
-# reported, but the cut-points were derived from the 80% training split, so
-# those figures are in-sample with respect to threshold selection. The test
-# split had been created and then never used. The held-out columns are the
-# defensible estimate; reporting both lets a reader see how far the in-sample
-# figures are optimistic.
+# Evaluate every candidate on both the full analytic cohort and the held-out
+# 20% split. The cut-points were derived from the 80% training split, so the
+# full-cohort figures are in-sample with respect to threshold selection; the
+# held-out columns are the defensible estimate.
 metrics <- function(dat, cls_fn) {
   cls  <- cls_fn(dat); copd <- cls %in% c("COPD-major", "COPD-minor")
   tp <- sum( dat$bhatt_copd &  copd); fp <- sum(!dat$bhatt_copd &  copd)
@@ -574,12 +516,8 @@ metrics <- function(dat, cls_fn) {
        sens = tp / (tp + fn), spec = tn / (tn + fp),
        kappa = kappa_fn(dat$bhatt_copd, copd))
 }
-# train_idx is sampled without replacement, so d_rp[train_idx, ] and
-# d_rp[-train_idx, ] are disjoint by construction; assert that rather than
-# comparing rownames, which dplyr resets to 1..n on both halves.
 # Disjointness and the row count are guaranteed by the indexing itself, so
-# asserting them tests base R. Assert the split FRACTION instead, which is a
-# property of the sample() call and would move if the 0.8 were edited.
+# assert the split FRACTION instead, a property of the sample() call.
 stopifnot(abs(nrow(test) / nrow(d_rp) - 0.2) < 0.01)
 
 sens_rows <- lapply(candidates, function(c) {
@@ -692,7 +630,7 @@ cat(sprintf("Agreement %.1f%% | kappa %.2f | sens %.0f%% | spec %.0f%%\n",
 ```
 
 ``` r
-# Figure 1 — stacked bars, both frameworks side-by-side (mirrors v3/v8 Figure 1)
+# Figure 1 — stacked bars, both frameworks side-by-side
 flow_long <- bind_rows(
   d_b %>% transmute(schema = "CT-based framework",  cls = bhatt_grp),
   d_b %>% transmute(schema = "ESI-based framework", cls = esi_grp)
@@ -936,7 +874,7 @@ Table: Table 1 (source data): head-to-head HRs by diagnostic category.
 |HR1...5 |Respiratory |COPD-minor      |     4.80|      2.14|     10.76|    0.00|   5.68|    2.43|   13.32|  0.00|
 |HR2...6 |Respiratory |COPD-major      |    36.27|     20.85|     63.07|    0.00|  30.95|   18.76|   51.06|  0.00|
 
-## Section 6b — Table 1 formal test: paired C-index equivalence (item 3)
+## Section 6b — Table 1 formal test: paired C-index equivalence
 
 Primary CT-vs-ESI agreement test — pre-specified paired equivalence at ±0.02 on
 the Harrell's C scale, tested via two one-sided tests (TOST) at α = 0.025
@@ -985,7 +923,8 @@ cindex_equiv <- function(fit_ct, fit_esi, outcome_label) {
   )
 }
 
-# Fallback: Harrell's-C paired subject-resample bootstrap (finding 2 — no statistic switch)
+# Fallback: Harrell's-C paired subject-resample bootstrap. Harrell's C in both
+# paths; the statistic must not switch between primary and fallback.
 cindex_equiv_bootstrap <- function(surv_time, surv_event, lp_ct, lp_esi, outcome_label,
                                    B = 1000, seed = BOOTSTRAP_SEED) {
   set.seed(seed)
@@ -1021,9 +960,8 @@ cindex_equiv_bootstrap <- function(surv_time, surv_event, lp_ct, lp_esi, outcome
 res_all  <- cindex_equiv(cox_bhatt_all,  cox_esi_all,  "all-cause")
 res_resp <- cindex_equiv(cox_bhatt_resp, cox_esi_resp, "respiratory")
 
-# Fall back per outcome. The respiratory fit is the sparse one and can fail on
-# its own; keying the fallback off the all-cause result let a NULL respiratory
-# result through, yielding a silently one-row table.
+# Fall back per outcome: the respiratory fit is the sparse one and can fail on
+# its own, so it must not be keyed off the all-cause result.
 if (is.null(res_all)) {
   message("A2 primary path unavailable for all-cause; using Harrell's-C bootstrap fallback.")
   res_all <- cindex_equiv_bootstrap(
@@ -1040,10 +978,8 @@ if (is.null(res_resp)) {
 }
 
 cindex_tbl <- rbind(res_all, res_resp)
-# Both outcomes must be present; a dropped row would otherwise reach Table 1
-# as a missing equivalence result rather than an error.
-# Row count and labels are fixed by construction above. The failure worth
-# catching is a fallback that ran and returned a degenerate concordance.
+# The failure worth catching is a fallback that ran and returned a degenerate
+# concordance.
 stopifnot(nrow(cindex_tbl) == 2,
           all(is.finite(c(cindex_tbl$c_ct, cindex_tbl$c_esi))),
           all(cindex_tbl$c_ct  > 0.5 & cindex_tbl$c_ct  < 1),
@@ -1101,7 +1037,7 @@ Table: Exacerbation incidence-rate ratios by category.
 |IRR1 |COPD-minor      |      2.72|      2.36|      3.14|    0.00|    2.77|    2.33|     3.3|  0.00|
 |IRR2 |COPD-major      |      5.05|      4.59|      5.56|    0.00|    4.47|    4.07|     4.9|  0.00|
 
-## Section 6c — Per-category paired-bootstrap HR difference (Supp Table S8 / A3)
+## Section 6c — Per-category paired-bootstrap HR difference (Supp Table S8)
 
 Paired subject-resample of `mort_b` (B = 1,000), refitting all four Cox models
 each iteration. Records `logHR_CT − logHR_ESI` for COPD-minor and COPD-major
@@ -1119,11 +1055,9 @@ CACHE_PATH  <- file.path(CACHE_DIR, "bootstrap_hr_diff.rds")
 if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
 
 # `table_version` is part of the fingerprint because the cache stores the
-# CONSTRUCTED table, not just the resample matrices. Without it, a change to
-# the table's columns (as on 2026-08-25, when the log-scale point estimate was
-# added) is silently skipped on any run that hits the cache, and the run
-# produces the old schema while the code says otherwise. Bump on any change to
-# the columns built below.
+# CONSTRUCTED table, not just the resample matrices, so a change to the
+# table's columns must invalidate it. Bump on any change to the columns
+# built below.
 .want <- list(n = nrow(mort_b),
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
@@ -1158,17 +1092,11 @@ if (!is.null(.cached)) {
     if (!term %in% rownames(co)) return(NA_real_)
     unname(co[term, "coef"])
   }
-  # Fit each OUTCOME in its own tryCatch. Previously all four models shared a
-  # single tryCatch that also caught warnings, so one warning from the
-  # respiratory fit discarded the (valid) all-cause fits for that resample as
-  # well. Under the TORCH underlying-cause definition respiratory has 704
-  # events with very few in the noCOPD reference, so the respiratory fit warns
-  # often — that silently cut the SHARED effective sample to 416/1000 and moved
-  # the all-cause interval even though all-cause data were unchanged. The
-  # dropped resamples are not missing at random (they are the ones with sparse
-  # respiratory events), so isolating failures per outcome is required for the
-  # all-cause interval to be unbiased, and B_effective is now tracked per
-  # outcome so the respiratory sample size is reported rather than hidden.
+  # Fit each OUTCOME in its own tryCatch. A warning from the sparse respiratory
+  # fit must not discard the valid all-cause fits for that resample: dropped
+  # resamples are not missing at random (they are the ones with sparse
+  # respiratory events), so failures are isolated per outcome and B_effective
+  # is tracked per outcome rather than pooled.
   fit_pair <- function(dat, ev_col) tryCatch({
     rhs <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
     lhs <- paste0("Surv(days_followed/365.25, ", ev_col, ")")
@@ -1260,8 +1188,7 @@ if (!is.null(.cached)) {
     B_eff_resp = B_eff_outcome[["resp"]],
     # Fingerprint of the data this cache was computed from, so a cache carried
     # over from a different cohort or event definition is detected rather than
-    # silently reused. Both have changed here: the cause-of-death switch and
-    # the ILD exclusion.
+    # silently reused.
     fingerprint = .want,
     seed = BOOTSTRAP_SEED
   )
@@ -1272,8 +1199,7 @@ if (!is.null(.cached)) {
 ```
 
 ```
-## Bootstrap effective resamples: all-cause = 1000, respiratory = 416 (of 1000)
-## Bootstrap complete: B_effective = 1000 / 1000
+## Loaded cached bootstrap: B_effective = 1000 / 1000 (all-cause 1000, respiratory 416)
 ```
 
 ``` r
@@ -1319,15 +1245,10 @@ distribution. Cached to `manuscript_assets/_cache/bootstrap_irr_diff.rds`.
 ``` r
 CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 
-# This cache had no validation: it was reused whenever the file existed. That
-# is the same failure the HR cache above is fingerprinted against, and it bites
-# harder here because the cache also stores IRR_CT/IRR_ESI captured when it was
-# written, so a stale cache would print old IRRs beside the current ones in
-# Table_Exacerbations_Bhatt.csv with nothing to flag it. Same schema version as
-# the HR table, and bumped for the same reason.
-# `table_version` covers BOTH the output schema and the resampling logic; the
-# cache stores the finished table, so either change must invalidate it. Bumped
-# to 3 on 2026-08-25 when warnings stopped being fatal in the fit loop.
+# Fingerprinted for the same reason as the HR cache above, and more sharply:
+# this cache also stores IRR_CT/IRR_ESI captured when it was written, so a
+# stale cache would print old IRRs beside current ones with nothing to flag
+# it. `table_version` covers both the output schema and the resampling logic.
 .want_irr <- list(n = nrow(ex_b),
                   total_exac = sum(ex_b$Total_Exacerbations),
                   B = B_BOOTSTRAP,
@@ -1357,18 +1278,13 @@ if (!is.null(.cached_irr)) {
   for (b in seq_len(B_BOOTSTRAP)) {
     idx <- sample.int(n_ex, size = n_ex, replace = TRUE)
     dat <- ex_b[idx, ]
-    # Both fits stay inside one tryCatch on purpose: the statistic is the
-    # PAIRED difference logIRR_CT - logIRR_ESI, so a resample is only usable if
-    # both fits succeeded. Splitting them per fit (as was done for the two
-    # independent OUTCOMES on the Cox side above) would buy nothing here.
-    #
-    # What was wrong was `warning = function(w) NULL`: any warning discarded
-    # the resample outright. glm.nb warns routinely on things that do not
-    # invalidate the coefficients (theta iteration limits, step-halving), and
-    # discarded resamples are not missing at random, so this could shrink the
-    # interval toward the null exactly as it did on the respiratory Cox arm.
-    # Warnings are now recorded and muffled rather than fatal; a resample is
-    # dropped only if a fit errors or returns a non-finite coefficient.
+    # Both fits stay inside one tryCatch on purpose: the statistic is the PAIRED
+    # difference logIRR_CT - logIRR_ESI, so a resample is only usable if both
+    # fits succeeded. A warning does not discard the resample: glm.nb warns
+    # routinely on conditions that do not invalidate the coefficients, and
+    # dropped resamples are not missing at random. Warnings are recorded and
+    # muffled; a resample is dropped only if a fit errors or returns a
+    # non-finite coefficient.
     warned <- FALSE
     fits <- tryCatch(
       withCallingHandlers({
@@ -1442,7 +1358,7 @@ if (!is.null(.cached_irr)) {
 ```
 
 ```
-## IRR bootstrap complete: B_effective = 1000 / 1000
+## Loaded cached IRR bootstrap: B_effective = 1000 / 1000
 ```
 
 ``` r
@@ -1663,7 +1579,7 @@ mort_disc$discord <- factor(mort_disc$discord,
 cox_disc_all  <- coxph(Surv(days_followed/365.25, vital_status) ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_disc)
 cox_disc_resp <- coxph(Surv(days_followed/365.25, event_resp)   ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_disc)
 
-# Retain the "(ESI missed)" / "(Bhatt missed)" naming used by build_revisions_v2
+# Retain the "(ESI missed)" / "(Bhatt missed)" naming
 label_map <- c("Both-COPD"        = "Both-COPD",
                "CT-only-COPD" = "CT-only-COPD (ESI missed)",
                "ESI-only-COPD"   = "ESI-only-COPD (Bhatt missed)")
@@ -1772,16 +1688,27 @@ Table: Exacerbation IRRs by cross-classification subgroup.
 |CT-only-COPD (ESI missed)    | 454| 2.00| 1.60| 2.51| 0.00|
 |ESI-only-COPD (Bhatt missed) |  78| 1.62| 0.97| 2.68| 0.06|
 
-## Section 7b — Table 2 pairwise contrasts (item 4)
+``` r
+# ---- Table 2 legend Ns ------------------------------------------------------
+# The Table 2 legend states the sample sizes the two cross-classification models
+# were fit on. Those are model Ns (after the vital-status / exacerbation joins
+# and covariate complete-cases), not the d_b-level subgroup size, so they are
+# read off the fitted objects rather than recomputed from the cross-tab.
+writeLines(
+  c(sprintf("n_mortality_model=%d",     cox_disc_all$n),
+    sprintf("n_exacerbation_model=%d",  nrow(model.frame(nb_disc)))),
+  file.path(OUT_DIR, "Table_2_model_Ns.txt"))
+```
+
+## Section 7b — Table 2 pairwise contrasts
 
 Three comparisons among Both-COPD / CT-only-COPD / ESI-only-COPD, using a
 **hand-built 3 × k contrast matrix** so `multcomp::glht`'s single-step
-adjustment is calibrated over exactly the three reported contrasts (finding 1
-from the second plan-agent review — `mcp("Tukey")` would compute the correction
-over 6 pairs and leave the reported p-values miscalibrated).
+adjustment is calibrated over exactly the three reported contrasts
+(`mcp("Tukey")` would compute the correction over 6 pairs and leave the
+reported p-values miscalibrated).
 
-`df = fit$df.residual` passed explicitly for the negative-binomial fit
-(finding 2 defensive coding).
+`df = fit$df.residual` is passed explicitly for the negative-binomial fit.
 
 
 ``` r
@@ -1808,9 +1735,7 @@ pairwise_rows <- function(fit, outcome_label, df_override = NULL) {
         else                       glht(fit, linfct = K, df = df_override)
   # multcomp's single-step adjustment integrates the multivariate normal by
   # Monte Carlo, so the adjusted p-values are not reproducible unless the RNG
-  # is fixed. Unseeded, a re-run moved the smallest of them by ~10% relative
-  # (0.00554 -> 0.00496) - enough for a reader reproducing this analysis to get
-  # different numbers from the ones printed in the paper.
+  # is fixed.
   set.seed(PAIRWISE_SEED)
   s  <- summary(tk)$test  # single-step adjustment over the 3 reported contrasts
   data.frame(
@@ -1942,7 +1867,7 @@ Table: Cause-specific mortality HRs by diagnostic category, both frameworks head
 |Other  |COPD-minor      |             60|     2.11|      1.53|      2.92|    0.00|           37|   2.02|    1.39|    2.92|  0.00|
 |Other  |COPD-major      |            157|     1.43|      1.10|      1.85|    0.01|          160|   1.30|    1.02|    1.67|  0.03|
 
-## Section 8b — Supp Table S3: three sensitivity analyses (A6b.2)
+## Section 8b — Supp Table S3: three sensitivity analyses
 
 Three pre-specified sensitivity analyses of the primary by-category framework:
 
@@ -2065,14 +1990,6 @@ Table: Supp Table S3 — three sensitivity analyses (rows are HR for mortality o
 |severe exac only |CT-based  |exacerbations |COPD-major      |    6.520|  5.758|  7.383| 0.000|
 |severe exac only |ESI-based |exacerbations |COPD-major      |    5.452|  4.835|  6.147| 0.000|
 
-<!-- NOTE (2026-07-19): the PH-assumption diagnostics chunk that lived here has
-been moved out of the main analysis / manuscript path.  A comprehensive
-PH-robustness analysis (per-variable Schoenfeld tests, stratified sensitivities,
-time-split analyses, framework-invariance checks) is maintained separately in
-`esi_ph_robustness_analysis_2026.7.17.Rmd` and is held in reserve for
-reviewer-response scenarios rather than surfaced in the manuscript body or its
-supplement. -->
-
 # Section 9 — Continuous ESI secondary analyses
 
 Pooled and per-stratum continuous-ESI models for mortality, exacerbations, and
@@ -2081,17 +1998,12 @@ the Results.
 
 
 ``` r
-# ---- Section 9 rewrite (A6b.3): split continuous-ESI supplement into three
-# per-metric tables so estimates on incompatible scales are never in one column.
-# Old CSV Supp_Table_Continuous_AllCause.csv is written with a .OLD suffix and
-# retired.
+# Continuous-ESI supplement split into three per-metric tables so estimates
+# on incompatible scales are never in one column.
 
 # Source cohort is d_b, the Bhatt-analytic cohort, matching the sibling
 # continuous table (the GOLD 0 FEV1-decline models below) and every other
-# table in the paper. Until 2026-08-25 this was built from `d`, the
-# pre-completeness merge, which made S6a/S6b the only tables in the
-# manuscript running on a different population (10,043 vs 9,400) with no n
-# column to make that visible.
+# table in the paper.
 d_cont <- d_b %>%
   inner_join(vs %>% select(pid, vital_status, days_followed), by = "pid") %>%
   left_join(cod %>% select(pid, UCD_Resp), by = "pid") %>%
@@ -2194,16 +2106,15 @@ Table: Supp Table S6b — Continuous ESI as an exacerbation predictor. Effect me
 |exacerbations |ESI + FEV1/FVC |1.01 (0.96-1.06) |0.727  |0.80 (0.73-0.88) |<0.001    |chi2=0.12, df=1, p=0.730 |   8338|
 
 ``` r
-# ---- Retire the old combined CSV (finding 3 filename migration) ------------
+# ---- Retire the old combined CSV -------------------------------------------
 old <- file.path(OUT_DIR, "Supp_Table_Continuous_AllCause.csv")
 if (file.exists(old)) file.rename(old, paste0(old, ".OLD"))
 ```
 
 
 ``` r
-# GOLD 0 subgroup — the 4.7 mL/yr signal
-# Fix item 6 (2026-07-17): restrict source cohort to d_b (Bhatt-analytic, n=9,402)
-# for denominator consistency with the by-category analyses.
+# GOLD 0 subgroup — the 4.7 mL/yr signal. Source cohort is d_b for
+# denominator consistency with the by-category analyses.
 g0 <- fev1_long %>%
   inner_join(d_b %>% transmute(pid, ESI_baseline = ESI_v1post,
                                FEV1_FVC_baseline = FEV1_FVC_post,
@@ -2323,12 +2234,6 @@ Table: Supp Table S6c — Continuous ESI as a longitudinal FEV1-decline predicto
 |pooled  |   9402|ESI only       |0.43 (SE 0.29)  |0.139  |-                   |-         |
 |pooled  |   9402|ESI + FEV1/FVC |2.49 (SE 0.54)  |<0.001 |20.11 (SE 6.18)     |0.001     |
 
-``` r
-# (Removed 2026-08-25: this block renamed the GOLD-0 sidecar to ".OLD", but
-# that file is written earlier in this same chunk, so every run retired its own
-# current output and the second run overwrote the previous ".OLD".)
-```
-
 # Section 10 — Bronchodilator ΔESI
 
 Mean within-subject change in ESI between pre- and post-bronchodilator
@@ -2397,7 +2302,7 @@ Table: Longitudinal ΔESI by baseline stratum (GOLD 0 vs PRISm).
 
 # Section 12 — Figures produced from the tables above
 
-`Figure_3_Discordance.png` (a.k.a. Figure 2 in the v8 manuscript) is built
+`Figure_3_Discordance.png` is built
 directly from `Table_Discordance.csv` written in Section 5.
 
 
@@ -2414,9 +2319,9 @@ disc_num <- disc %>% mutate(
 )
 lvl <- c("CT-only-COPD (ESI missed)", "Both-COPD", "ESI-only-COPD (Bhatt missed)")
 disc_num$grp_5 <- factor(disc_num$grp_5, levels = lvl)
-# Look the n up BY NAME. disc_num arrives in group_by() alphabetical order
-# (Both-COPD, CT-only, ESI-only), not in `lvl` order, so indexing n[1..3]
-# positionally paired each label with the wrong group's count.
+# Look the n up BY NAME: disc_num arrives in group_by() alphabetical order,
+# not in `lvl` order, so positional indexing pairs each label with the wrong
+# group's count.
 n_of <- setNames(disc_num$n, as.character(disc_num$grp_5))
 stopifnot(setequal(names(n_of), lvl))   # real guard: names come from the data
 lab <- c("CT-only-COPD (ESI missed)"     = "CT-only",
@@ -2485,9 +2390,8 @@ the `expected` column exactly (within rounding).
 ``` r
 selfcheck <- function(name, computed, expected, tol = 0.02) {
   # A missing lookup (e.g. a stratum that no longer exists) yields NA, and
-  # `abs(NA - x) < tol` is NA, so the row used to render as status NA and the
-  # PASS/FAIL tallies below both printed NA. A check that cannot be evaluated
-  # is a FAIL, not a blank.
+  # `abs(NA - x) < tol` is NA. A check that cannot be evaluated is a FAIL,
+  # not a blank.
   ok <- if (is.numeric(computed) && is.numeric(expected)) {
           isTRUE(abs(computed - expected) < tol)
         } else identical(computed, expected)
@@ -2498,23 +2402,22 @@ selfcheck <- function(name, computed, expected, tol = 0.02) {
              stringsAsFactors = FALSE)
 }
 
-# Expectations below are baselined to the ILD/Bronchiectasis-excluded cohort
-# and were confirmed identical on two independent machines (this workstation
-# and the Channing cluster).  Two cohorts are checked separately: the
-# ESI-merged cohort before the Bhatt-criteria completeness filter (d) and the
-# analytic cohort after it (d_b).  The manuscript quotes the d_b values; the
-# d values are carried as drift detectors only.
+# Expectations are baselined to the ILD/Bronchiectasis-excluded cohort. Two
+# cohorts are checked separately: the ESI-merged cohort before the
+# Bhatt-criteria completeness filter (d) and the analytic cohort after it
+# (d_b). The manuscript quotes the d_b values; the d values are carried as
+# drift detectors only.
 n_gold_d   <- d   %>% filter(!is.na(stratum)) %>% count(stratum) %>% tibble::deframe()
 n_gold_d_b <- d_b %>% filter(!is.na(stratum)) %>% count(stratum) %>% tibble::deframe()
 
 checks <- list(
   selfcheck("n analytic cohort (d_b, Bhatt-complete)", nrow(d_b), 9402),
-  # ---- Manuscript quoted breakdown (matches the pre-filter d cohort) ------
+  # ---- Pre-filter d cohort breakdown -----------------------------------
   selfcheck("n never-smokers (d, pre-filter)",   as.integer(n_gold_d["Never"]),   106),
   selfcheck("n GOLD 0 (d, pre-filter)",          as.integer(n_gold_d["GOLD0"]),   4308),
   selfcheck("n PRISm (d, pre-filter)",           as.integer(n_gold_d["PRISm"]),   1238),
   selfcheck("n GOLD 1-4 (d, pre-filter)",        as.integer(sum(n_gold_d[c("GOLD1","GOLD2","GOLD3","GOLD4")])), 4394),
-  # ---- Actual breakdown of the 9,402 analytic cohort (for manuscript fix) --
+  # ---- Analytic cohort breakdown ---------------------------------------
   selfcheck("n never-smokers (analytic, correct)", as.integer(n_gold_d_b["Never"]), 106),
   selfcheck("n GOLD 0 (analytic, correct)",        as.integer(n_gold_d_b["GOLD0"]), 4054),
   selfcheck("n PRISm (analytic, correct)",         as.integer(n_gold_d_b["PRISm"]), 1129),
@@ -2593,15 +2496,15 @@ cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
 ## Self-check summary: 29 PASS, 0 FAIL (of 29 total)
 ```
 
-# Section 14 — Completeness check for Phase C (A7b)
+# Section 14 — Completeness check
 
-Enumerates every CSV the v10 supplement build depends on and aborts if any is
-missing. Prevents Phase C from starting on a partially-run Rmd.
+Enumerates every CSV the supplement build depends on and aborts if any is
+missing, so the supplement is never built from a partially-run Rmd.
 
 
 ``` r
 required_csvs <- c(
-  # Main assets (v9 baseline; still consumed by Phase B)
+  # Main assets
   "Table_2.csv",
   "Table_6.csv",
   "Table_Agreement_stats.txt",
@@ -2615,19 +2518,20 @@ required_csvs <- c(
   "Table_CauseSpecific_byDiscord.csv",
   "Table_Exacerbations_Discordance.csv",
   "Table_FEV1Decline_byDiscord.csv",
-  # New Phase A outputs consumed by v10 (both manuscript + supplement)
+  "Table_2_model_Ns.txt",
+  # Supplement outputs
   "Table_1_Cindex_Equivalence.csv",             # A2 — Table 1 footnote
   "Supp_Table_HR_Difference_Bootstrap.csv",     # A3 — Supp Table S8
   "Table_S8_bootstrap_diagnostics.txt",         # A3 sidecar
   "Table_2_pairwise_contrasts.csv",             # A4 — Table 2 footnote + S9
   "Supp_Table_Thresholds.csv",                  # S1
-  "Table_S2_baseline_characteristics.csv",      # S2 (A6b.1)
-  "Table_S3_sensitivity.csv",                   # S3 (A6b.2)
+  "Table_S2_baseline_characteristics.csv",      # S2
+  "Table_S3_sensitivity.csv",                   # S3
   "Table_CauseSpecific_byClass.csv",            # S4
   "Table_BhattDecline.csv",                     # S5
-  "Table_S6a_continuous_mortality.csv",         # S6a (A6b.3)
-  "Table_S6b_continuous_exacerbations.csv",     # S6b (A6b.3)
-  "Table_S6c_continuous_fev1_decline.csv",      # S6c (A6b.3)
+  "Table_S6a_continuous_mortality.csv",         # S6a
+  "Table_S6b_continuous_exacerbations.csv",     # S6b
+  "Table_S6c_continuous_fev1_decline.csv",      # S6c
   "Supp_Table_S7_ESI_trajectory.csv",           # S7
   # Figures
   "Figure_Bhatt_StackedBars.png",
@@ -2636,7 +2540,7 @@ required_csvs <- c(
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing) > 0) {
   cat("MISSING:\n"); cat(paste0("  - ", missing, "\n"))
-  stop(sprintf("Phase C blocked: %d required file(s) missing. See list above.",
+  stop(sprintf("%d required file(s) missing. See list above.",
                length(missing)))
 } else {
   cat(sprintf("Completeness check PASS: all %d required files present.\n",
@@ -2645,7 +2549,30 @@ if (length(missing) > 0) {
 ```
 
 ```
-## Completeness check PASS: all 28 required files present.
+## Completeness check PASS: all 29 required files present.
+```
+
+``` r
+# ---- Provenance stamp -------------------------------------------------------
+# verification_report.Rmd reconciles the manuscript against these artifacts. It
+# has no way to tell a fresh artifact set from a stale one unless the run that
+# produced it says so. File mtimes cannot serve: a git clone on the cluster
+# stamps every file with checkout time in arbitrary order. So record the hash of
+# the source that produced this set, and the R that ran it.
+.src <- tryCatch(knitr::current_input(), error = function(e) NA_character_)
+writeLines(
+  c(sprintf("analysis_source=%s", if (is.na(.src)) "unknown" else basename(.src)),
+    sprintf("analysis_md5=%s",
+            if (is.na(.src) || !file.exists(.src)) "unknown"
+            else tools::md5sum(.src)[[1]]),
+    sprintf("r_version=%s", as.character(getRversion())),
+    sprintf("rendered_utc=%s", format(Sys.time(), tz = "UTC", "%Y-%m-%dT%H:%M:%SZ"))),
+  file.path(OUT_DIR, "PROVENANCE.txt"))
+cat("Provenance stamp written.\n")
+```
+
+```
+## Provenance stamp written.
 ```
 
 # Section 12 — Covariate-sensitivity robustness check
@@ -2985,6 +2912,9 @@ Table: Full comparison: primary-adjustment vs. minimal-adjustment estimates for 
 
 
 ``` r
+# Close any device left open; a lingering one keeps the R process alive after
+# the knit completes.
+graphics.off()
 sessionInfo()
 ```
 
@@ -3015,8 +2945,8 @@ sessionInfo()
 ## loaded via a namespace (and not attached):
 ##  [1] sandwich_3.1-1      generics_0.1.4      lattice_0.22-7     
 ##  [4] magrittr_2.0.5      evaluate_1.0.5      grid_4.5.2         
-##  [7] RColorBrewer_1.1-3  purrr_1.2.0         textshaping_1.0.4  
-## [10] codetools_0.2-20    numDeriv_2016.8-1.1 reformulas_0.4.4   
+##  [7] RColorBrewer_1.1-3  purrr_1.2.0         codetools_0.2-20   
+## [10] numDeriv_2016.8-1.1 textshaping_1.0.4   reformulas_0.4.4   
 ## [13] Rdpack_2.6.6        cli_3.6.5           rlang_1.1.7        
 ## [16] rbibutils_2.4.1     splines_4.5.2       withr_3.0.2        
 ## [19] otel_0.2.0          tools_4.5.2         nloptr_2.2.1       
