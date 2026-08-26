@@ -35,8 +35,8 @@ _VARIANT_TRANSFORMS = [
     (re.compile(r">=\s*(\d+)-of-(\d+)"), r"≥\1 of \2 minor"),
     (re.compile(r"ESI cutoff (\d)"), r"ESI cutoff = \1"),
     (re.compile(r"\s*/\s*T_high"),   r", T_high"),
-    (re.compile(r"T_low=\s*"),       r"cutoff low = "),
-    (re.compile(r"T_high=\s*"),      r"cutoff high = "),
+    (re.compile(r"T_low=\s*"),       r"ESI cutoff low = "),
+    (re.compile(r"T_high=\s*"),      r"ESI cutoff high = "),
 ]
 
 
