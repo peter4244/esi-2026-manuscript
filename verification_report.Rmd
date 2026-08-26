@@ -10,7 +10,8 @@ output:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      comment = "")   # no "##" gutter on printed output
 options(stringsAsFactors = FALSE)
 ```
 
@@ -39,7 +40,7 @@ numbers cannot drift from them. The main document's prose is hand-maintained —
 `manifest.py`'s `MANUSCRIPT_OUT` still points at *v11* while the live document is
 *v12* — which is where drift actually lives.
 
-```{r config}
+```{r config, include = FALSE}
 CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
 if (!file.exists(CONFIG)) {
   stop("Missing input-path config: '", CONFIG, "'. ",
@@ -66,7 +67,7 @@ cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
 ```
 
-```{r artifact-loader}
+```{r artifact-loader, include = FALSE}
 # --- artifact access ---------------------------------------------------------
 # Artifacts are loaded once and cached. `x` inside a registry `field` expression
 # is the loaded artifact: a data.frame for .csv, a named character vector for
@@ -118,14 +119,19 @@ parse_est <- function(s, which = c("est", "lo", "hi")) {
 num_p <- function(s) as.numeric(sub("^<", "", trimws(as.character(s))))
 ```
 
-```{r registry-builder}
+```{r registry-builder, include = FALSE}
 # --- registry ----------------------------------------------------------------
 REG <- list()
+
+# Entries are grouped for display by the section of the manuscript they check.
+# Each registry chunk sets .SECTION before calling reg().
+.SECTION <- "unassigned"
 
 reg <- function(id, location, claim, expected, artifact, field,
                 tolerance, local_only = FALSE, note = "") {
   REG[[length(REG) + 1]] <<- list(
-    id = id, location = location, claim = claim, expected = expected,
+    id = id, section = .SECTION,
+    location = location, claim = claim, expected = expected,
     artifact = artifact, field = field, tolerance = tolerance,
     local_only = local_only, note = note)
   invisible(NULL)
@@ -143,11 +149,8 @@ TOL_BOOT <- 0.01     # bootstrap percentile p: effective resamples differ with
 TOL_EXACT <- 0
 ```
 
-# Registry
-
-## Cohort and strata
-
-```{r reg-cohort}
+```{r reg-cohort, include = FALSE}
+.SECTION <- "Cohort and strata"
 reg("COH-01", "Results P1; Figure 1 legend", "analytic cohort of 9,402 participants",
     9402, "Table_Agreement_stats.txt", 'as.numeric(x[["n_cohort"]])', TOL_EXACT)
 
@@ -167,9 +170,8 @@ reg("COH-07", "Results P1", "mean ESI 8.30 in GOLD 4",
     8.30, "Table_S2_stratum_counts.csv", 'x$ESI_mean[x$stratum == "GOLD4"]', TOL_2DP)
 ```
 
-## ESI versus quantitative CT
-
-```{r reg-correlations}
+```{r reg-correlations, include = FALSE}
+.SECTION <- "ESI versus quantitative CT"
 reg("COR-01", "Results P2", "r = 0.78 with %LAA-950HU, whole cohort",
     0.78, "Table_2.csv", 'x$r_LAA[x$stratum == "All strata"]', TOL_2DP)
 reg("COR-02", "Results P2", "r = 0.81 with PRM emphysema, whole cohort",
@@ -180,9 +182,8 @@ reg("COR-04", "Results P2", "r = 0.58 in GOLD 3",
     0.58, "Table_2.csv", 'x$r_LAA[x$stratum == "GOLD3"]', TOL_2DP)
 ```
 
-## Classification agreement
-
-```{r reg-agreement}
+```{r reg-agreement, include = FALSE}
+.SECTION <- "Classification agreement"
 agree <- list(
   list("AGR-01", "91% overall agreement", 0.91,   "agreement"),
   list("AGR-02", "kappa = 0.82",          0.82,   "kappa"),
@@ -194,12 +195,8 @@ for (a in agree) {
 }
 ```
 
-## Table 1 — MD-COPD categories versus outcomes
-
-Transcribed to mirror the printed table. `p` is the paired-resample percentile
-p-value for the CT − ESI difference in log effect.
-
-```{r reg-table1}
+```{r reg-table1, include = FALSE}
+.SECTION <- "Table 1"
 T1 <- data.frame(
   outcome  = c("all-cause",  "all-cause",  "respiratory", "respiratory", "exacerbations", "exacerbations"),
   category = c("COPD-minor", "COPD-major", "COPD-minor",  "COPD-major",  "COPD-minor",    "COPD-major"),
@@ -210,7 +207,6 @@ T1 <- data.frame(
   esi_lo = c( 1.63,  2.18,  2.43, 18.76, 2.33, 4.07),
   esi_hi = c( 2.32,  2.63, 13.32, 51.06, 3.30, 4.90),
   p      = c("0.848", "<0.002", "0.702", "0.293", "0.796", "<0.002"))
-knitr::kable(T1, caption = "Table 1 as printed in the manuscript (transcription).")
 
 t1_src <- c("all-cause"     = "Table_8_allcause.csv",
             "respiratory"   = "Table_8_resp.csv",
@@ -273,17 +269,14 @@ for (i in seq_len(nrow(T1))) {
 }
 ```
 
-## Table 2 — cross-classification subgroups
-
-```{r reg-table2}
+```{r reg-table2, include = FALSE}
+.SECTION <- "Table 2"
 T2 <- data.frame(
   group = c("CT-only-COPD", "ESI-only-COPD", "Both-COPD"),
   src   = c("CT-only-COPD (ESI missed)", "ESI-only-COPD (Bhatt missed)", "Both-COPD"),
   all_est = c(1.53, 1.26, 2.02), all_lo = c(1.25, 0.76, 1.66), all_hi = c( 1.88,  2.07,  2.46),
   rsp_est = c(2.90, 4.86, 6.10), rsp_lo = c(0.91, 0.62, 2.19), rsp_hi = c( 9.28, 38.02, 16.96),
   exa_est = c(2.00, 1.62, 3.15), exa_lo = c(1.60, 0.97, 2.52), exa_hi = c( 2.51,  2.68,  3.93))
-knitr::kable(T2[, setdiff(names(T2), "src")],
-             caption = "Table 2 as printed in the manuscript (transcription).")
 
 for (i in seq_len(nrow(T2))) {
   r <- T2[i, ]
@@ -330,9 +323,8 @@ reg("T2-n-mortality-xcheck", "Table 2 legend (cross-check)",
     'sum(as.matrix(x[x$Bhatt %in% c("noCOPD","COPD-minor"), -1]))', TOL_EXACT)
 ```
 
-## Results prose — outcomes and secondary analyses
-
-```{r reg-prose}
+```{r reg-prose, include = FALSE}
+.SECTION <- "Results and Discussion prose"
 reg("PRO-01", "Results P5", "AFL-only-noCOPD FEV1 +10.1 mL/yr under the ESI framework",
     10.1, "Table_BhattDecline.csv", 'x$esi_est[x$group == "AFL-only-NoCOPD"]', TOL_1DP)
 reg("PRO-02", "Results P5", "AFL-only-noCOPD FEV1 decline p = 0.02",
@@ -375,13 +367,8 @@ reg("PRO-11", "Discussion, limitations", "AFL-only-noCOPD subgroup n = 170",
     'sum(as.numeric(x[x$Bhatt == "AFL-only-NoCOPD", -1]))', TOL_EXACT)
 ```
 
-## Results prose — significance claims
-
-Two Results statements are assertions about significance rather than about a
-printed number. They are the kind of claim that flips silently when a model
-changes, so they are checked as claims.
-
-```{r reg-significance}
+```{r reg-significance, include = FALSE}
+.SECTION <- "Significance claims"
 for (a in list(list("SIG-01", "all-cause mortality", "Table_8_allcause.csv",   c("bhatt_p", "esi_p")),
                list("SIG-02", "respiratory mortality", "Table_8_resp.csv",     c("bhatt_p", "esi_p")),
                list("SIG-03", "exacerbations", "Table_Exacerbations_Bhatt.csv", c("bhatt_p", "esi_p")))) {
@@ -398,9 +385,8 @@ reg("SIG-04", "Results P5",
     TOL_EXACT)
 ```
 
-## Methods — declared constants and the equivalence margin
-
-```{r reg-methods}
+```{r reg-methods, include = FALSE}
+.SECTION <- "Methods constants"
 reg("MET-01", "Methods, equivalence", "C-index equivalence margin +/-0.02, all-cause",
     TRUE, "Table_1_Cindex_Equivalence.csv",
     'abs(x$delta_c[x$outcome == "all-cause"]) < 0.02 && x$equivalent_within_margin[x$outcome == "all-cause"]',
@@ -415,7 +401,8 @@ Three Methods claims are constants in the analysis source rather than values in
 an artifact: the two ESI thresholds and the bootstrap resample count. They are
 checked by reading the source.
 
-```{r reg-constants}
+```{r reg-constants, include = FALSE}
+.SECTION <- "Methods constants"
 src_lines <- readLines(ANALYSIS_SRC, warn = FALSE)
 grab_const <- function(pattern) {
   hit <- grep(pattern, src_lines, value = TRUE)
@@ -478,9 +465,9 @@ reg("MET-06", "Methods, statistical analysis", "all analyses performed in R vers
     "4.5.2", "PROVENANCE.txt", 'x[["r_version"]]', TOL_EXACT)
 ```
 
-# Evaluation
+# Verdict
 
-```{r evaluate}
+```{r evaluate, include = FALSE}
 rows <- lapply(REG, function(e) {
   # Fields are evaluated in an environment whose parent is baseenv(), NOT the
   # global environment. If globals were reachable a field could name T1 or T2 --
@@ -523,7 +510,7 @@ rows <- lapply(REG, function(e) {
   if (e$local_only && status == "FAIL") status <- "LOCAL-ONLY"
 
   data.frame(
-    id = e$id, location = e$location, claim = e$claim,
+    id = e$id, section = e$section, location = e$location, claim = e$claim,
     expected  = as.character(e$expected),
     artifact  = e$artifact, field = e$field,
     tolerance = e$tolerance,
@@ -541,7 +528,7 @@ V <- do.call(rbind, rows)
 # stamps every file with checkout time in arbitrary order, so an mtime
 # comparison there is noise. Content hashes are.
 prov_row <- function(id, claim, expected, computed, status, note = "") {
-  data.frame(id = id, location = "provenance", claim = claim,
+  data.frame(id = id, section = "Provenance", location = "provenance", claim = claim,
              expected = expected, artifact = "PROVENANCE.txt", field = "-",
              tolerance = 0, computed = computed, status = status, note = note)
 }
@@ -582,55 +569,97 @@ V$artifact[V$id == "PRV-02"] <- MANUSCRIPT_VERSION
 write.csv(V, file.path(OUT_DIR, "VERIFICATION.csv"), row.names = FALSE)
 ```
 
-```{r summary}
+```{r verdict-banner}
+n_fail <- sum(V$status %in% c("FAIL", "ERROR"))
+n_pass <- sum(V$status == "PASS")
+cat(if (n_fail == 0)
+      sprintf("VERIFICATION PASSED - all %d manuscript claims reconcile.\n", nrow(V))
+    else
+      sprintf("VERIFICATION FAILED - %d of %d manuscript claims do not reconcile.\n",
+              n_fail, nrow(V)))
+cat(strrep("-", 62), "\n")
+cat(sprintf("  manuscript   %s\n", MANUSCRIPT_VERSION))
+cat(sprintf("  analysis     %s\n", ANALYSIS_SRC))
+cat(sprintf("  artifacts    %s\n", OUT_DIR))
+cat(sprintf("  checked at   %s\n", format(Sys.time(), "%Y-%m-%d %H:%M")))
+cat(strrep("-", 62), "\n")
 tally <- table(factor(V$status,
                       levels = c("PASS", "FAIL", "ERROR", "LOCAL-ONLY", "NOT-AVAILABLE")))
-knitr::kable(as.data.frame(tally, stringsAsFactors = FALSE),
-             col.names = c("status", "n"),
-             caption = sprintf("%d registry entries; written to %s",
-                               nrow(V), file.path(OUT_DIR, "VERIFICATION.csv")))
+for (k in names(tally)) if (tally[[k]] > 0) cat(sprintf("  %-14s %3d\n", k, tally[[k]]))
 ```
 
-## Entries that did not pass
+Anything not marked PASS is listed first, then every claim is shown grouped by
+the part of the manuscript it comes from. The machine-readable record, including
+the exact field expression behind each number, is written to
+`VERIFICATION.csv` in the artifact directory.
+
+## Anything that did not pass
 
 ```{r failures}
 bad <- V[V$status != "PASS", ]
 if (!nrow(bad)) {
-  cat("None.\n")
+  cat("Nothing. Every claim reconciled.\n")
 } else {
-  knitr::kable(bad[, c("id", "location", "claim", "expected", "computed",
-                       "tolerance", "artifact", "status")],
-               row.names = FALSE)
-  for (i in seq_len(nrow(bad))) if (nzchar(bad$note[i])) {
-    cat("\n**", bad$id[i], "** — ", bad$note[i], "\n", sep = "")
-  }
+  knitr::kable(bad[, c("id", "status", "location", "claim", "expected", "computed")],
+               row.names = FALSE,
+               col.names = c("ID", "Status", "Where", "Claim", "Manuscript says", "Artifact says"))
 }
 ```
 
-## Full registry
-
-```{r full-table}
-knitr::kable(V[, c("id", "location", "claim", "expected", "computed",
-                   "tolerance", "artifact", "field", "status")],
-             row.names = FALSE)
+```{r failure-notes, results = "asis"}
+if (nrow(bad)) for (i in seq_len(nrow(bad))) if (nzchar(bad$note[i]))
+  cat("\n**", bad$id[i], "** ", bad$note[i], "\n", sep = "")
 ```
 
-# Verdict
+## Every claim, by manuscript section
 
-```{r gate}
-n_fail <- sum(V$status %in% c("FAIL", "ERROR"))
-if (n_fail > 0) {
-  cat(sprintf("VERIFICATION FAILED: %d of %d manuscript claims do not reconcile.\n",
-              n_fail, nrow(V)))
-} else {
-  cat(sprintf("VERIFICATION PASSED: %d claims reconcile (%d local-only).\n",
-              sum(V$status == "PASS"), sum(V$status == "LOCAL-ONLY")))
+```{r by-section, results = "asis"}
+show <- function(d) {
+  print(knitr::kable(d[, c("id", "claim", "expected", "computed", "tolerance", "status")],
+                     row.names = FALSE,
+                     col.names = c("ID", "Claim", "Manuscript says", "Artifact says",
+                                   "Tolerance", "Status")))
+}
+for (sec in unique(V$section)) {
+  d <- V[V$section == sec, ]
+  cat(sprintf("\n### %s (%d of %d passing)\n\n",
+              sec, sum(d$status == "PASS"), nrow(d)))
+  show(d)
+  cat("\n")
 }
 ```
 
-The hard gate lives in `verify.R`, not here, so that a failing run still produces
-a readable document. Run the report with:
+## The transcription, as printed
 
-    Rscript verify.R
+`Manuscript says` above is a hand transcription of the document, made once.
+The two tables are reproduced here in the shape they appear in the paper so
+that the transcription itself can be checked by eye against the page.
 
-which renders this file and then exits non-zero if any entry did not pass.
+```{r transcription}
+knitr::kable(T1, row.names = FALSE,
+             caption = "Table 1 as printed in the manuscript.")
+knitr::kable(T2[, setdiff(names(T2), "src")], row.names = FALSE,
+             caption = "Table 2 as printed in the manuscript.")
+```
+
+## Appendix: how each number was obtained
+
+The `field` column is the expression evaluated against the named artifact. This
+is the audit trail: it is what makes each claim traceable back to the code that
+produced it.
+
+```{r appendix}
+knitr::kable(V[, c("id", "artifact", "field", "computed", "status")],
+             row.names = FALSE,
+             col.names = c("ID", "Artifact", "Field expression", "Computed", "Status"))
+```
+
+## How to run this
+
+```
+Rscript verify.R
+```
+
+`verify.R` renders this document and then exits non-zero if any claim did not
+reconcile. The gate lives there rather than in this file so that a failing run
+still leaves a readable report behind.
