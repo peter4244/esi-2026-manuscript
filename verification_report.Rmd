@@ -472,6 +472,71 @@ for (cc in crit) {
       "<analysis source>", sprintf('CONSTS[["%s"]]', cc[[1]]), TOL_EXACT)
 }
 
+# --- covariate sets ----------------------------------------------------------
+# Both table legends and Methods state which covariates each model adjusts for.
+# Nothing else in this registry would notice if a model formula changed: every
+# artifact would move together, the tables would stay internally consistent, and
+# the prose would silently stop describing the code. Same failure shape as the
+# criterion constants above, so it is checked the same way, against the source.
+COVARIATES <- c("age_visit", "gender", "gender_baseline", "race", "race_baseline",
+                "SmokCigNow", "ATS_PackYears", "BMI", "Height_CM", "stratum")
+
+covars_of <- function(anchor) {
+  i <- grep(anchor, src_lines)
+  if (!length(i)) return("<model not found>")
+  # A formula may wrap over several lines; accumulate until parentheses balance.
+  txt <- src_lines[i[1]]
+  j <- i[1]
+  while (nchar(gsub("[^(]", "", txt)) != nchar(gsub("[^)]", "", txt)) &&
+         j < length(src_lines)) {
+    j <- j + 1
+    txt <- paste(txt, src_lines[j])
+  }
+  rhs <- sub("^[^~]*~", "", txt)
+  toks <- unlist(strsplit(rhs, "[+*(),|]"))
+  toks <- trimws(gsub("[^A-Za-z0-9_]", "", toks))
+  # radix, not the default: sort() is locale-collated, so the same formula
+  # would render in a different order on a machine with a different locale and
+  # the comparison would fail for no reason. radix is C-order everywhere.
+  paste(sort(unique(intersect(toks, COVARIATES)), method = "radix"),
+        collapse = ", ")
+}
+
+PRIMARY_SET <- "ATS_PackYears, BMI, SmokCigNow, age_visit, gender, race"
+DECLINE_SET <- "ATS_PackYears, Height_CM, SmokCigNow, age_visit, gender_baseline, race_baseline"
+CONT_SET    <- "ATS_PackYears, SmokCigNow, age_visit, gender, race, stratum"
+
+cov_reg <- list(
+  list("COV-01", "Table 1 legend", "all-cause mortality, CT-based",  PRIMARY_SET, "^cox_bhatt_all\\s*<-"),
+  list("COV-02", "Table 1 legend", "all-cause mortality, ESI-based", PRIMARY_SET, "^cox_esi_all\\s*<-"),
+  list("COV-03", "Table 1 legend", "respiratory mortality, CT-based", PRIMARY_SET, "^cox_bhatt_resp\\s*<-"),
+  list("COV-04", "Table 1 legend", "exacerbations, CT-based",        PRIMARY_SET, "^nbB\\s*<-"),
+  list("COV-05", "Table 1 legend", "exacerbations, ESI-based",       PRIMARY_SET, "^nbE\\s*<-"),
+  list("COV-06", "Table 2 legend", "cross-classification mortality", PRIMARY_SET, "^cox_disc_all\\s*<-"),
+  list("COV-07", "Table 2 legend", "cross-classification exacerbations", PRIMARY_SET, "^nb_disc\\s*<-"),
+  list("COV-08", "Methods, adjustment sets", "FEV1 decline, CT-based: height replaces BMI",
+       DECLINE_SET, "^lmm_bhatt\\s*<-"),
+  list("COV-09", "Methods, adjustment sets", "FEV1 decline, ESI-based: height replaces BMI",
+       DECLINE_SET, "^lmm_esi\\s*<-"),
+  list("COV-10", "Methods, adjustment sets", "GOLD 0 continuous-ESI decline: height replaces BMI",
+       DECLINE_SET, "^lmm_g0\\s*<-"),
+  list("COV-11", "Methods, adjustment sets", "continuous-ESI mortality omits BMI",
+       CONT_SET, "^fit_cox_esi\\s*<-"),
+  list("COV-12", "Methods, adjustment sets", "continuous-ESI exacerbations omits BMI",
+       CONT_SET, "^nb_esi_ex\\s*<-"))
+
+# Resolve here rather than embedding the anchor regex in the field expression:
+# a "\\s" inside generated R source is not a valid string escape.
+COVSET <- vapply(cov_reg, function(cv) covars_of(cv[[5]]), character(1))
+names(COVSET) <- vapply(cov_reg, function(cv) cv[[1]], character(1))
+
+for (cv in cov_reg) {
+  reg(cv[[1]], cv[[2]],
+      sprintf("adjustment covariates, %s", cv[[3]]),
+      cv[[4]], "<analysis source>",
+      sprintf('COVSET[["%s"]]', cv[[1]]), TOL_EXACT)
+}
+
 # The manuscript's R version is a property of the run that produced the
 # artifacts, not of whatever interpreter renders this report, so read it off the
 # provenance stamp the analysis writes.
@@ -501,7 +566,7 @@ rows <- lapply(REG, function(e) {
     env <- new.env(parent = baseenv())
     env$parse_est <- parse_est; env$num_p <- num_p
     if (e$artifact == "<analysis source>") {
-      env$CONSTS <- CONSTS
+      env$CONSTS <- CONSTS; env$COVSET <- COVSET
     } else {
       env$x <- art(e$artifact)
     }
