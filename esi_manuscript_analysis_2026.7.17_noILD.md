@@ -36,6 +36,33 @@ locations for the machine you are running on, and knit.
 
 
 ``` r
+# ---- Headless raster device --------------------------------------------
+# This must run in the FIRST chunk, not in `setup`. knitr opens a graphics
+# device for a chunk BEFORE evaluating its code (block_exec -> eng_r ->
+# chunk_device), so on a node whose default bitmapType is Xlib and which has
+# no display, the device for chunk 1 is opened and warns before any code has
+# had a chance to switch it. Measured on a Channing compute node: one
+# "unable to open connection to X11 display" per run, raised before
+# options(warn = 1) could take effect, so it surfaced at the very end of a
+# 68-chunk render with nothing to attribute it to.
+#
+# `paths` and `setup` also carry fig.keep = "none": neither draws anything,
+# so knitr has no reason to open a device for them at all.
+#
+# Rescue only values that cannot work headless. Taking cairo unconditionally
+# would switch macOS off quartz and change local figure rendering for no
+# reason.
+local({
+  .bt <- getOption("bitmapType")
+  if (capabilities("cairo") &&
+      (is.null(.bt) || !nzchar(.bt) || identical(.bt, "Xlib"))) {
+    options(bitmapType = "cairo")
+    # knitr has no "cairo_png" device; the base-R route is the png device
+    # with type = "cairo", which needs no extra package.
+    knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo"))
+  }
+})
+
 # ----- Inputs -------------------------------------------------------------
 # Set ESI_CONFIG to use a config file elsewhere, e.g.
 #   Sys.setenv(ESI_CONFIG = "/path/to/config_paths.R")
