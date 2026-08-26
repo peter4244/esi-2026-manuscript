@@ -79,34 +79,68 @@ knitr::opts_chunk$set(
   fig.width = 9, fig.height = 5.5, dpi = 110
 )
 
-# Headless raster device. Two independent paths need one:
-#   1. png() called directly by the figure chunks, which uses bitmapType. On a
-#      node without X11 that defaults to Xlib, which cannot open a connection.
+# Headless raster device. THREE independent paths need one, not two:
+#   1. png() called directly, which uses bitmapType. On a node without X11 that
+#      defaults to Xlib, which cannot open a connection.
 #   2. the device knitr uses for plots embedded in the report, set via `dev`.
-# Fixing only (2) leaves the figures broken; fixing only (1) leaves knitr
-# warning on every embedded plot. png() fails with a WARNING, not an error, and
-# opts_chunk sets warning = FALSE, so either failure reads as a successful run.
-if (identical(getOption("bitmapType"), "Xlib") && capabilities("cairo")) {
-  options(bitmapType = "cairo")
-}
-if (requireNamespace("ragg", quietly = TRUE)) {
-  knitr::opts_chunk$set(dev = "ragg_png")
-}
-# Probe the path the figure chunks actually use: base png().
+#   3. ggsave(), which builds its own png(..., res = dpi, units = "in") call
+#      (see ggplot2:::validate_device). The manuscript figures go through (3),
+#      NOT (1), which is why a probe of (1) alone passed while (3) warned.
+# Fixing only some of these leaves the rest broken. png() fails with a WARNING,
+# not an error, and opts_chunk sets warning = FALSE, so a failure reads as a
+# successful run.
+#
+# Rescue only the values that cannot work headless. The old guard fired only on
+# an exact "Xlib" and so did nothing when the option was unset or empty; taking
+# cairo unconditionally would be worse, because it would switch macOS off
+# quartz and change local figure rendering for no reason.
 local({
-  .p <- file.path(tempdir(), "device_probe.png")
-  # 200px with near-zero margins: a smaller canvas errors with "figure margins
-  # too large", which looks like a device failure and is not.
-  ok <- tryCatch({ png(.p, width = 200, height = 200)
-                   op <- par(mar = rep(0.1, 4)); plot.new(); par(op); dev.off()
-                   file.exists(.p) && file.size(.p) > 0 },
-                 error = function(e) FALSE, warning = function(w) FALSE)
-  if (!ok) stop("png() cannot write a file. bitmapType=", getOption("bitmapType"),
-                " cairo=", capabilities("cairo"), " X11=", capabilities("X11"),
-                ". Install cairo support or ragg.")
-  unlink(.p)
-  cat(sprintf("Raster device OK (png bitmapType=%s, knitr dev=%s)\n",
-              getOption("bitmapType"), knitr::opts_chunk$get("dev")))
+  .bt <- getOption("bitmapType")
+  if (capabilities("cairo") &&
+      (is.null(.bt) || !nzchar(.bt) || identical(.bt, "Xlib"))) {
+    options(bitmapType = "cairo")
+    # Same rescue for path (2). knitr has no "cairo_png" device; the base-R
+    # route is the png device with type = "cairo", which needs no extra
+    # package. Set only when the default was broken, so a machine whose
+    # default already works keeps rendering as it did.
+    knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo"))
+  }
+})
+# Probe every path that writes a file, in the shape it is actually called.
+local({
+  .d <- tempdir()
+  # (1) base png(), pixel geometry. 200px with near-zero margins: a smaller
+  # canvas errors with "figure margins too large", which looks like a device
+  # failure and is not.
+  .p1 <- file.path(.d, "device_probe_base.png")
+  ok1 <- tryCatch({ png(.p1, width = 200, height = 200)
+                    op <- par(mar = rep(0.1, 4)); plot.new(); par(op); dev.off()
+                    file.exists(.p1) && file.size(.p1) > 0 },
+                  error = function(e) FALSE, warning = function(w) FALSE)
+  if (!ok1) stop("base png() cannot write a file. bitmapType=",
+                 getOption("bitmapType"), " cairo=", capabilities("cairo"),
+                 " X11=", capabilities("X11"), ". Install cairo support.")
+
+  # (3) the ggsave() path, at the same res/units the figure chunks use. This is
+  # the call that emitted "unable to open connection to X11 display" on a
+  # compute node while probe (1) passed, because they are not the same path.
+  .p2 <- file.path(.d, "device_probe_ggsave.png")
+  ok2 <- tryCatch({
+    ggplot2::ggsave(.p2, ggplot2::ggplot(), width = 4, height = 3, dpi = 300)
+    file.exists(.p2) && file.size(.p2) > 0 },
+    error = function(e) FALSE, warning = function(w) FALSE)
+  if (!ok2) stop("ggsave() cannot write a png. bitmapType=",
+                 getOption("bitmapType"), " cairo=", capabilities("cairo"),
+                 ". The manuscript figures are written through this path.")
+
+  unlink(c(.p1, .p2))
+  # Write to the stderr CONNECTION, not via message(). This chunk is
+  # include = FALSE, so evaluate() captures stdout and also traps message()
+  # conditions; both are discarded and never reach render.log. A direct
+  # cat(file = stderr()) is the only one of the three that escapes.
+  cat(sprintf("Raster device OK (png bitmapType=%s, knitr dev=%s, ggsave OK)\n",
+              getOption("bitmapType"), knitr::opts_chunk$get("dev")),
+      file = stderr())
 })
 
 suppressPackageStartupMessages({
