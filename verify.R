@@ -61,5 +61,14 @@ if (nrow(bad)) {
   stop(sprintf("VERIFICATION FAILED: %d of %d manuscript claims do not reconcile. See %s",
                nrow(bad), nrow(V), csv))
 }
-message(sprintf("VERIFICATION PASSED: %d of %d claims reconcile. See %s",
-                sum(V$status == "PASS"), nrow(V), csv))
+# Report waived and inapplicable entries as their own categories rather than
+# folding them into a "129 of 132" that reads as three failures. Every entry is
+# accounted for; none of them failed.
+n_pass <- sum(V$status == "PASS")
+n_lo   <- sum(V$status == "LOCAL-ONLY")
+n_na   <- sum(V$status == "NOT-AVAILABLE")
+parts  <- c(sprintf("%d verified", n_pass),
+            if (n_lo) sprintf("%d waived (differs by site, named above)", n_lo),
+            if (n_na) sprintf("%d not applicable here", n_na))
+message(sprintf("VERIFICATION PASSED: %d claims, 0 failed - %s. See %s",
+                nrow(V), paste(parts, collapse = ", "), csv))
