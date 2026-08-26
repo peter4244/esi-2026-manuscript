@@ -79,13 +79,37 @@ knitr::opts_chunk$set(
   fig.width = 9, fig.height = 5.5, dpi = 110
 )
 
-# Headless-safe raster device: without X11 the default bitmap device is Xlib,
-# which cannot open a connection, so png() fails with a warning rather than an
-# error and the run appears to succeed while producing no figure. cairo needs
-# no display.
-if (identical(getOption("bitmapType"), "Xlib") && capabilities("cairo")) {
+# Headless raster device. Without X11 the default bitmap device is Xlib, which
+# cannot open a connection: png() then fails with a WARNING, not an error, so
+# with warning = FALSE above the run looks successful while writing no figure.
+# Pick a device that needs no display, prefer ragg, and stop if none exists
+# rather than discovering it in the output.
+if (requireNamespace("ragg", quietly = TRUE)) {
+  knitr::opts_chunk$set(dev = "ragg_png")
+} else if (capabilities("cairo")) {
   options(bitmapType = "cairo")
+  knitr::opts_chunk$set(dev = "png")
+} else if (!capabilities("X11")) {
+  stop("No headless raster device available: ragg is not installed, cairo is ",
+       "not compiled in, and there is no X11 display. Install ragg.")
 }
+# Prove the chosen device actually opens, here, instead of finding out from a
+# missing figure later.
+local({
+  .p <- file.path(tempdir(), "device_probe.png")
+  # 200px with near-zero margins: a smaller canvas errors with "figure margins
+  # too large" and would look like a device failure.
+  ok <- tryCatch({ png(.p, width = 200, height = 200)
+                   op <- par(mar = rep(0.1, 4)); plot.new(); par(op); dev.off()
+                   file.exists(.p) && file.size(.p) > 0 },
+                 error = function(e) FALSE, warning = function(w) FALSE)
+  if (!ok) stop("Raster device probe failed: png() cannot write a file. ",
+                "bitmapType=", getOption("bitmapType"),
+                " cairo=", capabilities("cairo"), " X11=", capabilities("X11"))
+  unlink(.p)
+  cat(sprintf("Raster device OK (dev=%s, bitmapType=%s)\n",
+              knitr::opts_chunk$get("dev"), getOption("bitmapType")))
+})
 suppressPackageStartupMessages({
   library(dplyr); library(tidyr); library(ggplot2); library(scales)
   library(survival); library(MASS)
@@ -2317,5 +2341,8 @@ kable(cs_reg, caption = "Full comparison: primary-adjustment vs. minimal-adjustm
 # Session info
 
 ```{r session}
+# Close any device left open; a lingering one keeps the R process alive after
+# the knit completes.
+graphics.off()
 sessionInfo()
 ```
