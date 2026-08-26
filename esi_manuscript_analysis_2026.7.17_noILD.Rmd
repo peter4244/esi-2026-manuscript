@@ -397,13 +397,6 @@ per-stratum correlation claims (GOLD 0 r ≈ 0.08; GOLD 3 r ≈ 0.58; all-cohort
 LAA-950 r = 0.77).
 
 ```{r correlations}
-# Computed on d_b, the analytic cohort, so these share a denominator with every
-# other table. Previously computed on `d` (the pre-filter ESI-merged cohort),
-# which made the per-stratum Ns exceed their own ST4 stratum totals (GOLD 3:
-# 1054 vs 1053) and the pooled row exceed both the cohort and the sum of its
-# strata (9404 vs 9348), because the pooled row alone did not drop rows with a
-# missing stratum. The pooled row now applies the same stratum filter as the
-# per-stratum rows, so "All strata" equals their sum by construction.
 t2 <- d_b %>%
   filter(!is.na(stratum)) %>%
   group_by(stratum) %>%
