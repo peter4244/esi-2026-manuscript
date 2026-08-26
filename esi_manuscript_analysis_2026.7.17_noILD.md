@@ -1205,8 +1205,7 @@ if (!is.null(.cached)) {
 ```
 
 ```
-## Bootstrap effective resamples: all-cause = 1000, respiratory = 416 (of 1000)
-## Bootstrap complete: B_effective = 1000 / 1000
+## Loaded cached bootstrap: B_effective = 1000 / 1000 (all-cause 1000, respiratory 416)
 ```
 
 ``` r
@@ -1366,7 +1365,7 @@ if (!is.null(.cached_irr)) {
 ```
 
 ```
-## IRR bootstrap complete: B_effective = 1000 / 1000
+## Loaded cached IRR bootstrap: B_effective = 1000 / 1000
 ```
 
 ``` r

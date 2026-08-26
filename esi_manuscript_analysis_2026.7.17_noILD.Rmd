@@ -79,6 +79,14 @@ knitr::opts_chunk$set(
   fig.width = 9, fig.height = 5.5, dpi = 110
 )
 
+# Print warnings as they happen rather than buffering them to the end of the
+# knit. R's default (warn = 0) defers every warning until the top-level call
+# returns, so a device warning raised in chunk 12 appears after chunk 68 with
+# nothing to attribute it to. With warn = 1 the warning lands immediately after
+# the chunk marker that produced it, which is the only way to localise one in a
+# 68-chunk batch run.
+options(warn = 1)
+
 # Headless raster device. THREE independent paths need one, not two:
 #   1. png() called directly, which uses bitmapType. On a node without X11 that
 #      defaults to Xlib, which cannot open a connection.
