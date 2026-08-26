@@ -186,33 +186,10 @@ esi_raw <- bind_pid(read_any(ESI_PATH), "ESI_PATH")
 phe_raw <- bind_pid(read_any(PHE_PATH, na.strings = c("", "NA")), "PHE_PATH")
 
 # ---- Exclude the ILD/Bronchiectasis recruitment cohort ---------------------
-# Added 2026-08-24 (noILD variant of the analysis).
-#
-# COPDGene's phenotype table carries three recruitment cohorts in `cohort`:
-# "Smoker", "Never smoked" and "ILD/Brnch". The ILD/Bronchiectasis cohort is
-# removed here, at the single point where the phenotype table is loaded, so the
-# exclusion propagates to every downstream dataset: v1 -> d -> d_b -> mort_b and
-# ex_b, and fev1_long for the decline models. Filtering anywhere later would
-# leave one of those populations out of step.
-#
-# Two reasons. (1) ESI is computed from the expiratory flow-volume curve, and
-# ILD produces restrictive physiology with a different curve morphology, so
-# these subjects sit outside the intended target population for an ESI-based
-# COPD classification. (2) Retaining them made the longitudinal analyses
-# disagree on their population: the vital-status file covers only the SM and NS
-# cohorts, so ILD/Brnch subjects were already absent from the mortality models
-# (0 of 61 in the analytic cohort) while still present in the exacerbation (55)
-# and FEV1-decline (61) models. Excluding them makes all four consistent.
 is_ild  <- !is.na(phe_raw$cohort) & trimws(phe_raw$cohort) == "ILD/Brnch"
 n_ild   <- length(unique(phe_raw$pid[is_ild]))
 n_row0  <- nrow(phe_raw)
 phe_raw <- phe_raw[!is_ild, ]
-# The old guard here re-tested the filter that had just run and so could
-# never fail. The failure that can actually happen is the label changing
-# upstream ("ILD/Brnch" -> something else): is_ild would then be all FALSE,
-# nothing would be excluded, and every downstream population would silently
-# revert to the ILD-inclusive cohort. Assert the filter DID something, and
-# that what remains is exactly the two cohorts we expect.
 stopifnot(n_ild > 0)
 .cohorts_left <- sort(unique(trimws(phe_raw$cohort[!is.na(phe_raw$cohort)])))
 stopifnot(identical(.cohorts_left, sort(c("Smoker", "Never smoked"))))
