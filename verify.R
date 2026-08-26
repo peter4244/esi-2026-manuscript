@@ -15,6 +15,19 @@ REGISTRY_N <- 132L
 csv <- file.path(OUT_DIR, "VERIFICATION.csv")
 if (file.exists(csv)) invisible(file.remove(csv))   # never gate on a previous run's CSV
 
+# Same headless-device problem as the analysis, and the same fix. render()
+# knits, and knitr probes the png device during knit() startup before any chunk
+# runs, so on a node whose default bitmapType is "Xlib" with no display that
+# probe warns. It has to be set here, before render() is called; nothing inside
+# verification_report.Rmd is early enough. See render_analysis.R.
+local({
+  .bt <- getOption("bitmapType")
+  if (capabilities("cairo") &&
+      (is.null(.bt) || !nzchar(.bt) || identical(.bt, "Xlib"))) {
+    options(bitmapType = "cairo")
+  }
+})
+
 rmarkdown::render("verification_report.Rmd", quiet = TRUE)
 
 if (!file.exists(csv)) stop("verification_report.Rmd wrote no VERIFICATION.csv")
