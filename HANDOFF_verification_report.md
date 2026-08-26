@@ -62,6 +62,32 @@ bootstraps:
 to no artifact — computed ad hoc. Add a stats writer to the analysis or compute
 them in the report.
 
+## A cluster run is IN FLIGHT — check it first
+
+Started 2026-08-25 on Channing, ~20 min, from local commit `a2c143d`
+(snapshot `09dca2d`). Ask Pete for the output; he runs the commands, we do not
+have cluster access.
+
+    cd /proj/regeps/regep00/studies/COPDGene/analyses/repjc/COPDGene/ESI_MDCOPD_2026/esi-2026 && echo "--- R still running? ---" && (pgrep -f "[k]nitr::knit" >/dev/null && echo YES || echo NO) && echo "--- tail ---" && tail -5 render.log && echo "--- figures ---" && ls -la manuscript_assets/Figure_3_Discordance.png manuscript_assets/Figure_Bhatt_StackedBars.png && echo "--- selfcheck ---" && awk -F, '{print $NF}' manuscript_assets/SELFCHECK.csv | sort | uniq -c && echo "--- diffs ---" && git status --porcelain manuscript_assets
+
+Expected: 68/68, 29 PASS / 0 FAIL, both PNGs fresh and non-zero, R exited.
+
+Three things this run is testing, each a bug fixed today:
+
+1. **Figures actually written.** The figure chunks call `png()` directly, which
+   uses `bitmapType`; knitr's `dev` only covers plots embedded in the report.
+   Setting only one leaves the other broken. A probe in the setup chunk now
+   opens base `png()` and stops if it cannot write, so a dead device fails in
+   5 seconds instead of after a 20-minute run with no figures.
+2. **Clean exit.** R was hanging at exit clearing its temp dir on NFS. Run now
+   sets `TMPDIR=/tmp/repjc_R`, and `graphics.off()` closes lingering devices.
+3. **Reproduction**, via the `git status` diff against this machine's outputs.
+
+**Known nit, not yet fixed:** the setup chunk is `include = FALSE`, so knitr
+captures its output and the `Raster device OK (...)` line never reaches
+`render.log`. Change that `cat()` to `message()` so it goes to stderr. Absence
+of the line is NOT a failure signal; a failed probe calls `stop()`.
+
 ## State
 
 Analysis renders 68/68, self-check 29 PASS / 0 FAIL on both machines.
