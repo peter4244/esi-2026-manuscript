@@ -46,6 +46,14 @@ Thumbs.db
 
 # ---- Rendered deliverables (regenerable from code) -------------------------
 *.docx
+# ...except the two live manuscript documents. These are NOT regenerable: the
+# .docx is the source of truth for the manuscript (build_manuscript.py is
+# retired and its prose .md sources were deleted), so without history an
+# overwrite is unrecoverable. Superseded drafts under manuscript/Old/ stay
+# ignored. Both are excluded from the Changit snapshot, which is built from an
+# explicit file manifest, not from what git tracks.
+!manuscript/ESI manuscript draft v12 2026.8.22_PJC.docx
+!manuscript/ESI manuscript supplement v12 2026.8.16_PJC.docx
 *.doc
 *.pptx
 *.ppt
