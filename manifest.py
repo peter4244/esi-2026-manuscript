@@ -103,9 +103,9 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 ASSETS       = os.path.join(PROJECT_ROOT, "manuscript_assets")
 FIGURES_DIR  = os.path.join(PROJECT_ROOT, "figures")
 MANUSCRIPT_OUT = os.path.join(PROJECT_ROOT, "manuscript",
-                              "ESI manuscript draft v11 2026.8.22_PJC.docx")
+                              "ESI manuscript draft v13 2026.8.26_PJC.docx")
 SUPPLEMENT_OUT = os.path.join(PROJECT_ROOT, "manuscript",
-                              "ESI manuscript supplement v12 2026.8.16_PJC.docx")
+                              "ESI manuscript supplement v13 2026.8.26_PJC.docx")
 BUILD_LOG          = os.path.join(PROJECT_ROOT, "build_log_v9.txt")
 BUILD_LOG_MAIN     = os.path.join(PROJECT_ROOT, "build_log_v9_main.txt")
 BUILD_LOG_SUPP     = os.path.join(PROJECT_ROOT, "build_log_v9_supp.txt")

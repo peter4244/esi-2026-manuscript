@@ -23,22 +23,22 @@ against the artifact as it exists on disk *now*. A number that has drifted —
 because the analysis changed and the prose did not, or the prose was edited by
 hand — fails loudly.
 
-The manuscript is a `.docx` and the Changit snapshot ships no `manuscript/`
-directory, so the report cannot read the document on the cluster. The `claim`
-and `expected` columns are therefore a **transcription** of the printed
-document, made once, by hand, from:
+The manuscript is a `.docx`, so the `claim` and `expected` columns are a
+**transcription** of the printed document, made once, by hand, from:
 
-- `manuscript/ESI manuscript draft v12 2026.8.22_PJC.docx`
+- `manuscript/ESI manuscript draft v13 2026.8.26_PJC.docx`
 
 The transcription is laid out below to mirror the printed tables so a reader can
 check it against the document by eye. Everything downstream of the transcription
 is mechanical.
 
-**Scope.** The main manuscript only. The supplement is machine-built from these
-same artifacts by `build_supplement.py` (see `build_log_v9_supp.txt`), so its
-numbers cannot drift from them. The main document's prose is hand-maintained —
-`manifest.py`'s `MANUSCRIPT_OUT` still points at *v11* while the live document is
-*v12* — which is where drift actually lives.
+**Scope.** The main manuscript, plus those supplement legend claims that are
+written as literals rather than read from an artifact. Supplement *table cells*
+are machine-built from these artifacts by `build_supplement.py` and cannot drift
+from them; supplement *legend prose* can, and did — four CT-category totals sat
+at their pre-ILD-exclusion values until commit `334d655`, because the module
+asserted its own hardcoded totals against a hardcoded cohort size and both sides
+were stale. A co-author spotted that before this registry did.
 
 ```{r config, include = FALSE}
 CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
@@ -50,7 +50,7 @@ source(CONFIG, local = FALSE)
 if (!exists("OUT_DIR")) stop("config '", CONFIG, "' does not define OUT_DIR")
 if (!dir.exists(OUT_DIR)) stop("OUT_DIR does not exist: ", OUT_DIR)
 
-MANUSCRIPT_VERSION <- "ESI manuscript draft v12 2026.8.22_PJC.docx"
+MANUSCRIPT_VERSION <- "ESI manuscript draft v13 2026.8.26_PJC.docx"
 MANUSCRIPT_PATH    <- file.path("manuscript", MANUSCRIPT_VERSION)
 ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 
@@ -58,10 +58,10 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # transcription of the document named above, made once. If the document changes,
 # the transcription may no longer describe it and the registry must be re-read
 # against it -- so the document is pinned by hash. Editing the manuscript without
-# revisiting this file fails here. The Changit snapshot ships no manuscript/
-# directory, so on the cluster this degrades to NOT-AVAILABLE rather than
-# pretending to check something that is not there.
-MANUSCRIPT_MD5 <- "da957e51ef630e97b7fa568f25b12549"
+# revisiting this file fails here. Where no manuscript/ directory is present
+# this degrades to NOT-AVAILABLE rather than pretending to check something that
+# is not there.
+MANUSCRIPT_MD5 <- "5c04c034426e559534f58fda87bcf308"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
@@ -472,6 +472,50 @@ for (cc in crit) {
       "<analysis source>", sprintf('CONSTS[["%s"]]', cc[[1]]), TOL_EXACT)
 }
 
+# --- supplement legend literals ----------------------------------------------
+# Supplement TABLE CELLS are generated from the artifacts and cannot drift. Some
+# legend PROSE, however, states participant counts as literals. That is exactly
+# how the four CT-category totals came to sit at their pre-ILD-exclusion values
+# (COPD-minor 1,099 and COPD-major 3,969, from a cohort of 9,463) while the main
+# text had moved to 9,402: the module asserted its own hardcoded totals against a
+# hardcoded cohort size, so both sides of the check were stale and it passed.
+# Those four are now derived from Table_6.csv. These remaining literals are not,
+# so they are checked here against the artifact they describe.
+legend_num <- function(file, pattern) {
+  path <- file.path("tables", "supp", file)
+  if (!file.exists(path)) return(NA_real_)
+  txt <- paste(readLines(path, warn = FALSE), collapse = " ")
+  m <- regmatches(txt, regexpr(pattern, txt, perl = TRUE))
+  if (!length(m)) return(NA_real_)
+  # Take only the count after "n =". Stripping every non-digit from the whole
+  # match folds in any other number the phrase contains -- "held-out 20% split
+  # (n = 1,880" collapsed to 201880 before this.
+  as.numeric(gsub("[^0-9]", "", sub("^.*n = ", "", m)))
+}
+
+.SECTION <- "Supplement legend literals"
+COHORT_N <- sum(as.matrix(art("Table_6.csv")[, -1]))
+
+# Resolved here, not embedded in the field expression: a regex backslash inside
+# generated R source is not a valid string escape.
+sup_spec <- list(
+  list("SUP-01", "ST1 legend", "full analytic cohort stated as n = 9,402",
+       COHORT_N,             "s1_thresholds_legend.md", "full analytic cohort \\(n = [0-9,]+"),
+  list("SUP-02", "ST1 legend", "held-out split stated as n = 1,880, i.e. 20% of the cohort",
+       round(0.2 * COHORT_N), "s1_thresholds_legend.md", "held-out 20% split \\(n = [0-9,]+"),
+  list("SUP-03", "ST4 legend", "Overall row stated as the full analytic cohort, n = 9,402",
+       COHORT_N,             "s4_baseline_legend.md",   "full analytic cohort \\(n = [0-9,]+"),
+  list("SUP-04", "ST2 legend", "paired bootstrap stated as n = 1,000 replicates",
+       1000,                 "s2_bootstrap_legend.md",  "with replacement \\(n = [0-9,]+"))
+
+SUPVAL <- vapply(sup_spec, function(z) legend_num(z[[5]], z[[6]]), numeric(1))
+names(SUPVAL) <- vapply(sup_spec, function(z) z[[1]], character(1))
+
+for (z in sup_spec) {
+  reg(z[[1]], z[[2]], z[[3]], z[[4]], "<supplement legend>",
+      sprintf('SUPVAL[["%s"]]', z[[1]]), TOL_EXACT)
+}
+
 # --- covariate sets ----------------------------------------------------------
 # Both table legends and Methods state which covariates each model adjusts for.
 # Nothing else in this registry would notice if a model formula changed: every
@@ -567,6 +611,8 @@ rows <- lapply(REG, function(e) {
     env$parse_est <- parse_est; env$num_p <- num_p
     if (e$artifact == "<analysis source>") {
       env$CONSTS <- CONSTS; env$COVSET <- COVSET
+    } else if (e$artifact == "<supplement legend>") {
+      env$SUPVAL <- SUPVAL
     } else {
       env$x <- art(e$artifact)
     }

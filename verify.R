@@ -10,7 +10,7 @@ source(CONFIG, local = FALSE)
 # a chunk turned eval=FALSE, a cached CSV -- reduces what is verified without
 # reducing how green it looks, so the expected count is asserted here rather
 # than merely recorded in a commit message. Raise it when entries are added.
-REGISTRY_N <- 132L
+REGISTRY_N <- 136L
 
 csv <- file.path(OUT_DIR, "VERIFICATION.csv")
 if (file.exists(csv)) invisible(file.remove(csv))   # never gate on a previous run's CSV
