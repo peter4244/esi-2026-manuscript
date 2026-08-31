@@ -108,6 +108,31 @@ def vmerge_col(tbl, col_idx, header_rows=1):
 
 # ---- Table construction ---------------------------------------------------
 
+# Canonical display labels for the MD-COPD diagnostic categories.
+#
+# The analysis writes "COPD-minor" / "COPD-major" as factor levels and every
+# artifact carries those strings; this maps them to what the paper prints. On
+# co-author review the earlier labels were judged to imply that COPD itself can
+# be major or minor, rather than naming the diagnostic pathway.
+#
+# Renaming at display time keeps one vocabulary in the artifacts, so the
+# verification registry keeps matching on the values it always matched on.
+# Four modules previously carried their own identity copy of this map; they now
+# share this one, so a future change cannot land in three places out of four.
+CATEGORY_DISPLAY = {
+    "noCOPD":          "noCOPD",
+    "AFL-only-NoCOPD": "AFL-only-noCOPD",
+    "AFL-only-noCOPD": "AFL-only-noCOPD",
+    "COPD-minor":      "COPD, minor pathway",
+    "COPD-major":      "COPD, major pathway",
+}
+
+
+def cat_label(x):
+    """Display label for a diagnostic category; unknown values pass through."""
+    return CATEGORY_DISPLAY.get(x, x)
+
+
 def _keep_block_together(tbl):
     """Stop a supplemental table and its legend straddling a page boundary.
 

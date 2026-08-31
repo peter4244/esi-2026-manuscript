@@ -13,14 +13,10 @@ they cannot drift from it again.
 import csv
 import os
 
+from tables import docx_helpers as dh
 from manifest import ASSETS
 
-_ROW_LABELS = {
-    "noCOPD":          "noCOPD",
-    "AFL-only-NoCOPD": "AFL-only-noCOPD",
-    "COPD-minor":      "COPD-minor",
-    "COPD-major":      "COPD-major",
-}
+_ROW_LABELS = dh.CATEGORY_DISPLAY   # canonical, see tables/docx_helpers.py
 
 
 def _load():

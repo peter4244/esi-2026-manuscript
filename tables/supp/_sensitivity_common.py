@@ -8,6 +8,7 @@ construction so the three per-analysis modules stay minimal.
 import csv
 import os
 
+from tables import docx_helpers as dh
 from manifest import ASSETS
 
 
@@ -20,11 +21,7 @@ def _fmt_est(est, lci, uci):
     return f"{float(est):.2f} ({float(lci):.2f}–{float(uci):.2f})"
 
 
-_CAT_DISPLAY = {
-    "AFL-only-NoCOPD": "AFL-only-noCOPD",
-    "COPD-minor":      "COPD-minor",
-    "COPD-major":      "COPD-major",
-}
+_CAT_DISPLAY = dh.CATEGORY_DISPLAY   # canonical, see tables/docx_helpers.py
 
 
 _OUTCOME_ORDER   = ["all-cause", "respiratory", "exacerbations"]

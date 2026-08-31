@@ -7,6 +7,7 @@ the shared row-construction logic so the three per-cause modules are minimal.
 import csv
 import os
 
+from tables import docx_helpers as dh
 from manifest import ASSETS
 
 
@@ -20,11 +21,7 @@ def _fmt_hr(hr, lci, uci):
 
 
 CATEGORY_ORDER = ["AFL-only-NoCOPD", "COPD-minor", "COPD-major"]
-CATEGORY_DISPLAY = {
-    "AFL-only-NoCOPD": "AFL-only-noCOPD",
-    "COPD-minor":      "COPD-minor",
-    "COPD-major":      "COPD-major",
-}
+CATEGORY_DISPLAY = dh.CATEGORY_DISPLAY   # canonical, see tables/docx_helpers.py
 
 
 def load_cause_specific(cause):

@@ -84,7 +84,7 @@ def build(doc):
             esi_est_prefix = esi_est_col.split("_")[0]    # "esi"
             body_rows.append([
                 outcome_label,
-                cat,
+                dh.cat_label(cat),
                 _fmt(r[ct_est_col],
                      r[f"{ct_est_prefix}_LCI"],
                      r[f"{ct_est_prefix}_UCI"]),

@@ -67,8 +67,12 @@ stopifnot(n_total == stats["n_cohort"])
 wrap_axis <- function(x) {
   x <- gsub("^noCOPD$",         "\nnoCOPD",       x)
   x <- gsub("AFL-only-noCOPD",  "AFL-only\nnoCOPD", x)
-  x <- gsub("COPD-minor",       "COPD\nminor",    x)
-  x <- gsub("COPD-major",       "COPD\nmajor",    x)
+  # Panel B carries the pathway wording; the full "COPD, minor pathway" string
+  # does not fit the label gutter, and the two-line form keeps the same vertical
+  # footprint as the other categories. Panel A's blocks are shallower still and
+  # keep the bare "minor" / "major", which the legend maps.
+  x <- gsub("COPD-minor",       "minor\npathway", x)
+  x <- gsub("COPD-major",       "major\npathway", x)
   x
 }
 

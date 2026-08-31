@@ -44,7 +44,7 @@ def build(doc):
         for r in rows:
             display, metric = outcome_display[r["outcome"]]
             ci = f"({_fmt(r[cilo_col], 3)}, {_fmt(r[cihi_col], 3)})"
-            body.append([display, metric, r["category"],
+            body.append([display, metric, dh.cat_label(r["category"]),
                          _fmt(r[ct_col]), _fmt(r[esi_col]),
                          _fmt(r[absdiff_col]),
                          _fmt(r[est_col], 3),

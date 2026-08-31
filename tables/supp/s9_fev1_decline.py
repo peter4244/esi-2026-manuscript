@@ -13,11 +13,7 @@ TITLE = ("FEV₁ decline (mL/yr) by MD-COPD diagnostic category under "
 
 
 CATEGORY_ORDER = ["AFL-only-NoCOPD", "COPD-minor", "COPD-major"]
-CATEGORY_DISPLAY = {
-    "AFL-only-NoCOPD": "AFL-only-noCOPD",
-    "COPD-minor":      "COPD-minor",
-    "COPD-major":      "COPD-major",
-}
+CATEGORY_DISPLAY = dh.CATEGORY_DISPLAY   # canonical, see tables/docx_helpers.py
 
 
 def _fmt_p(p):
