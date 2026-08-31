@@ -1,0 +1,5 @@
+**Table 3. Adjusted associations by cross-classification group.**
+
+Cox proportional hazards models estimate the hazard ratio for all-cause and respiratory mortality, and a negative binomial model with a follow-up-year offset estimates the incidence-rate ratio for exacerbations, each relative to the Both-noCOPD reference. Adjustment covariates are age, sex, race, current smoking status, pack-years and body mass index, with prior exacerbation frequency additionally included in the exacerbation model. Groups are defined as in Table 2, which reports the crude rate ratios these estimates adjust; the observed rates and event counts behind those ratios are given in Supplemental Table S18. Pairwise contrasts among the three COPD-positive groups were tested on the log scale with single-step adjusted p-values (multcomp); no contrast reached significance for any outcome, so no significance letters are shown. Full contrast estimates are reported in Supplemental Table 3.
+
+**Abbreviations:** CT, computed tomography; ESI, Emphysema Severity Index; COPD, chronic obstructive pulmonary disease; HR, hazard ratio; IRR, incidence-rate ratio; CI, confidence interval

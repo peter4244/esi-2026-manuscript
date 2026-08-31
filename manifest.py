@@ -24,7 +24,8 @@ MAIN_PROSE_ORDER = [
 # Main-manuscript tables. Long name = filesystem module; short alias = prose key.
 MAIN_TABLES = [
     "table1_by_category",
-    "table2_cross_classification",
+    "table2_crossclass_crude",
+    "table3_crossclass_adjusted",
 ]
 
 # Figures. Same convention.
@@ -38,7 +39,8 @@ FIGURES = [
 # If a table module is renamed, only this map changes; prose is untouched.
 INSERT_KEYS = {
     "table1":   "tables.main.table1_by_category",
-    "table2":   "tables.main.table2_cross_classification",
+    "table2":   "tables.main.table2_crossclass_crude",
+    "table3":   "tables.main.table3_crossclass_adjusted",
     "figure1":  "figures.figure1_agreement",
     "figure2":  "figures.figure2_discordance",
 }

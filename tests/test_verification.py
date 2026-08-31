@@ -76,54 +76,118 @@ def _build_isolated(module_path):
 # ---------------------------------------------------------------------------
 # T-VERIF-1: per-cell triples
 # ---------------------------------------------------------------------------
+def _stacked(est, lci, uci):
+    """The main tables print the estimate on one line and the interval on the
+    next; python-docx reads that w:br back as a newline."""
+    return f"{float(est):.2f}\n({float(lci):.2f}–{float(uci):.2f})"
+
+
+def _flat(est, lci, uci):
+    return f"{float(est):.2f} ({float(lci):.2f}–{float(uci):.2f})"
+
+
+def _find(rows, **kw):
+    for r in rows:
+        if all(r[k] == v for k, v in kw.items()):
+            return r
+    raise KeyError(f"no row matching {kw}")
+
+
 def verif_table1():
-    """Table 1: outcomes by category. Re-derive HR (LCI–UCI) from source CSVs."""
+    """Table 1: nine rows x {crude CT, crude ESI, crude p, adjusted CT,
+    adjusted ESI, adjusted p}, each re-derived from the source CSVs."""
     _, tbl = _build_isolated("tables.main.table1_by_category")
-    rows = _cells(tbl)
-    # Row 1: All-cause mortality (HR) | COPD-minor | CT | ESI
-    allcause = _load_csv("Table_8_allcause.csv")
-    for r in allcause:
-        if r["group"] == "COPD-minor":
-            expected_ct = (f"{float(r['bhatt_HR']):.2f} "
-                            f"({float(r['bhatt_LCI']):.2f}–"
-                            f"{float(r['bhatt_UCI']):.2f})")
-            expected_esi = (f"{float(r['esi_HR']):.2f} "
-                             f"({float(r['esi_LCI']):.2f}–"
-                             f"{float(r['esi_UCI']):.2f})")
-            break
-    actual = rows[1]
-    if actual[2] == expected_ct and actual[3] == expected_esi:
-        _pass(f"Table 1 all-cause × COPD-minor: {expected_ct} | {expected_esi}")
+    rows = [[c.text for c in row.cells] for row in tbl.rows]
+
+    crude = _load_csv("Table_1_raw_rates.csv")
+    adj_src = {"All-cause mortality":   ("Table_8_allcause.csv", "HR"),
+               "Respiratory mortality": ("Table_8_resp.csv", "HR"),
+               "Exacerbations":         ("Table_Exacerbations_Bhatt.csv", "IRR")}
+    boot_src = {"All-cause mortality":   ("Supp_Table_HR_Difference_Bootstrap.csv", "all-cause"),
+                "Respiratory mortality": ("Supp_Table_HR_Difference_Bootstrap.csv", "respiratory"),
+                "Exacerbations":         ("Supp_Table_IRR_Difference_Bootstrap.csv", "exacerbations")}
+    cats = ["AFL-only-NoCOPD", "COPD-minor", "COPD-major"]
+
+    bad = []
+    i = 0
+    for outcome in ("All-cause mortality", "Respiratory mortality", "Exacerbations"):
+        adj_csv, stem = adj_src[outcome]
+        adj = _load_csv(adj_csv)
+        boot_csv, boot_key = boot_src[outcome]
+        boot = _load_csv(boot_csv)
+        for cat in cats:
+            i += 1
+            c = _find(crude, outcome=outcome, category=cat)
+            a = _find(adj, group=cat)
+            b = _find(boot, outcome=boot_key, category=cat)
+            p_crude = float(c["raw_p"])
+            want = [
+                _stacked(c["rr_ct"],  c["rr_ct_lo"],  c["rr_ct_hi"]),
+                _stacked(c["rr_esi"], c["rr_esi_lo"], c["rr_esi_hi"]),
+                "<0.01" if p_crude == 0 else f"{p_crude:.2f}",
+                _stacked(a[f"bhatt_{stem}"], a["bhatt_LCI"], a["bhatt_UCI"]),
+                _stacked(a[f"esi_{stem}"],   a["esi_LCI"],   a["esi_UCI"]),
+                b["two_sided_p_reported"],
+            ]
+            got = rows[i][2:]
+            if got != want:
+                bad.append(f"{outcome}/{cat}: expected {want}, got {got}")
+    if bad:
+        for m in bad:
+            _fail(f"Table 1 drift: {m}")
     else:
-        _fail(f"Table 1 all-cause × COPD-minor drift: "
-              f"expected [{expected_ct} | {expected_esi}], got "
-              f"[{actual[2]} | {actual[3]}]")
+        _pass(f"Table 1: {i} rows x 6 value cells re-derived from source CSVs")
 
 
 def verif_table2():
-    """Table 2: cross-classification. Verify Both-COPD row against CSV."""
-    _, tbl = _build_isolated("tables.main.table2_cross_classification")
-    rows = _cells(tbl)
-    hr_data = _load_csv("Table_BhattOnly_vs_Both.csv")
-    irr_data = _load_csv("Table_Exacerbations_Discordance.csv")
-    both_hr = next(r for r in hr_data if r["group"] == "Both-COPD")
-    both_irr = next(r for r in irr_data if r["group"] == "Both-COPD")
-    expected_all = (f"{float(both_hr['all_HR']):.2f} "
-                     f"({float(both_hr['all_LCI']):.2f}–"
-                     f"{float(both_hr['all_UCI']):.2f})")
-    expected_resp = (f"{float(both_hr['resp_HR']):.2f} "
-                      f"({float(both_hr['resp_LCI']):.2f}–"
-                      f"{float(both_hr['resp_UCI']):.2f})")
-    expected_irr = (f"{float(both_irr['IRR']):.2f} "
-                     f"({float(both_irr['LCI']):.2f}–"
-                     f"{float(both_irr['UCI']):.2f})")
-    both_row = next(r for r in rows if r[0] == "Both-COPD")
-    exp = ["Both-COPD", str(both_hr["n"]),
-           expected_all, expected_resp, expected_irr]
-    if both_row == exp:
-        _pass(f"Table 2 Both-COPD row: {' | '.join(both_row)}")
+    """Table 2: crude rate ratios against the Both-noCOPD reference."""
+    _, tbl = _build_isolated("tables.main.table2_crossclass_crude")
+    rows = [[c.text for c in row.cells] for row in tbl.rows]
+    src = {r["group"]: r for r in _load_csv("Table_2_raw_rates.csv")}
+
+    bad = []
+    if rows[1] != ["Both-noCOPD", "Reference", "Reference", "Reference"]:
+        bad.append(f"reference row: got {rows[1]}")
+    for i, g in enumerate(["CT-only-COPD", "ESI-only-COPD", "Both-COPD"], start=2):
+        r = src[g]
+        want = [g] + [_flat(r[s], r[s + "_lo"], r[s + "_hi"])
+                      for s in ("rr_allcause", "rr_resp", "rr_exac")]
+        if rows[i] != want:
+            bad.append(f"{g}: expected {want}, got {rows[i]}")
+    if bad:
+        for m in bad:
+            _fail(f"Table 2 drift: {m}")
     else:
-        _fail(f"Table 2 Both-COPD row drift: expected {exp}, got {both_row}")
+        _pass("Table 2: 4 group rows re-derived from Table_2_raw_rates.csv")
+
+
+def verif_table3():
+    """Table 3: adjusted HR/IRR against the Both-noCOPD reference."""
+    _, tbl = _build_isolated("tables.main.table3_crossclass_adjusted")
+    rows = [[c.text for c in row.cells] for row in tbl.rows]
+    hr = _load_csv("Table_BhattOnly_vs_Both.csv")
+    irr = _load_csv("Table_Exacerbations_Discordance.csv")
+    src_key = {"CT-only-COPD":  "CT-only-COPD (ESI missed)",
+               "ESI-only-COPD": "ESI-only-COPD (Bhatt missed)",
+               "Both-COPD":     "Both-COPD"}
+
+    bad = []
+    if rows[1] != ["Both-noCOPD", "Reference", "Reference", "Reference"]:
+        bad.append(f"reference row: got {rows[1]}")
+    for i, g in enumerate(["CT-only-COPD", "ESI-only-COPD", "Both-COPD"], start=2):
+        h = _find(hr, group=src_key[g])
+        n = _find(irr, group=src_key[g])
+        want = [g,
+                _flat(h["all_HR"],  h["all_LCI"],  h["all_UCI"]),
+                _flat(h["resp_HR"], h["resp_LCI"], h["resp_UCI"]),
+                _flat(n["IRR"],     n["LCI"],      n["UCI"])]
+        if rows[i] != want:
+            bad.append(f"{g}: expected {want}, got {rows[i]}")
+    if bad:
+        for m in bad:
+            _fail(f"Table 3 drift: {m}")
+    else:
+        _pass("Table 3: 4 group rows re-derived from the adjusted-estimate CSVs")
 
 
 def verif_s1():
@@ -383,15 +447,109 @@ def verif_shape_all():
             ok += 1
         except Exception as e:
             _fail(f"{name} failed to build: {type(e).__name__}: {e}")
-            return
     for name in SUPP_TABLES:
         try:
             _, tbl = _build_isolated(f"tables.supp.{name}")
             ok += 1
         except Exception as e:
             _fail(f"{name} failed to build: {type(e).__name__}: {e}")
-            return
-    _pass(f"all {ok} table modules build without exception")
+    _pass(f"{ok} of {len(MAIN_TABLES) + len(SUPP_TABLES)} table modules "
+          f"build without exception")
+
+
+# ---------------------------------------------------------------------------
+# T-VERIF-4: module output agrees with the shipped .docx
+# ---------------------------------------------------------------------------
+# build_manuscript.py is retired and its prose sources are gone, so the .docx
+# is the source of truth and the main tables are edited in it directly. That
+# leaves the table modules with nothing forcing them to stay current: they went
+# stale once already, and the only reason it was noticed was that this suite
+# crashed on their missing legend files. These cases close that loop by
+# comparing what each module renders against what the .docx actually ships,
+# cell for cell and legend for legend.
+
+_DOCX_TABLE_INDEX = {"table1_by_category": 0,
+                     "table2_crossclass_crude": 1,
+                     "table3_crossclass_adjusted": 2}
+
+
+def _manuscript_document():
+    from manifest import MANUSCRIPT_OUT
+    if not os.path.exists(MANUSCRIPT_OUT):
+        return None
+    return Document(MANUSCRIPT_OUT)
+
+
+def verif_modules_match_docx():
+    doc = _manuscript_document()
+    if doc is None:
+        _fail("manuscript .docx not found; cannot check module agreement")
+        return
+    shipped = doc.tables
+    for name, idx in _DOCX_TABLE_INDEX.items():
+        mod = importlib.import_module(f"tables.main.{name}")
+        d = Document()
+        try:
+            built = mod.build(d)
+        except Exception as e:
+            _fail(f"{name} failed to build: {type(e).__name__}: {e}")
+            continue
+        if idx >= len(shipped):
+            _fail(f"{name}: .docx has only {len(shipped)} tables")
+            continue
+        b = [[c.text for c in r.cells] for r in built.rows]
+        t = [[c.text for c in r.cells] for r in shipped[idx].rows]
+        if b == t:
+            _pass(f"{name} matches .docx table {idx} "
+                  f"({len(b)} rows x {len(b[0])} cols)")
+            continue
+        _fail(f"{name} differs from .docx table {idx}")
+        if len(b) != len(t):
+            _fail(f"  row count: module {len(b)}, .docx {len(t)}")
+        for i, (rb, rt) in enumerate(zip(b, t)):
+            for j, (x, y) in enumerate(zip(rb, rt)):
+                if x != y:
+                    _fail(f"  r{i}c{j}: module {x!r}, .docx {y!r}")
+
+
+def verif_legends_match_docx():
+    """The legend .md files were reconstructed from the .docx after the
+    originals were deleted; this keeps them reconciled."""
+    doc = _manuscript_document()
+    if doc is None:
+        _fail("manuscript .docx not found; cannot check legend agreement")
+        return
+    shipped = {}
+    for p in doc.paragraphs:
+        m = re.match(r"^Table ([123])\. ", p.text.strip())
+        if m and len(p.text) > 200:
+            shipped[m.group(1)] = " ".join(p.text.split())
+
+    for name in _DOCX_TABLE_INDEX:
+        mod = importlib.import_module(f"tables.main.{name}")
+        d = Document()
+        try:
+            mod.build(d)
+        except Exception as e:
+            _fail(f"{name} legend: build failed: {type(e).__name__}: {e}")
+            continue
+        num = mod.TABLE_NUM
+        rendered = [" ".join(p.text.split()) for p in d.paragraphs
+                    if p.text.strip().startswith(f"Table {num}.")]
+        if len(rendered) != 1:
+            _fail(f"{name}: expected 1 legend paragraph, got {len(rendered)}")
+            continue
+        if num not in shipped:
+            _fail(f"{name}: no Table {num} legend found in the .docx")
+            continue
+        if rendered[0] == shipped[num]:
+            _pass(f"{name} legend matches the .docx")
+        else:
+            _fail(f"{name} legend differs from the .docx")
+            import difflib
+            for tok in difflib.ndiff(shipped[num].split(), rendered[0].split()):
+                if tok[0] in "+-":
+                    _fail(f"  {tok}")
 
 
 # ---------------------------------------------------------------------------
@@ -611,6 +769,20 @@ def verif_v10_to_v9_prose_preservation():
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def _run(case):
+    """Run one case, converting an exception into a FAIL rather than letting
+    it abort the suite. The suite used to die on the first raised error, which
+    is how a broken main-table module hid every supplement case behind it for
+    as long as it was broken."""
+    try:
+        case()
+    except Exception as e:
+        import traceback
+        _fail(f"{case.__name__} raised {type(e).__name__}: {e}")
+        for line in traceback.format_exc().strip().splitlines()[-3:]:
+            _fail(f"    {line.strip()}")
+
+
 def main():
     print("=" * 70)
     print("Phase K verification suite")
@@ -618,33 +790,39 @@ def main():
 
     print("\nT-VERIF-1  Per-cell triples")
     print("-" * 70)
-    verif_shape_all()
-    verif_table1()
-    verif_table2()
-    verif_s1()
-    verif_s2()
-    verif_s3()
-    verif_s4a_cvd()
-    verif_s4b_cancer()
-    verif_s4c_other()
-    verif_s5()
-    verif_s6a_mortality_all()
-    verif_s6b_exac()
-    verif_s6c_stratum_display()
-    verif_s7_stratum_display()
-    verif_s8_bootstrap()
-    verif_s9a_mortality()
-    verif_s9b_exac()
-    verif_bhatt_ns_consistent_across_legends()
+    _run(verif_shape_all)
+    _run(verif_table1)
+    _run(verif_table2)
+    _run(verif_table3)
+    _run(verif_s1)
+    _run(verif_s2)
+    _run(verif_s3)
+    _run(verif_s4a_cvd)
+    _run(verif_s4b_cancer)
+    _run(verif_s4c_other)
+    _run(verif_s5)
+    _run(verif_s6a_mortality_all)
+    _run(verif_s6b_exac)
+    _run(verif_s6c_stratum_display)
+    _run(verif_s7_stratum_display)
+    _run(verif_s8_bootstrap)
+    _run(verif_s9a_mortality)
+    _run(verif_s9b_exac)
+    _run(verif_bhatt_ns_consistent_across_legends)
+
+    print("\nT-VERIF-4  Main-table modules agree with the shipped .docx")
+    print("-" * 70)
+    _run(verif_modules_match_docx)
+    _run(verif_legends_match_docx)
 
     print("\nT-VERIF-2  Marker resolution round-trip")
     print("-" * 70)
-    verif_results_marker_resolution()
-    verif_methods_marker_resolution()
+    _run(verif_results_marker_resolution)
+    _run(verif_methods_marker_resolution)
 
     print("\nT-VERIF-3  v10.2 → v9 prose verbatim preservation")
     print("-" * 70)
-    verif_v10_to_v9_prose_preservation()
+    _run(verif_v10_to_v9_prose_preservation)
 
     print()
     print("=" * 70)
