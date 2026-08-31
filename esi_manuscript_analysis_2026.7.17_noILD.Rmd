@@ -2134,6 +2134,94 @@ cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
 Enumerates every CSV the supplement build depends on and aborts if any is
 missing, so the supplement is never built from a partially-run Rmd.
 
+## Section 13 — Reviewer-requested sensitivity analyses
+
+Two adjustments requested in co-author review. Both are reported here as
+sensitivity analyses alongside the primary estimate, so the effect of the extra
+covariate is visible rather than silently folded into the headline result.
+
+- **Exacerbations adjusted for prior exacerbation frequency.** `Exacerbation_Frequency`
+  at the baseline visit, complete for every participant. This is the adjustment
+  used in the original MD-COPD report.
+- **FEV1 decline adjusted for baseline lung function.** Baseline post-bronchodilator
+  FEV1 % predicted, entered as a main effect and interacted with time so category
+  slopes are compared at equal baseline lung function.
+
+```{r reviewer-sensitivity}
+base_cov <- phe_raw %>%
+  filter(visitnum == 1) %>%
+  transmute(pid,
+            prior_exac  = suppressWarnings(as.numeric(Exacerbation_Frequency)),
+            FEV1pp_base = suppressWarnings(as.numeric(FEV1pp_post))) %>%
+  distinct(pid, .keep_all = TRUE)
+
+cats3 <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
+
+# ---- (a) Table 1 exacerbations, + prior exacerbation frequency -------------
+ex_adj <- ex_no_ceil %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(prior_exac))
+nbB_adj <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow +
+                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
+nbE_adj <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow +
+                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
+
+t_exac_adj <- do.call(rbind, lapply(cats3, function(g) {
+  pb <- nb_row(nbB, paste0("bhatt_grp", g)); pe <- nb_row(nbE, paste0("esi_grp", g))
+  ab <- nb_row(nbB_adj, paste0("bhatt_grp", g)); ae <- nb_row(nbE_adj, paste0("esi_grp", g))
+  data.frame(group = g,
+             bhatt_IRR_primary = pb["IRR"], bhatt_IRR_adj = ab["IRR"],
+             bhatt_LCI_adj = ab["LCI"], bhatt_UCI_adj = ab["UCI"], bhatt_p_adj = ab["p"],
+             esi_IRR_primary = pe["IRR"], esi_IRR_adj = ae["IRR"],
+             esi_LCI_adj = ae["LCI"], esi_UCI_adj = ae["UCI"], esi_p_adj = ae["p"])
+}))
+t_exac_adj$n_model <- nrow(ex_adj)
+write.csv(t_exac_adj, file.path(OUT_DIR, "Table_S18_exac_prior_adjusted.csv"), row.names = FALSE)
+kable(t_exac_adj, digits = 3, row.names = FALSE,
+      caption = "Exacerbation IRRs, primary vs additionally adjusted for prior exacerbation frequency.")
+
+# ---- (b) FEV1 decline, + baseline FEV1 % predicted -------------------------
+dec_adj <- decline_b %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(FEV1pp_base))
+lmmB_adj <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + years_from_baseline * FEV1pp_base +
+                   Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow +
+                   ATS_PackYears + (1 | pid), data = dec_adj)
+lmmE_adj <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp + years_from_baseline * FEV1pp_base +
+                   Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow +
+                   ATS_PackYears + (1 | pid), data = dec_adj)
+
+# Baseline FEV1 entered as a main effect only, without the time interaction.
+# Adjusting a longitudinal model of FEV1 for its own baseline is not innocuous
+# (Lord's paradox / regression to the mean), and the two specifications do not
+# have to agree, so both are reported rather than one being chosen silently.
+lmmB_adj0 <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + FEV1pp_base +
+                    Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow +
+                    ATS_PackYears + (1 | pid), data = dec_adj)
+lmmE_adj0 <- lmer(FEV1_post_mL ~ years_from_baseline * esi_grp + FEV1pp_base +
+                    Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow +
+                    ATS_PackYears + (1 | pid), data = dec_adj)
+
+t_decl_adj <- do.call(rbind, lapply(cats3, function(g) {
+  pb <- lmm_row(lmm_bhatt, paste0("years_from_baseline:bhatt_grp", g))
+  pe <- lmm_row(lmm_esi,   paste0("years_from_baseline:esi_grp", g))
+  ab <- lmm_row(lmmB_adj,  paste0("years_from_baseline:bhatt_grp", g))
+  ae <- lmm_row(lmmE_adj,  paste0("years_from_baseline:esi_grp", g))
+  data.frame(group = g,
+             bhatt_est_primary = pb["est"], bhatt_est_adj = ab["est"],
+             bhatt_se_adj = ab["se"], bhatt_p_adj = ab["p"],
+             esi_est_primary = pe["est"], esi_est_adj = ae["est"],
+             esi_se_adj = ae["se"], esi_p_adj = ae["p"],
+             bhatt_est_mainonly = lmm_row(lmmB_adj0, paste0("years_from_baseline:bhatt_grp", g))["est"],
+             bhatt_p_mainonly   = lmm_row(lmmB_adj0, paste0("years_from_baseline:bhatt_grp", g))["p"],
+             esi_est_mainonly   = lmm_row(lmmE_adj0, paste0("years_from_baseline:esi_grp", g))["est"],
+             esi_p_mainonly     = lmm_row(lmmE_adj0, paste0("years_from_baseline:esi_grp", g))["p"])
+}))
+t_decl_adj$n_subj <- dplyr::n_distinct(dec_adj$pid)
+write.csv(t_decl_adj, file.path(OUT_DIR, "Table_S19_decline_baseline_adjusted.csv"), row.names = FALSE)
+kable(t_decl_adj, digits = 3, row.names = FALSE,
+      caption = "FEV1 decline (mL/yr), primary vs additionally adjusted for baseline FEV1 % predicted.")
+
+cat(sprintf("Reviewer sensitivity: exacerbation model n = %d; decline model n = %d participants\n",
+            nrow(ex_adj), dplyr::n_distinct(dec_adj$pid)))
+```
+
 ```{r completeness}
 required_csvs <- c(
   # Main assets
@@ -2151,6 +2239,8 @@ required_csvs <- c(
   "Table_Exacerbations_Discordance.csv",
   "Table_FEV1Decline_byDiscord.csv",
   "Table_2_model_Ns.txt",
+  "Table_S18_exac_prior_adjusted.csv",
+  "Table_S19_decline_baseline_adjusted.csv",
   # Supplement outputs
   "Table_1_Cindex_Equivalence.csv",             # A2 — Table 1 footnote
   "Supp_Table_HR_Difference_Bootstrap.csv",     # A3 — Supp Table S8
