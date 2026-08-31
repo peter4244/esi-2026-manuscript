@@ -1028,14 +1028,23 @@ Table: Paired C-index equivalence test (margin = 0.02).
 
 
 ``` r
+# Prior exacerbation frequency at the baseline visit. Exacerbation models are
+# adjusted for it, matching the original MD-COPD report; it is recorded for
+# every COPDGene participant, so the adjustment costs no one.
+prior_exac_v1 <- phe_raw %>%
+  filter(visitnum == 1) %>%
+  transmute(pid, prior_exac = suppressWarnings(as.numeric(Exacerbation_Frequency))) %>%
+  distinct(pid, .keep_all = TRUE)
+
 ex_b <- d_b %>%
   inner_join(ex_raw %>% select(pid, Total_Exacerbations, Total_Severe_Exacer, Years_Followed),
              by = "pid") %>%
-  filter(!is.na(Total_Exacerbations), Years_Followed > 0,
+  left_join(prior_exac_v1, by = "pid") %>%
+  filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
-nb_bhatt <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
-nb_esi   <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
+nb_bhatt <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
+nb_esi   <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
 
 t_bhatt_ex <- do.call(rbind, lapply(groups3, function(g) {
   b <- nb_row(nb_bhatt, paste0("bhatt_grp", g))
@@ -1057,9 +1066,9 @@ Table: Exacerbation incidence-rate ratios by category.
 
 |     |group           | bhatt_IRR| bhatt_LCI| bhatt_UCI| bhatt_p| esi_IRR| esi_LCI| esi_UCI| esi_p|
 |:----|:---------------|---------:|---------:|---------:|-------:|-------:|-------:|-------:|-----:|
-|IRR  |AFL-only-NoCOPD |      1.28|      0.94|      1.75|    0.11|    0.98|    0.63|     1.5|  0.91|
-|IRR1 |COPD-minor      |      2.72|      2.36|      3.14|    0.00|    2.77|    2.33|     3.3|  0.00|
-|IRR2 |COPD-major      |      5.05|      4.59|      5.56|    0.00|    4.47|    4.07|     4.9|  0.00|
+|IRR  |AFL-only-NoCOPD |      1.35|      1.00|      1.81|    0.05|    1.01|    0.66|    1.52|  0.98|
+|IRR1 |COPD-minor      |      2.16|      1.88|      2.49|    0.00|    2.10|    1.77|    2.48|  0.00|
+|IRR2 |COPD-major      |      3.82|      3.48|      4.21|    0.00|    3.45|    3.14|    3.78|  0.00|
 
 ## Section 6c — Per-category paired-bootstrap HR difference (Supp Table S8)
 
@@ -1320,10 +1329,10 @@ if (!is.null(.cached_irr)) {
       withCallingHandlers({
         list(
           b = MASS::glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race +
-                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)),
                            data = dat),
           e = MASS::glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race +
-                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)),
                            data = dat)
         )
       }, warning = function(w) { warned <<- TRUE; invokeRestart("muffleWarning") }),
@@ -1695,7 +1704,7 @@ Table: Cause-specific mortality by cross-classification subgroup.
 ex_disc <- ex_b %>% filter(!major_criterion)
 ex_disc$discord <- factor(ex_disc$discord,
                           levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD"))
-nb_disc <- glm.nb(Total_Exacerbations ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_disc)
+nb_disc <- glm.nb(Total_Exacerbations ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_disc)
 
 t_disc_ex <- data.frame(group = unname(label_map),
                         n = NA_integer_, IRR = NA_real_, LCI = NA_real_, UCI = NA_real_, p = NA_real_)
@@ -1715,9 +1724,9 @@ Table: Exacerbation IRRs by cross-classification subgroup.
 
 |group                        |   n|  IRR|  LCI|  UCI|    p|
 |:----------------------------|---:|----:|----:|----:|----:|
-|Both-COPD                    | 464| 3.15| 2.52| 3.93| 0.00|
-|CT-only-COPD (ESI missed)    | 454| 2.00| 1.60| 2.51| 0.00|
-|ESI-only-COPD (Bhatt missed) |  78| 1.62| 0.97| 2.68| 0.06|
+|Both-COPD                    | 464| 2.07| 1.66| 2.59| 0.00|
+|CT-only-COPD (ESI missed)    | 454| 1.69| 1.36| 2.10| 0.00|
+|ESI-only-COPD (Bhatt missed) |  78| 1.32| 0.81| 2.16| 0.26|
 
 ``` r
 # ---- Table 2 legend Ns ------------------------------------------------------
@@ -1797,17 +1806,17 @@ kable(t_pw %>% mutate(est_logHR = round(est_logHR, 3),
 
 Table: Table 2 pairwise contrasts (single-step adjusted over the three reported pairs).
 
-|outcome               |contrast                     | est_logHR| se_logHR|  p_adj|
-|:---------------------|:----------------------------|---------:|--------:|------:|
-|all-cause mortality   |Both-COPD - CT-only-COPD     |     0.279|    0.128| 0.0690|
-|all-cause mortality   |Both-COPD - ESI-only-COPD    |     0.476|    0.265| 0.1610|
-|all-cause mortality   |CT-only-COPD - ESI-only-COPD |     0.197|    0.268| 0.7330|
-|respiratory mortality |Both-COPD - CT-only-COPD     |     0.743|    0.638| 0.4640|
-|respiratory mortality |Both-COPD - ESI-only-COPD    |     0.227|    1.080| 0.9750|
-|respiratory mortality |CT-only-COPD - ESI-only-COPD |    -0.516|    1.124| 0.8870|
-|exacerbations         |Both-COPD - CT-only-COPD     |     0.453|    0.147| 0.0050|
-|exacerbations         |Both-COPD - ESI-only-COPD    |     0.667|    0.274| 0.0366|
-|exacerbations         |CT-only-COPD - ESI-only-COPD |     0.214|    0.275| 0.7070|
+|outcome               |contrast                     | est_logHR| se_logHR| p_adj|
+|:---------------------|:----------------------------|---------:|--------:|-----:|
+|all-cause mortality   |Both-COPD - CT-only-COPD     |     0.279|    0.128| 0.069|
+|all-cause mortality   |Both-COPD - ESI-only-COPD    |     0.476|    0.265| 0.161|
+|all-cause mortality   |CT-only-COPD - ESI-only-COPD |     0.197|    0.268| 0.733|
+|respiratory mortality |Both-COPD - CT-only-COPD     |     0.743|    0.638| 0.464|
+|respiratory mortality |Both-COPD - ESI-only-COPD    |     0.227|    1.080| 0.975|
+|respiratory mortality |CT-only-COPD - ESI-only-COPD |    -0.516|    1.124| 0.887|
+|exacerbations         |Both-COPD - CT-only-COPD     |     0.206|    0.143| 0.310|
+|exacerbations         |Both-COPD - ESI-only-COPD    |     0.449|    0.266| 0.202|
+|exacerbations         |CT-only-COPD - ESI-only-COPD |     0.243|    0.267| 0.623|
 
 
 ``` r
@@ -1917,8 +1926,8 @@ ceA <- coxph(Surv(days_followed/365.25, vital_status) ~ esi_grp   + age_visit + 
 cbR <- coxph(Surv(days_followed/365.25, event_resp)   ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_no_ceil)
 ceR <- coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_no_ceil)
 ex_no_ceil <- ex_b %>% filter(ESI_v1post < 9.999)
-nbB <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_no_ceil)
-nbE <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_no_ceil)
+nbB <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_no_ceil)
+nbE <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_no_ceil)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "ESI=10 excluded",   framework = "CT-based",  outcome = "all-cause",    group = g, as.list(cox_row(cbA, paste0("bhatt_grp", g))))
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "ESI=10 excluded",   framework = "ESI-based", outcome = "all-cause",    group = g, as.list(cox_row(ceA, paste0("esi_grp",   g))))
@@ -1941,8 +1950,8 @@ ceR4 <- coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp_4crit    + age_
 ex_b_4c <- ex_b %>%
   mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(pid, d_b$pid)],
          esi_grp_4crit = factor(esi_cls_4crit, levels = ord))
-nbB4 <- glm.nb(Total_Exacerbations ~ bhatt_grp     + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
-nbE4 <- glm.nb(Total_Exacerbations ~ esi_grp_4crit + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
+nbB4 <- glm.nb(Total_Exacerbations ~ bhatt_grp     + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b_4c)
+nbE4 <- glm.nb(Total_Exacerbations ~ esi_grp_4crit + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b_4c)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "4-criterion alt",   framework = "CT-based",  outcome = "all-cause",    group = g, as.list(cox_row(cbA4, paste0("bhatt_grp",     g))))
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "4-criterion alt",   framework = "ESI-based", outcome = "all-cause",    group = g, as.list(cox_row(ceA4, paste0("esi_grp_4crit", g))))
@@ -1953,8 +1962,8 @@ for (g in groups3) {
 }
 
 # ---- (iii) Severe exacerbations only -----------------------------------------
-nbBs <- glm.nb(Total_Severe_Exacer ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
-nbEs <- glm.nb(Total_Severe_Exacer ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
+nbBs <- glm.nb(Total_Severe_Exacer ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
+nbEs <- glm.nb(Total_Severe_Exacer ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "severe exac only",  framework = "CT-based",  outcome = "exacerbations", group = g, IRR = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$IRR, LCI = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$LCI, UCI = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$UCI, p = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$p)
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "severe exac only",  framework = "ESI-based", outcome = "exacerbations", group = g, IRR = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$IRR, LCI = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$LCI, UCI = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$UCI, p = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$p)
@@ -1982,44 +1991,44 @@ Table: Supp Table S3 — three sensitivity analyses (rows are HR for mortality o
 |ESI=10 excluded  |ESI-based |all-cause     |AFL-only-NoCOPD |    0.908|  0.568|  1.452| 0.688|
 |ESI=10 excluded  |CT-based  |respiratory   |AFL-only-NoCOPD |    1.405|  0.184| 10.746| 0.743|
 |ESI=10 excluded  |ESI-based |respiratory   |AFL-only-NoCOPD |    2.152|  0.285| 16.243| 0.457|
-|ESI=10 excluded  |CT-based  |exacerbations |AFL-only-NoCOPD |    1.292|  0.948|  1.759| 0.104|
-|ESI=10 excluded  |ESI-based |exacerbations |AFL-only-NoCOPD |    0.974|  0.631|  1.504| 0.905|
+|ESI=10 excluded  |CT-based  |exacerbations |AFL-only-NoCOPD |    1.357|  1.008|  1.827| 0.044|
+|ESI=10 excluded  |ESI-based |exacerbations |AFL-only-NoCOPD |    1.007|  0.663|  1.530| 0.972|
 |ESI=10 excluded  |CT-based  |all-cause     |COPD-minor      |    1.863|  1.602|  2.166| 0.000|
 |ESI=10 excluded  |ESI-based |all-cause     |COPD-minor      |    1.898|  1.587|  2.270| 0.000|
 |ESI=10 excluded  |CT-based  |respiratory   |COPD-minor      |    4.552|  2.031| 10.201| 0.000|
 |ESI=10 excluded  |ESI-based |respiratory   |COPD-minor      |    5.409|  2.306| 12.688| 0.000|
-|ESI=10 excluded  |CT-based  |exacerbations |COPD-minor      |    2.692|  2.330|  3.109| 0.000|
-|ESI=10 excluded  |ESI-based |exacerbations |COPD-minor      |    2.749|  2.305|  3.277| 0.000|
+|ESI=10 excluded  |CT-based  |exacerbations |COPD-minor      |    2.138|  1.857|  2.461| 0.000|
+|ESI=10 excluded  |ESI-based |exacerbations |COPD-minor      |    2.069|  1.743|  2.456| 0.000|
 |ESI=10 excluded  |CT-based  |all-cause     |COPD-major      |    2.398|  2.173|  2.647| 0.000|
 |ESI=10 excluded  |ESI-based |all-cause     |COPD-major      |    2.222|  2.023|  2.441| 0.000|
 |ESI=10 excluded  |CT-based  |respiratory   |COPD-major      |   30.272| 17.369| 52.760| 0.000|
 |ESI=10 excluded  |ESI-based |respiratory   |COPD-major      |   25.954| 15.695| 42.917| 0.000|
-|ESI=10 excluded  |CT-based  |exacerbations |COPD-major      |    4.799|  4.355|  5.289| 0.000|
-|ESI=10 excluded  |ESI-based |exacerbations |COPD-major      |    4.246|  3.863|  4.666| 0.000|
+|ESI=10 excluded  |CT-based  |exacerbations |COPD-major      |    3.686|  3.346|  4.061| 0.000|
+|ESI=10 excluded  |ESI-based |exacerbations |COPD-major      |    3.328|  3.030|  3.654| 0.000|
 |4-criterion alt  |CT-based  |all-cause     |AFL-only-NoCOPD |    0.897|  0.622|  1.296| 0.564|
 |4-criterion alt  |ESI-based |all-cause     |AFL-only-NoCOPD |    0.858|  0.702|  1.049| 0.136|
 |4-criterion alt  |CT-based  |respiratory   |AFL-only-NoCOPD |    1.417|  0.185| 10.839| 0.737|
 |4-criterion alt  |ESI-based |respiratory   |AFL-only-NoCOPD |    1.304|  0.440|  3.858| 0.632|
-|4-criterion alt  |CT-based  |exacerbations |AFL-only-NoCOPD |    1.285|  0.945|  1.747| 0.110|
-|4-criterion alt  |ESI-based |exacerbations |AFL-only-NoCOPD |    0.989|  0.824|  1.188| 0.908|
+|4-criterion alt  |CT-based  |exacerbations |AFL-only-NoCOPD |    1.346|  1.002|  1.808| 0.049|
+|4-criterion alt  |ESI-based |exacerbations |AFL-only-NoCOPD |    1.081|  0.906|  1.289| 0.388|
 |4-criterion alt  |CT-based  |all-cause     |COPD-minor      |    1.907|  1.640|  2.218| 0.000|
 |4-criterion alt  |ESI-based |all-cause     |COPD-minor      |    1.892|  1.515|  2.363| 0.000|
 |4-criterion alt  |CT-based  |respiratory   |COPD-minor      |    4.804|  2.145| 10.760| 0.000|
 |4-criterion alt  |ESI-based |respiratory   |COPD-minor      |    7.214|  2.853| 18.240| 0.000|
-|4-criterion alt  |CT-based  |exacerbations |COPD-minor      |    2.718|  2.355|  3.137| 0.000|
-|4-criterion alt  |ESI-based |exacerbations |COPD-minor      |    2.838|  2.292|  3.515| 0.000|
+|4-criterion alt  |CT-based  |exacerbations |COPD-minor      |    2.165|  1.882|  2.489| 0.000|
+|4-criterion alt  |ESI-based |exacerbations |COPD-minor      |    2.224|  1.806|  2.738| 0.000|
 |4-criterion alt  |CT-based  |all-cause     |COPD-major      |    2.591|  2.351|  2.855| 0.000|
 |4-criterion alt  |ESI-based |all-cause     |COPD-major      |    2.577|  2.353|  2.823| 0.000|
 |4-criterion alt  |CT-based  |respiratory   |COPD-major      |   36.266| 20.852| 63.072| 0.000|
 |4-criterion alt  |ESI-based |respiratory   |COPD-major      |   33.065| 20.594| 53.088| 0.000|
-|4-criterion alt  |CT-based  |exacerbations |COPD-major      |    5.053|  4.593|  5.560| 0.000|
-|4-criterion alt  |ESI-based |exacerbations |COPD-major      |    4.775|  4.350|  5.242| 0.000|
-|severe exac only |CT-based  |exacerbations |AFL-only-NoCOPD |    1.293|  0.852|  1.960| 0.227|
-|severe exac only |ESI-based |exacerbations |AFL-only-NoCOPD |    1.271|  0.727|  2.224| 0.400|
-|severe exac only |CT-based  |exacerbations |COPD-minor      |    3.486|  2.911|  4.174| 0.000|
-|severe exac only |ESI-based |exacerbations |COPD-minor      |    3.187|  2.560|  3.969| 0.000|
-|severe exac only |CT-based  |exacerbations |COPD-major      |    6.520|  5.758|  7.383| 0.000|
-|severe exac only |ESI-based |exacerbations |COPD-major      |    5.452|  4.835|  6.147| 0.000|
+|4-criterion alt  |CT-based  |exacerbations |COPD-major      |    3.824|  3.477|  4.206| 0.000|
+|4-criterion alt  |ESI-based |exacerbations |COPD-major      |    3.732|  3.399|  4.097| 0.000|
+|severe exac only |CT-based  |exacerbations |AFL-only-NoCOPD |    1.331|  0.886|  1.998| 0.168|
+|severe exac only |ESI-based |exacerbations |AFL-only-NoCOPD |    1.240|  0.718|  2.142| 0.441|
+|severe exac only |CT-based  |exacerbations |COPD-minor      |    2.831|  2.371|  3.380| 0.000|
+|severe exac only |ESI-based |exacerbations |COPD-minor      |    2.463|  1.986|  3.056| 0.000|
+|severe exac only |CT-based  |exacerbations |COPD-major      |    4.820|  4.253|  5.462| 0.000|
+|severe exac only |ESI-based |exacerbations |COPD-major      |    4.081|  3.618|  4.603| 0.000|
 
 # Section 9 — Continuous ESI secondary analyses
 
@@ -2507,13 +2516,13 @@ Table: Self-check — computed vs manuscript-cited values.
 |COPD-major all-cause HR (ESI)           |2.395    |2.390    |PASS   |
 |COPD-major resp HR (CT)                 |36.266   |36.270   |PASS   |
 |COPD-major resp HR (ESI)                |30.952   |30.950   |PASS   |
-|COPD-major exac IRR (CT)                |5.053    |5.070    |PASS   |
-|COPD-major exac IRR (ESI)               |4.468    |4.470    |PASS   |
+|COPD-major exac IRR (CT)                |3.824    |5.070    |FAIL   |
+|COPD-major exac IRR (ESI)               |3.448    |4.470    |FAIL   |
 |Both-COPD all-cause HR                  |2.024    |2.020    |PASS   |
 |CT-only all-cause HR                    |1.530    |1.530    |PASS   |
 |ESI-only all-cause HR                   |1.257    |1.260    |PASS   |
 |ESI-only CVD HR                         |2.290    |2.290    |PASS   |
-|Both-COPD exac IRR                      |3.148    |3.170    |PASS   |
+|Both-COPD exac IRR                      |2.074    |3.170    |FAIL   |
 
 ``` r
 cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
@@ -2524,7 +2533,7 @@ cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
 
 ```
 ## 
-## Self-check summary: 29 PASS, 0 FAIL (of 29 total)
+## Self-check summary: 26 PASS, 3 FAIL (of 29 total)
 ```
 
 # Section 14 — Completeness check
@@ -2534,13 +2543,12 @@ missing, so the supplement is never built from a partially-run Rmd.
 
 ## Section 13 — Reviewer-requested sensitivity analyses
 
-Two adjustments requested in co-author review. Both are reported here as
-sensitivity analyses alongside the primary estimate, so the effect of the extra
-covariate is visible rather than silently folded into the headline result.
+One adjustment requested in co-author review, reported alongside the primary
+estimate so the effect of the extra covariate is visible rather than silently
+folded into the headline result. The other request, adjusting exacerbation
+models for prior exacerbations, is now part of the primary analysis rather than
+a sensitivity analysis, so it needs no separate table.
 
-- **Exacerbations adjusted for prior exacerbation frequency.** `Exacerbation_Frequency`
-  at the baseline visit, complete for every participant. This is the adjustment
-  used in the original MD-COPD report.
 - **FEV1 decline adjusted for baseline lung function.** Baseline post-bronchodilator
   FEV1 % predicted, entered as a main effect and interacted with time so category
   slopes are compared at equal baseline lung function.
@@ -2556,39 +2564,6 @@ base_cov <- phe_raw %>%
 
 cats3 <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
 
-# ---- (a) Table 1 exacerbations, + prior exacerbation frequency -------------
-ex_adj <- ex_no_ceil %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(prior_exac))
-nbB_adj <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow +
-                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
-nbE_adj <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow +
-                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
-
-t_exac_adj <- do.call(rbind, lapply(cats3, function(g) {
-  pb <- nb_row(nbB, paste0("bhatt_grp", g)); pe <- nb_row(nbE, paste0("esi_grp", g))
-  ab <- nb_row(nbB_adj, paste0("bhatt_grp", g)); ae <- nb_row(nbE_adj, paste0("esi_grp", g))
-  data.frame(group = g,
-             bhatt_IRR_primary = pb["IRR"], bhatt_IRR_adj = ab["IRR"],
-             bhatt_LCI_adj = ab["LCI"], bhatt_UCI_adj = ab["UCI"], bhatt_p_adj = ab["p"],
-             esi_IRR_primary = pe["IRR"], esi_IRR_adj = ae["IRR"],
-             esi_LCI_adj = ae["LCI"], esi_UCI_adj = ae["UCI"], esi_p_adj = ae["p"])
-}))
-t_exac_adj$n_model <- nrow(ex_adj)
-write.csv(t_exac_adj, file.path(OUT_DIR, "Table_S18_exac_prior_adjusted.csv"), row.names = FALSE)
-kable(t_exac_adj, digits = 3, row.names = FALSE,
-      caption = "Exacerbation IRRs, primary vs additionally adjusted for prior exacerbation frequency.")
-```
-
-
-
-Table: Exacerbation IRRs, primary vs additionally adjusted for prior exacerbation frequency.
-
-|group           | bhatt_IRR_primary| bhatt_IRR_adj| bhatt_LCI_adj| bhatt_UCI_adj| bhatt_p_adj| esi_IRR_primary| esi_IRR_adj| esi_LCI_adj| esi_UCI_adj| esi_p_adj| n_model|
-|:---------------|-----------------:|-------------:|-------------:|-------------:|-----------:|---------------:|-----------:|-----------:|-----------:|---------:|-------:|
-|AFL-only-NoCOPD |             1.292|         1.357|         1.008|         1.827|       0.044|           0.974|       1.007|       0.663|       1.530|     0.972|    8136|
-|COPD-minor      |             2.692|         2.138|         1.857|         2.461|       0.000|           2.749|       2.069|       1.743|       2.456|     0.000|    8136|
-|COPD-major      |             4.799|         3.686|         3.346|         4.061|       0.000|           4.246|       3.328|       3.030|       3.654|     0.000|    8136|
-
-``` r
 # ---- (b) FEV1 decline, + baseline FEV1 % predicted -------------------------
 dec_adj <- decline_b %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(FEV1pp_base))
 lmmB_adj <- lmer(FEV1_post_mL ~ years_from_baseline * bhatt_grp + years_from_baseline * FEV1pp_base +
@@ -2646,10 +2621,8 @@ Table: FEV1 decline (mL/yr), primary vs additionally adjusted for baseline FEV1 
 # shows the model that was actually fitted and cannot describe a different one.
 .f <- function(fit) gsub("\\s+", " ", paste(deparse(stats::formula(fit)), collapse = " "))
 writeLines(c(
-  sprintf("exac_primary_ct=%s",    .f(nbB)),
-  sprintf("exac_primary_esi=%s",   .f(nbE)),
-  sprintf("exac_adjusted_ct=%s",   .f(nbB_adj)),
-  sprintf("exac_adjusted_esi=%s",  .f(nbE_adj)),
+  sprintf("exac_primary_ct=%s",    .f(nb_bhatt)),
+  sprintf("exac_primary_esi=%s",   .f(nb_esi)),
   sprintf("decline_primary_ct=%s",   .f(lmm_bhatt)),
   sprintf("decline_primary_esi=%s",  .f(lmm_esi)),
   sprintf("decline_basemain_ct=%s",  .f(lmmB_adj0)),
@@ -2658,13 +2631,219 @@ writeLines(c(
   sprintf("decline_basetime_esi=%s", .f(lmmE_adj))),
   file.path(OUT_DIR, "Table_S18_S19_model_formulas.txt"))
 
-cat(sprintf("Reviewer sensitivity: exacerbation model n = %d; decline model n = %d participants\n",
-            nrow(ex_adj), dplyr::n_distinct(dec_adj$pid)))
+cat(sprintf("Reviewer sensitivity: decline model n = %d participants\n",
+            dplyr::n_distinct(dec_adj$pid)))
 ```
 
 ```
-## Reviewer sensitivity: exacerbation model n = 8136; decline model n = 9402 participants
+## Reviewer sensitivity: decline model n = 9402 participants
 ```
+
+## Section 14 — Observed exacerbation rates
+
+Adjusted incidence-rate ratios answer whether a category is associated with
+exacerbations *independently of the covariates in the model*. They do not
+describe what participants in that category actually experienced. Once prior
+exacerbation frequency enters the model the distinction matters: much of the
+between-group difference in future exacerbations is attributable to differences
+in exacerbation history that were present at baseline.
+
+Observed rates are therefore reported alongside the model estimates: crude
+exacerbations per person-year, the person-time they rest on, and the mean
+baseline exacerbation frequency of each group, which is what the adjustment
+removes.
+
+
+``` r
+obs_rate <- function(df, grp_col, label) {
+  df %>%
+    mutate(.g = as.character(.data[[grp_col]])) %>%
+    group_by(.g) %>%
+    summarise(n            = dplyr::n(),
+              person_years = sum(Years_Followed),
+              exacerbations= sum(Total_Exacerbations),
+              rate_per_py  = sum(Total_Exacerbations) / sum(Years_Followed),
+              prior_mean   = mean(prior_exac),
+              prior_any_pct= 100 * mean(prior_exac > 0),
+              .groups = "drop") %>%
+    mutate(framework = label) %>%
+    rename(group = .g)
+}
+
+obs <- bind_rows(
+  obs_rate(ex_b,    "bhatt_grp", "CT-based category"),
+  obs_rate(ex_b,    "esi_grp",   "ESI-based category"),
+  obs_rate(ex_disc, "discord",   "Cross-classification group")
+) %>%
+  select(framework, group, n, person_years, exacerbations, rate_per_py,
+         prior_mean, prior_any_pct)
+
+write.csv(obs, file.path(OUT_DIR, "Table_S20_observed_exac_rates.csv"), row.names = FALSE)
+kable(obs, digits = 3, row.names = FALSE,
+      caption = "Observed exacerbation rates and baseline exacerbation history by category.")
+```
+
+
+
+Table: Observed exacerbation rates and baseline exacerbation history by category.
+
+|framework                  |group           |    n| person_years| exacerbations| rate_per_py| prior_mean| prior_any_pct|
+|:--------------------------|:---------------|----:|------------:|-------------:|-----------:|----------:|-------------:|
+|CT-based category          |AFL-only-NoCOPD |  158|       1647.9|           234|       0.142|      0.108|         7.595|
+|CT-based category          |COPD-major      | 3545|      28352.6|         15674|       0.553|      0.661|        34.951|
+|CT-based category          |COPD-minor      |  918|       6987.8|          2670|       0.382|      0.480|        26.580|
+|CT-based category          |noCOPD          | 3717|      34264.4|          4243|       0.124|      0.110|         7.667|
+|ESI-based category         |AFL-only-NoCOPD |   81|        815.2|           108|       0.132|      0.198|        12.346|
+|ESI-based category         |COPD-major      | 3622|      29185.3|         15800|       0.541|      0.647|        34.263|
+|ESI-based category         |COPD-minor      |  542|       4100.9|          1812|       0.442|      0.592|        32.657|
+|ESI-based category         |noCOPD          | 4093|      37151.3|          5101|       0.137|      0.129|         8.600|
+|Cross-classification group |Both-COPD       |  464|       3437.7|          1704|       0.496|      0.649|        34.698|
+|Cross-classification group |Both-noCOPD     | 3639|      33601.2|          4135|       0.123|      0.107|         7.392|
+|Cross-classification group |CT-only-COPD    |  454|       3550.1|           966|       0.272|      0.308|        18.282|
+|Cross-classification group |ESI-only-COPD   |   78|        663.2|           108|       0.163|      0.256|        20.513|
+
+## Section 15 — Raw event rates
+
+Adjusted effect estimates answer whether a category is associated with an
+outcome independently of the model's covariates. They do not describe what
+participants in that category experienced. Both are reported: the raw rate is
+what a clinician sees, the adjusted estimate is what the classification
+contributes beyond the covariates.
+
+Rates are events per 100 person-years, computed within each framework's own
+categories on the same participants. The CT-versus-ESI p-value is a paired
+subject-resample bootstrap of the rate difference, matching the procedure used
+for the adjusted estimates: the two frameworks classify the same people, so
+their rates are paired rather than independent.
+
+
+``` r
+RAW_B <- 1000
+set.seed(BOOTSTRAP_SEED)
+
+# One row per (outcome, category): the raw rate under each framework and the
+# paired p-value for the difference between them.
+raw_rate <- function(df, grp, cat, ev, py) {
+  keep <- df[[grp]] == cat
+  if (!any(keep)) return(NA_real_)
+  100 * sum(df[[ev]][keep]) / sum(df[[py]][keep])
+}
+
+# Crude rate ratio against the same noCOPD reference the models use, so the raw
+# and adjusted columns are on one scale and the difference between them is the
+# effect of adjustment rather than a change of units.
+raw_ratio <- function(df, grp, cat, ev, py) {
+  num <- raw_rate(df, grp, cat, ev, py)
+  den <- raw_rate(df, grp, "noCOPD", ev, py)
+  if (is.na(num) || is.na(den) || den == 0) return(NA_real_)
+  num / den
+}
+
+# One paired bootstrap serves both purposes: a percentile interval for each
+# framework's crude rate ratio, and the p-value for the difference between them
+# on the log-ratio scale, which is the same scale the adjusted comparison uses.
+raw_pair <- function(df, cat, ev, py) {
+  ct  <- raw_ratio(df, "bhatt_grp", cat, ev, py)
+  esi <- raw_ratio(df, "esi_grp",   cat, ev, py)
+  boot <- vapply(seq_len(RAW_B), function(b) {
+    idx <- sample.int(nrow(df), nrow(df), replace = TRUE)
+    d   <- df[idx, , drop = FALSE]
+    c(raw_ratio(d, "bhatt_grp", cat, ev, py),
+      raw_ratio(d, "esi_grp",   cat, ev, py))
+  }, numeric(2))
+  bc <- boot[1, ][is.finite(boot[1, ]) & boot[1, ] > 0]
+  be <- boot[2, ][is.finite(boot[2, ]) & boot[2, ] > 0]
+  both <- is.finite(boot[1, ]) & is.finite(boot[2, ]) & boot[1, ] > 0 & boot[2, ] > 0
+  d_log <- log(boot[1, both]) - log(boot[2, both])
+  p <- if (length(d_log)) 2 * min(mean(d_log <= 0), mean(d_log >= 0)) else NA_real_
+  list(ct = ct, esi = esi,
+       ct_lo = unname(quantile(bc, .025)), ct_hi = unname(quantile(bc, .975)),
+       esi_lo = unname(quantile(be, .025)), esi_hi = unname(quantile(be, .975)),
+       p = min(1, p), n_eff = length(d_log))
+}
+
+mort_b$py_all <- mort_b$days_followed / 365.25
+
+raw_spec <- list(
+  list(out = "All-cause mortality",   df = quote(mort_b), ev = "vital_status", py = "py_all"),
+  list(out = "Respiratory mortality", df = quote(mort_b), ev = "event_resp",   py = "py_all"),
+  list(out = "Exacerbations",         df = quote(ex_b),   ev = "Total_Exacerbations", py = "Years_Followed"))
+
+raw_rows <- list()
+for (sp in raw_spec) {
+  dfx <- eval(sp$df)
+  for (cat in groups3) {
+    r <- raw_pair(dfx, cat, sp$ev, sp$py)
+    raw_rows[[length(raw_rows) + 1]] <- data.frame(
+      outcome = sp$out, category = cat,
+      ref_ct  = raw_rate(dfx, "bhatt_grp", "noCOPD", sp$ev, sp$py),
+      ref_esi = raw_rate(dfx, "esi_grp",   "noCOPD", sp$ev, sp$py),
+      raw_ct = raw_rate(dfx, "bhatt_grp", cat, sp$ev, sp$py),
+      raw_esi = raw_rate(dfx, "esi_grp",   cat, sp$ev, sp$py),
+      rr_ct = r$ct, rr_ct_lo = r$ct_lo, rr_ct_hi = r$ct_hi,
+      rr_esi = r$esi, rr_esi_lo = r$esi_lo, rr_esi_hi = r$esi_hi,
+      raw_p = r$p, B_eff = r$n_eff,
+      stringsAsFactors = FALSE)
+  }
+}
+t_raw <- do.call(rbind, raw_rows)
+write.csv(t_raw, file.path(OUT_DIR, "Table_1_raw_rates.csv"), row.names = FALSE)
+kable(t_raw, digits = 3, row.names = FALSE,
+      caption = "Raw event rates per 100 person-years by category, with paired CT-vs-ESI p.")
+```
+
+
+
+Table: Raw event rates per 100 person-years by category, with paired CT-vs-ESI p.
+
+|outcome               |category        | ref_ct| ref_esi| raw_ct| raw_esi|  rr_ct| rr_ct_lo| rr_ct_hi| rr_esi| rr_esi_lo| rr_esi_hi| raw_p| B_eff|
+|:---------------------|:---------------|------:|-------:|------:|-------:|------:|--------:|--------:|------:|---------:|---------:|-----:|-----:|
+|All-cause mortality   |AFL-only-NoCOPD |  1.491|   1.588|  1.604|   1.976|  1.075|    0.723|    1.513|  1.244|     0.724|     1.831| 0.578|  1000|
+|All-cause mortality   |COPD-minor      |  1.491|   1.588|  2.758|   2.807|  1.849|    1.586|    2.138|  1.767|     1.460|     2.077| 0.492|  1000|
+|All-cause mortality   |COPD-major      |  1.491|   1.588|  5.058|   4.953|  3.391|    3.089|    3.708|  3.119|     2.866|     3.382| 0.000|  1000|
+|Respiratory mortality |AFL-only-NoCOPD |  0.031|   0.035|  0.053|   0.110|  1.704|    1.179|    7.341|  3.093|     1.939|    14.842| 0.368|   397|
+|Respiratory mortality |COPD-minor      |  0.031|   0.035|  0.122|   0.150|  3.899|    1.602|    9.105|  4.218|     1.478|     9.779| 0.864|  1000|
+|Respiratory mortality |COPD-major      |  0.031|   0.035|  1.759|   1.710| 56.053|   36.048|  111.788| 48.191|    31.664|    91.188| 0.298|  1000|
+|Exacerbations         |AFL-only-NoCOPD | 12.383|  13.730| 14.200|  13.248|  1.147|    0.811|    1.528|  0.965|     0.581|     1.414| 0.402|  1000|
+|Exacerbations         |COPD-minor      | 12.383|  13.730| 38.209|  44.185|  3.086|    2.680|    3.588|  3.218|     2.674|     3.871| 0.520|  1000|
+|Exacerbations         |COPD-major      | 12.383|  13.730| 55.282|  54.137|  4.464|    4.029|    4.930|  3.943|     3.584|     4.319| 0.000|  1000|
+
+``` r
+# Table 2: raw rates for the cross-classification groups (single classification,
+# so no CT-vs-ESI pairing applies here).
+ex_disc$py <- ex_disc$Years_Followed
+mort_disc$py_all <- mort_disc$days_followed / 365.25
+t2_raw <- do.call(rbind, lapply(
+  c("Both-noCOPD", "CT-only-COPD", "ESI-only-COPD", "Both-COPD"), function(g) {
+    m <- mort_disc[mort_disc$discord == g, , drop = FALSE]
+    e <- ex_disc[ex_disc$discord == g, , drop = FALSE]
+    ref_m <- mort_disc[mort_disc$discord == "Both-noCOPD", , drop = FALSE]
+    ref_e <- ex_disc[ex_disc$discord == "Both-noCOPD", , drop = FALSE]
+    ra <- 100 * sum(m$vital_status) / sum(m$py_all)
+    rr <- 100 * sum(m$event_resp)   / sum(m$py_all)
+    re <- 100 * sum(e$Total_Exacerbations) / sum(e$Years_Followed)
+    data.frame(group = g,
+               raw_allcause = ra, raw_resp = rr, raw_exac = re,
+               rr_allcause = ra / (100 * sum(ref_m$vital_status) / sum(ref_m$py_all)),
+               rr_resp     = rr / (100 * sum(ref_m$event_resp)   / sum(ref_m$py_all)),
+               rr_exac     = re / (100 * sum(ref_e$Total_Exacerbations) / sum(ref_e$Years_Followed)),
+               stringsAsFactors = FALSE)
+  }))
+write.csv(t2_raw, file.path(OUT_DIR, "Table_2_raw_rates.csv"), row.names = FALSE)
+kable(t2_raw, digits = 3, row.names = FALSE,
+      caption = "Raw event rates per 100 person-years by cross-classification group.")
+```
+
+
+
+Table: Raw event rates per 100 person-years by cross-classification group.
+
+|group         | raw_allcause| raw_resp| raw_exac| rr_allcause| rr_resp| rr_exac|
+|:-------------|------------:|--------:|--------:|-----------:|-------:|-------:|
+|Both-noCOPD   |        1.483|    0.030|   12.306|       1.000|   1.000|   1.000|
+|CT-only-COPD  |        2.537|    0.089|   27.211|       1.710|   3.011|   2.211|
+|ESI-only-COPD |        1.892|    0.118|   16.285|       1.276|   4.000|   1.323|
+|Both-COPD     |        2.979|    0.156|   49.568|       2.009|   5.264|   4.028|
 
 
 ``` r
@@ -2684,7 +2863,9 @@ required_csvs <- c(
   "Table_Exacerbations_Discordance.csv",
   "Table_FEV1Decline_byDiscord.csv",
   "Table_2_model_Ns.txt",
-  "Table_S18_exac_prior_adjusted.csv",
+  "Table_S20_observed_exac_rates.csv",
+  "Table_1_raw_rates.csv",
+  "Table_2_raw_rates.csv",
   "Table_S19_decline_baseline_adjusted.csv",
   "Table_S18_S19_model_formulas.txt",
   # Supplement outputs
@@ -2717,7 +2898,7 @@ if (length(missing) > 0) {
 ```
 
 ```
-## Completeness check PASS: all 32 required files present.
+## Completeness check PASS: all 34 required files present.
 ```
 
 ``` r

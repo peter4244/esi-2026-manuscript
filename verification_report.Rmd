@@ -61,7 +61,7 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # revisiting this file fails here. Where no manuscript/ directory is present
 # this degrades to NOT-AVAILABLE rather than pretending to check something that
 # is not there.
-MANUSCRIPT_MD5 <- "7dbe2b73dfb6464d664814d34561bab4"
+MANUSCRIPT_MD5 <- "d505cf6e14f9d9e588117b958197f554"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
@@ -214,12 +214,12 @@ for (a in agree) {
 T1 <- data.frame(
   outcome  = c("all-cause",  "all-cause",  "respiratory", "respiratory", "exacerbations", "exacerbations"),
   category = c("COPD-minor", "COPD-major", "COPD-minor",  "COPD-major",  "COPD-minor",    "COPD-major"),
-  ct_est = c( 1.91,  2.59,  4.80, 36.27, 2.72, 5.05),
-  ct_lo  = c( 1.64,  2.35,  2.14, 20.85, 2.36, 4.59),
-  ct_hi  = c( 2.22,  2.86, 10.76, 63.07, 3.14, 5.56),
-  esi_est= c( 1.94,  2.39,  5.68, 30.95, 2.77, 4.47),
-  esi_lo = c( 1.63,  2.18,  2.43, 18.76, 2.33, 4.07),
-  esi_hi = c( 2.32,  2.63, 13.32, 51.06, 3.30, 4.90),
+  ct_est = c( 1.91,  2.59,  4.80, 36.27, 2.16, 3.82),
+  ct_lo  = c( 1.64,  2.35,  2.14, 20.85, 1.88, 3.48),
+  ct_hi  = c( 2.22,  2.86, 10.76, 63.07, 2.49, 4.21),
+  esi_est= c( 1.94,  2.39,  5.68, 30.95, 2.10, 3.45),
+  esi_lo = c( 1.63,  2.18,  2.43, 18.76, 1.77, 3.14),
+  esi_hi = c( 2.32,  2.63, 13.32, 51.06, 2.48, 3.78),
   p      = c("0.85", "<0.002", "0.70", "0.29", "0.80", "<0.002"))
 
 t1_src <- c("all-cause"     = "Table_8_allcause.csv",
@@ -290,7 +290,7 @@ T2 <- data.frame(
   src   = c("CT-only-COPD (ESI missed)", "ESI-only-COPD (Bhatt missed)", "Both-COPD"),
   all_est = c(1.53, 1.26, 2.02), all_lo = c(1.25, 0.76, 1.66), all_hi = c( 1.88,  2.07,  2.46),
   rsp_est = c(2.90, 4.86, 6.10), rsp_lo = c(0.91, 0.62, 2.19), rsp_hi = c( 9.28, 38.02, 16.96),
-  exa_est = c(2.00, 1.62, 3.15), exa_lo = c(1.60, 0.97, 2.52), exa_hi = c( 2.51,  2.68,  3.93))
+  exa_est = c(1.69, 1.32, 2.07), exa_lo = c(1.36, 0.81, 1.66), exa_hi = c( 2.10,  2.16,  2.59))
 
 for (i in seq_len(nrow(T2))) {
   r <- T2[i, ]
@@ -299,7 +299,7 @@ for (i in seq_len(nrow(T2))) {
                    list("rsp", "Table_BhattOnly_vs_Both.csv", c(est="resp_HR", lo="resp_LCI", hi="resp_UCI"), "respiratory mortality HR"),
                    list("exa", "Table_Exacerbations_Discordance.csv", c(est="IRR", lo="LCI", hi="UCI"), "exacerbation IRR"))) {
     for (part in c("est", "lo", "hi")) {
-      reg(sprintf("T2-%s-%s-%s", r$group, blk[[1]], part), "Table 2",
+      reg(sprintf("T2-%s-%s-%s", r$group, blk[[1]], part), "Table 3",
           sprintf("%s, %s, %s", r$group, blk[[4]], part),
           r[[paste0(blk[[1]], "_", part)]], blk[[2]],
           sprintf('x[["%s"]][x$group == "%s"]', blk[[3]][[part]], r$src),
@@ -309,16 +309,12 @@ for (i in seq_len(nrow(T2))) {
 }
 
 # Table 2 legend: pairwise adjusted p-values among the three COPD-positive groups.
-reg("T2-p-both-vs-ct", "Table 2 legend",
-    "Both-COPD vs CT-only exacerbation IRR, p = 0.005", 0.005,
-    "Table_2_pairwise_contrasts.csv",
-    'x$p_adj[x$outcome == "exacerbations" & x$contrast == "Both-COPD - CT-only-COPD"]',
-    TOL_3DP)
-reg("T2-p-both-vs-esi", "Table 2 legend",
-    "Both-COPD vs ESI-only exacerbation IRR, p = 0.037", 0.037,
-    "Table_2_pairwise_contrasts.csv",
-    'x$p_adj[x$outcome == "exacerbations" & x$contrast == "Both-COPD - ESI-only-COPD"]',
-    TOL_3DP)
+# The Table 3 legend now states that no pairwise contrast reached significance
+# for any outcome, so that is what is checked. Adjusting the exacerbation models
+# for prior exacerbation frequency removed the only contrast that previously did.
+reg("T2-p-none-significant", "Table 3 legend",
+    "no pairwise contrast among the COPD-positive groups reaches significance, any outcome",
+    TRUE, "Table_2_pairwise_contrasts.csv", 'all(x$p_adj >= 0.05)', TOL_EXACT)
 
 # Table 2 legend: model sample sizes. These are model Ns, taken off the fitted
 # objects by the `cross-class-exac` chunk. They are NOT the d_b-level subgroup
@@ -383,9 +379,12 @@ reg("PRO-11", "Discussion, limitations", "AFL-only-noCOPD subgroup n = 170",
 
 ```{r reg-significance, include = FALSE}
 .SECTION <- "Significance claims"
+# SIG-03 is not asserted for exacerbations: after adjustment for prior
+# exacerbation frequency the CT-based AFL-only-noCOPD estimate is nominally
+# significant, so the manuscript no longer claims the category is null across
+# every outcome. The mortality claims stand.
 for (a in list(list("SIG-01", "all-cause mortality", "Table_8_allcause.csv",   c("bhatt_p", "esi_p")),
-               list("SIG-02", "respiratory mortality", "Table_8_resp.csv",     c("bhatt_p", "esi_p")),
-               list("SIG-03", "exacerbations", "Table_Exacerbations_Bhatt.csv", c("bhatt_p", "esi_p")))) {
+               list("SIG-02", "respiratory mortality", "Table_8_resp.csv",     c("bhatt_p", "esi_p")))) {
   reg(a[[1]], "Results P4; Discussion P7",
       sprintf("AFL-only-noCOPD not significantly associated with %s under either framework", a[[2]]),
       TRUE, a[[3]],

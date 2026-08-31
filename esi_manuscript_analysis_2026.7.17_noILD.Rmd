@@ -965,14 +965,23 @@ kable(cindex_tbl %>%
 ```
 
 ```{r by-category-exac}
+# Prior exacerbation frequency at the baseline visit. Exacerbation models are
+# adjusted for it, matching the original MD-COPD report; it is recorded for
+# every COPDGene participant, so the adjustment costs no one.
+prior_exac_v1 <- phe_raw %>%
+  filter(visitnum == 1) %>%
+  transmute(pid, prior_exac = suppressWarnings(as.numeric(Exacerbation_Frequency))) %>%
+  distinct(pid, .keep_all = TRUE)
+
 ex_b <- d_b %>%
   inner_join(ex_raw %>% select(pid, Total_Exacerbations, Total_Severe_Exacer, Years_Followed),
              by = "pid") %>%
-  filter(!is.na(Total_Exacerbations), Years_Followed > 0,
+  left_join(prior_exac_v1, by = "pid") %>%
+  filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
-nb_bhatt <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
-nb_esi   <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
+nb_bhatt <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
+nb_esi   <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
 
 t_bhatt_ex <- do.call(rbind, lapply(groups3, function(g) {
   b <- nb_row(nb_bhatt, paste0("bhatt_grp", g))
@@ -1228,10 +1237,10 @@ if (!is.null(.cached_irr)) {
       withCallingHandlers({
         list(
           b = MASS::glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race +
-                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)),
                            data = dat),
           e = MASS::glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race +
-                           SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)),
+                           SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)),
                            data = dat)
         )
       }, warning = function(w) { warned <<- TRUE; invokeRestart("muffleWarning") }),
@@ -1516,7 +1525,7 @@ kable(t_cs_disc, digits = 2, caption = "Cause-specific mortality by cross-classi
 ex_disc <- ex_b %>% filter(!major_criterion)
 ex_disc$discord <- factor(ex_disc$discord,
                           levels = c("Both-noCOPD", "Both-COPD", "CT-only-COPD", "ESI-only-COPD"))
-nb_disc <- glm.nb(Total_Exacerbations ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_disc)
+nb_disc <- glm.nb(Total_Exacerbations ~ discord + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_disc)
 
 t_disc_ex <- data.frame(group = unname(label_map),
                         n = NA_integer_, IRR = NA_real_, LCI = NA_real_, UCI = NA_real_, p = NA_real_)
@@ -1680,8 +1689,8 @@ ceA <- coxph(Surv(days_followed/365.25, vital_status) ~ esi_grp   + age_visit + 
 cbR <- coxph(Surv(days_followed/365.25, event_resp)   ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_no_ceil)
 ceR <- coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI, data = mort_no_ceil)
 ex_no_ceil <- ex_b %>% filter(ESI_v1post < 9.999)
-nbB <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_no_ceil)
-nbE <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_no_ceil)
+nbB <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_no_ceil)
+nbE <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_no_ceil)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "ESI=10 excluded",   framework = "CT-based",  outcome = "all-cause",    group = g, as.list(cox_row(cbA, paste0("bhatt_grp", g))))
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "ESI=10 excluded",   framework = "ESI-based", outcome = "all-cause",    group = g, as.list(cox_row(ceA, paste0("esi_grp",   g))))
@@ -1704,8 +1713,8 @@ ceR4 <- coxph(Surv(days_followed/365.25, event_resp)   ~ esi_grp_4crit    + age_
 ex_b_4c <- ex_b %>%
   mutate(esi_cls_4crit = d_b$esi_cls_4crit[match(pid, d_b$pid)],
          esi_grp_4crit = factor(esi_cls_4crit, levels = ord))
-nbB4 <- glm.nb(Total_Exacerbations ~ bhatt_grp     + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
-nbE4 <- glm.nb(Total_Exacerbations ~ esi_grp_4crit + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b_4c)
+nbB4 <- glm.nb(Total_Exacerbations ~ bhatt_grp     + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b_4c)
+nbE4 <- glm.nb(Total_Exacerbations ~ esi_grp_4crit + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b_4c)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "4-criterion alt",   framework = "CT-based",  outcome = "all-cause",    group = g, as.list(cox_row(cbA4, paste0("bhatt_grp",     g))))
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "4-criterion alt",   framework = "ESI-based", outcome = "all-cause",    group = g, as.list(cox_row(ceA4, paste0("esi_grp_4crit", g))))
@@ -1716,8 +1725,8 @@ for (g in groups3) {
 }
 
 # ---- (iii) Severe exacerbations only -----------------------------------------
-nbBs <- glm.nb(Total_Severe_Exacer ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
-nbEs <- glm.nb(Total_Severe_Exacer ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + offset(log(Years_Followed)), data = ex_b)
+nbBs <- glm.nb(Total_Severe_Exacer ~ bhatt_grp + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
+nbEs <- glm.nb(Total_Severe_Exacer ~ esi_grp   + age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_b)
 for (g in groups3) {
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "severe exac only",  framework = "CT-based",  outcome = "exacerbations", group = g, IRR = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$IRR, LCI = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$LCI, UCI = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$UCI, p = as.list(nb_row(nbBs, paste0("bhatt_grp", g)))$p)
   sens_rows[[length(sens_rows) + 1]] <- data.frame(sensitivity = "severe exac only",  framework = "ESI-based", outcome = "exacerbations", group = g, IRR = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$IRR, LCI = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$LCI, UCI = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$UCI, p = as.list(nb_row(nbEs, paste0("esi_grp",   g)))$p)
@@ -2136,13 +2145,12 @@ missing, so the supplement is never built from a partially-run Rmd.
 
 ## Section 13 — Reviewer-requested sensitivity analyses
 
-Two adjustments requested in co-author review. Both are reported here as
-sensitivity analyses alongside the primary estimate, so the effect of the extra
-covariate is visible rather than silently folded into the headline result.
+One adjustment requested in co-author review, reported alongside the primary
+estimate so the effect of the extra covariate is visible rather than silently
+folded into the headline result. The other request, adjusting exacerbation
+models for prior exacerbations, is now part of the primary analysis rather than
+a sensitivity analysis, so it needs no separate table.
 
-- **Exacerbations adjusted for prior exacerbation frequency.** `Exacerbation_Frequency`
-  at the baseline visit, complete for every participant. This is the adjustment
-  used in the original MD-COPD report.
 - **FEV1 decline adjusted for baseline lung function.** Baseline post-bronchodilator
   FEV1 % predicted, entered as a main effect and interacted with time so category
   slopes are compared at equal baseline lung function.
@@ -2156,27 +2164,6 @@ base_cov <- phe_raw %>%
   distinct(pid, .keep_all = TRUE)
 
 cats3 <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
-
-# ---- (a) Table 1 exacerbations, + prior exacerbation frequency -------------
-ex_adj <- ex_no_ceil %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(prior_exac))
-nbB_adj <- glm.nb(Total_Exacerbations ~ bhatt_grp + age_visit + gender + race + SmokCigNow +
-                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
-nbE_adj <- glm.nb(Total_Exacerbations ~ esi_grp   + age_visit + gender + race + SmokCigNow +
-                    ATS_PackYears + BMI + prior_exac + offset(log(Years_Followed)), data = ex_adj)
-
-t_exac_adj <- do.call(rbind, lapply(cats3, function(g) {
-  pb <- nb_row(nbB, paste0("bhatt_grp", g)); pe <- nb_row(nbE, paste0("esi_grp", g))
-  ab <- nb_row(nbB_adj, paste0("bhatt_grp", g)); ae <- nb_row(nbE_adj, paste0("esi_grp", g))
-  data.frame(group = g,
-             bhatt_IRR_primary = pb["IRR"], bhatt_IRR_adj = ab["IRR"],
-             bhatt_LCI_adj = ab["LCI"], bhatt_UCI_adj = ab["UCI"], bhatt_p_adj = ab["p"],
-             esi_IRR_primary = pe["IRR"], esi_IRR_adj = ae["IRR"],
-             esi_LCI_adj = ae["LCI"], esi_UCI_adj = ae["UCI"], esi_p_adj = ae["p"])
-}))
-t_exac_adj$n_model <- nrow(ex_adj)
-write.csv(t_exac_adj, file.path(OUT_DIR, "Table_S18_exac_prior_adjusted.csv"), row.names = FALSE)
-kable(t_exac_adj, digits = 3, row.names = FALSE,
-      caption = "Exacerbation IRRs, primary vs additionally adjusted for prior exacerbation frequency.")
 
 # ---- (b) FEV1 decline, + baseline FEV1 % predicted -------------------------
 dec_adj <- decline_b %>% inner_join(base_cov, by = "pid") %>% filter(!is.na(FEV1pp_base))
@@ -2223,10 +2210,8 @@ kable(t_decl_adj, digits = 3, row.names = FALSE,
 # shows the model that was actually fitted and cannot describe a different one.
 .f <- function(fit) gsub("\\s+", " ", paste(deparse(stats::formula(fit)), collapse = " "))
 writeLines(c(
-  sprintf("exac_primary_ct=%s",    .f(nbB)),
-  sprintf("exac_primary_esi=%s",   .f(nbE)),
-  sprintf("exac_adjusted_ct=%s",   .f(nbB_adj)),
-  sprintf("exac_adjusted_esi=%s",  .f(nbE_adj)),
+  sprintf("exac_primary_ct=%s",    .f(nb_bhatt)),
+  sprintf("exac_primary_esi=%s",   .f(nb_esi)),
   sprintf("decline_primary_ct=%s",   .f(lmm_bhatt)),
   sprintf("decline_primary_esi=%s",  .f(lmm_esi)),
   sprintf("decline_basemain_ct=%s",  .f(lmmB_adj0)),
@@ -2235,8 +2220,164 @@ writeLines(c(
   sprintf("decline_basetime_esi=%s", .f(lmmE_adj))),
   file.path(OUT_DIR, "Table_S18_S19_model_formulas.txt"))
 
-cat(sprintf("Reviewer sensitivity: exacerbation model n = %d; decline model n = %d participants\n",
-            nrow(ex_adj), dplyr::n_distinct(dec_adj$pid)))
+cat(sprintf("Reviewer sensitivity: decline model n = %d participants\n",
+            dplyr::n_distinct(dec_adj$pid)))
+```
+
+## Section 14 — Observed exacerbation rates
+
+Adjusted incidence-rate ratios answer whether a category is associated with
+exacerbations *independently of the covariates in the model*. They do not
+describe what participants in that category actually experienced. Once prior
+exacerbation frequency enters the model the distinction matters: much of the
+between-group difference in future exacerbations is attributable to differences
+in exacerbation history that were present at baseline.
+
+Observed rates are therefore reported alongside the model estimates: crude
+exacerbations per person-year, the person-time they rest on, and the mean
+baseline exacerbation frequency of each group, which is what the adjustment
+removes.
+
+```{r observed-exacerbation-rates}
+obs_rate <- function(df, grp_col, label) {
+  df %>%
+    mutate(.g = as.character(.data[[grp_col]])) %>%
+    group_by(.g) %>%
+    summarise(n            = dplyr::n(),
+              person_years = sum(Years_Followed),
+              exacerbations= sum(Total_Exacerbations),
+              rate_per_py  = sum(Total_Exacerbations) / sum(Years_Followed),
+              prior_mean   = mean(prior_exac),
+              prior_any_pct= 100 * mean(prior_exac > 0),
+              .groups = "drop") %>%
+    mutate(framework = label) %>%
+    rename(group = .g)
+}
+
+obs <- bind_rows(
+  obs_rate(ex_b,    "bhatt_grp", "CT-based category"),
+  obs_rate(ex_b,    "esi_grp",   "ESI-based category"),
+  obs_rate(ex_disc, "discord",   "Cross-classification group")
+) %>%
+  select(framework, group, n, person_years, exacerbations, rate_per_py,
+         prior_mean, prior_any_pct)
+
+write.csv(obs, file.path(OUT_DIR, "Table_S20_observed_exac_rates.csv"), row.names = FALSE)
+kable(obs, digits = 3, row.names = FALSE,
+      caption = "Observed exacerbation rates and baseline exacerbation history by category.")
+```
+
+## Section 15 — Raw event rates
+
+Adjusted effect estimates answer whether a category is associated with an
+outcome independently of the model's covariates. They do not describe what
+participants in that category experienced. Both are reported: the raw rate is
+what a clinician sees, the adjusted estimate is what the classification
+contributes beyond the covariates.
+
+Rates are events per 100 person-years, computed within each framework's own
+categories on the same participants. The CT-versus-ESI p-value is a paired
+subject-resample bootstrap of the rate difference, matching the procedure used
+for the adjusted estimates: the two frameworks classify the same people, so
+their rates are paired rather than independent.
+
+```{r raw-event-rates}
+RAW_B <- 1000
+set.seed(BOOTSTRAP_SEED)
+
+# One row per (outcome, category): the raw rate under each framework and the
+# paired p-value for the difference between them.
+raw_rate <- function(df, grp, cat, ev, py) {
+  keep <- df[[grp]] == cat
+  if (!any(keep)) return(NA_real_)
+  100 * sum(df[[ev]][keep]) / sum(df[[py]][keep])
+}
+
+# Crude rate ratio against the same noCOPD reference the models use, so the raw
+# and adjusted columns are on one scale and the difference between them is the
+# effect of adjustment rather than a change of units.
+raw_ratio <- function(df, grp, cat, ev, py) {
+  num <- raw_rate(df, grp, cat, ev, py)
+  den <- raw_rate(df, grp, "noCOPD", ev, py)
+  if (is.na(num) || is.na(den) || den == 0) return(NA_real_)
+  num / den
+}
+
+# One paired bootstrap serves both purposes: a percentile interval for each
+# framework's crude rate ratio, and the p-value for the difference between them
+# on the log-ratio scale, which is the same scale the adjusted comparison uses.
+raw_pair <- function(df, cat, ev, py) {
+  ct  <- raw_ratio(df, "bhatt_grp", cat, ev, py)
+  esi <- raw_ratio(df, "esi_grp",   cat, ev, py)
+  boot <- vapply(seq_len(RAW_B), function(b) {
+    idx <- sample.int(nrow(df), nrow(df), replace = TRUE)
+    d   <- df[idx, , drop = FALSE]
+    c(raw_ratio(d, "bhatt_grp", cat, ev, py),
+      raw_ratio(d, "esi_grp",   cat, ev, py))
+  }, numeric(2))
+  bc <- boot[1, ][is.finite(boot[1, ]) & boot[1, ] > 0]
+  be <- boot[2, ][is.finite(boot[2, ]) & boot[2, ] > 0]
+  both <- is.finite(boot[1, ]) & is.finite(boot[2, ]) & boot[1, ] > 0 & boot[2, ] > 0
+  d_log <- log(boot[1, both]) - log(boot[2, both])
+  p <- if (length(d_log)) 2 * min(mean(d_log <= 0), mean(d_log >= 0)) else NA_real_
+  list(ct = ct, esi = esi,
+       ct_lo = unname(quantile(bc, .025)), ct_hi = unname(quantile(bc, .975)),
+       esi_lo = unname(quantile(be, .025)), esi_hi = unname(quantile(be, .975)),
+       p = min(1, p), n_eff = length(d_log))
+}
+
+mort_b$py_all <- mort_b$days_followed / 365.25
+
+raw_spec <- list(
+  list(out = "All-cause mortality",   df = quote(mort_b), ev = "vital_status", py = "py_all"),
+  list(out = "Respiratory mortality", df = quote(mort_b), ev = "event_resp",   py = "py_all"),
+  list(out = "Exacerbations",         df = quote(ex_b),   ev = "Total_Exacerbations", py = "Years_Followed"))
+
+raw_rows <- list()
+for (sp in raw_spec) {
+  dfx <- eval(sp$df)
+  for (cat in groups3) {
+    r <- raw_pair(dfx, cat, sp$ev, sp$py)
+    raw_rows[[length(raw_rows) + 1]] <- data.frame(
+      outcome = sp$out, category = cat,
+      ref_ct  = raw_rate(dfx, "bhatt_grp", "noCOPD", sp$ev, sp$py),
+      ref_esi = raw_rate(dfx, "esi_grp",   "noCOPD", sp$ev, sp$py),
+      raw_ct = raw_rate(dfx, "bhatt_grp", cat, sp$ev, sp$py),
+      raw_esi = raw_rate(dfx, "esi_grp",   cat, sp$ev, sp$py),
+      rr_ct = r$ct, rr_ct_lo = r$ct_lo, rr_ct_hi = r$ct_hi,
+      rr_esi = r$esi, rr_esi_lo = r$esi_lo, rr_esi_hi = r$esi_hi,
+      raw_p = r$p, B_eff = r$n_eff,
+      stringsAsFactors = FALSE)
+  }
+}
+t_raw <- do.call(rbind, raw_rows)
+write.csv(t_raw, file.path(OUT_DIR, "Table_1_raw_rates.csv"), row.names = FALSE)
+kable(t_raw, digits = 3, row.names = FALSE,
+      caption = "Raw event rates per 100 person-years by category, with paired CT-vs-ESI p.")
+
+# Table 2: raw rates for the cross-classification groups (single classification,
+# so no CT-vs-ESI pairing applies here).
+ex_disc$py <- ex_disc$Years_Followed
+mort_disc$py_all <- mort_disc$days_followed / 365.25
+t2_raw <- do.call(rbind, lapply(
+  c("Both-noCOPD", "CT-only-COPD", "ESI-only-COPD", "Both-COPD"), function(g) {
+    m <- mort_disc[mort_disc$discord == g, , drop = FALSE]
+    e <- ex_disc[ex_disc$discord == g, , drop = FALSE]
+    ref_m <- mort_disc[mort_disc$discord == "Both-noCOPD", , drop = FALSE]
+    ref_e <- ex_disc[ex_disc$discord == "Both-noCOPD", , drop = FALSE]
+    ra <- 100 * sum(m$vital_status) / sum(m$py_all)
+    rr <- 100 * sum(m$event_resp)   / sum(m$py_all)
+    re <- 100 * sum(e$Total_Exacerbations) / sum(e$Years_Followed)
+    data.frame(group = g,
+               raw_allcause = ra, raw_resp = rr, raw_exac = re,
+               rr_allcause = ra / (100 * sum(ref_m$vital_status) / sum(ref_m$py_all)),
+               rr_resp     = rr / (100 * sum(ref_m$event_resp)   / sum(ref_m$py_all)),
+               rr_exac     = re / (100 * sum(ref_e$Total_Exacerbations) / sum(ref_e$Years_Followed)),
+               stringsAsFactors = FALSE)
+  }))
+write.csv(t2_raw, file.path(OUT_DIR, "Table_2_raw_rates.csv"), row.names = FALSE)
+kable(t2_raw, digits = 3, row.names = FALSE,
+      caption = "Raw event rates per 100 person-years by cross-classification group.")
 ```
 
 ```{r completeness}
@@ -2256,7 +2397,9 @@ required_csvs <- c(
   "Table_Exacerbations_Discordance.csv",
   "Table_FEV1Decline_byDiscord.csv",
   "Table_2_model_Ns.txt",
-  "Table_S18_exac_prior_adjusted.csv",
+  "Table_S20_observed_exac_rates.csv",
+  "Table_1_raw_rates.csv",
+  "Table_2_raw_rates.csv",
   "Table_S19_decline_baseline_adjusted.csv",
   "Table_S18_S19_model_formulas.txt",
   # Supplement outputs
