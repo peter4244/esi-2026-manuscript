@@ -61,7 +61,7 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # revisiting this file fails here. Where no manuscript/ directory is present
 # this degrades to NOT-AVAILABLE rather than pretending to check something that
 # is not there.
-MANUSCRIPT_MD5 <- "809aba582e9a12c51ba815582b17eeee"
+MANUSCRIPT_MD5 <- "a27e8e3bb0b13fc8028db7fb5e10a40a"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
