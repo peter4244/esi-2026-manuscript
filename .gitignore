@@ -121,3 +121,6 @@ build_log_*.txt
 *.swp
 *.swo
 *.OLD
+
+# Rendered response report (regenerate with render_bhatt_response.R)
+bhatt_response.html

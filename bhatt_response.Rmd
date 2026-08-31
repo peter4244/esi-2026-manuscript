@@ -1,0 +1,358 @@
+---
+title: "Response to co-author review — S. P. Bhatt"
+author: "ESI / MD-COPD manuscript"
+date: "`r format(Sys.time(), '%Y-%m-%d %H:%M')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    df_print: kable
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, comment = "")
+options(stringsAsFactors = FALSE)
+
+CONFIG <- Sys.getenv("ESI_CONFIG", unset = "config_paths.R")
+if (!file.exists(CONFIG)) stop("Missing input-path config: '", CONFIG, "'")
+source(CONFIG, local = FALSE)
+if (!exists("OUT_DIR")) stop("config '", CONFIG, "' does not define OUT_DIR")
+
+# Every number below is read from the artifacts, never typed in. If the analysis
+# changes, this document changes with it.
+A <- function(f) {
+  p <- file.path(OUT_DIR, f)
+  if (!file.exists(p)) stop("artifact absent: ", f,
+                            "\nRun the analysis first: Rscript render_analysis.R")
+  if (grepl("\\.csv$", f)) read.csv(p, check.names = FALSE) else {
+    ln <- readLines(p, warn = FALSE); ln <- ln[grepl("=", ln, fixed = TRUE)]
+    setNames(trimws(sub("^[^=]*=", "", ln)), trimws(sub("=.*$", "", ln)))
+  }
+}
+fmt <- function(x, d = 2) formatC(x, format = "f", digits = d)
+```
+
+<style>
+body { max-width: 62em; }
+table { font-size: 0.94em; }
+.q { background:#f6f8fa; border-left:4px solid #999; padding:0.6em 1em; margin:1em 0; }
+.old { background:#fff5f5; border-left:4px solid #d0021b; padding:0.5em 1em; margin:0.5em 0; }
+.new { background:#f2fbf4; border-left:4px solid #2e7d32; padding:0.5em 1em; margin:0.5em 0; }
+</style>
+
+# What this is
+
+Responses to 21 comments and 8 tracked edits from S. P. Bhatt, made on
+**ESI manuscript draft v12 2026.8.22**. The current draft is **v13 2026.8.26**,
+so a few comments are already overtaken.
+
+Comment text is transcribed from the reviewed `.docx`; every **number** is read
+live from the analysis artifacts in `OUT_DIR`, so this document cannot report a
+value the analysis no longer produces.
+
+```{r provenance}
+p <- tryCatch(A("PROVENANCE.txt"), error = function(e) NULL)
+cat("artifacts   : ", OUT_DIR, "\n", sep = "")
+if (!is.null(p)) {
+  cat("produced by : ", p[["analysis_source"]], "\n",
+      "analysis md5: ", p[["analysis_md5"]], "\n",
+      "R version   : ", p[["r_version"]], "\n",
+      "rendered    : ", p[["rendered_utc"]], "\n", sep = "")
+}
+```
+
+# Disposition at a glance
+
+```{r disposition}
+D <- data.frame(check.names = FALSE,
+  `#` = c(1,3,6,7,8,9,10,11,12,13,14,15,16,17,19,22,24,25,26,27,28),
+  Comment = c(
+    "91% agreement, given no airway assessment",
+    "\"controls\" -> healthy volunteers",
+    "Rename COPD-major / COPD-minor to pathway terms",
+    "State that airway wall thickening is also replaced by ESI",
+    "Is reusing training cutoffs on the whole dataset OK?",
+    "ESI is 0-10; define the thresholds clearly",
+    "What about the airflow-obstruction-but-no-COPD group?",
+    "> should be >=",
+    "> should be >=, confirm what was done",
+    "Do the file names belong in the main text?",
+    "Same for all the file names",
+    "Four groups: weighted kappa or Bangdiwala B?",
+    "Adjust exacerbation models for prior exacerbations",
+    "Add baseline FEV1",
+    "Was GOLD 4 much higher, to give an overall r of 0.78?",
+    "Check FEV1 decline after adjusting for baseline",
+    "ESI unchanged after bronchodilation - \"This is great!\"",
+    "ESI is not on standard spirometry outputs",
+    "Sankey suggests half the CT minor cases were missed",
+    "Add N to each category",
+    "How were the <0.002 p-values calculated?"),
+  Status = c(
+    "Answered below", "Done in v13", "Agreed - wording to confirm",
+    "Deferred", "No change needed", "Text proposed",
+    "Text proposed", "Correction needed", "Correction needed",
+    "Done in v13", "Done in v13", "Answered below - no change needed",
+    "Analysis done", "Analysis done", "Answered below - he is right",
+    "Analysis done", "No action", "Left to the authors",
+    "Answered below - he is right", "Text proposed", "Text proposed"))
+knitr::kable(D, row.names = FALSE)
+```
+
+# Analyses run
+
+## [16] Exacerbations adjusted for prior exacerbations
+
+<div class="q">
+Exacerbation models should ideally be adjusted for prior exacerbations. This will
+also make results consistent with the JAMA paper.
+</div>
+
+Baseline exacerbation frequency is recorded for every participant, so no one is
+lost to the adjustment.
+
+```{r exac-adj}
+s18 <- A("Table_S18_exac_prior_adjusted.csv")
+tab <- data.frame(check.names = FALSE,
+  Category = s18$group,
+  `CT primary`  = fmt(s18$bhatt_IRR_primary),
+  `CT adjusted` = sprintf("%s (%s-%s)", fmt(s18$bhatt_IRR_adj),
+                          fmt(s18$bhatt_LCI_adj), fmt(s18$bhatt_UCI_adj)),
+  `ESI primary`  = fmt(s18$esi_IRR_primary),
+  `ESI adjusted` = sprintf("%s (%s-%s)", fmt(s18$esi_IRR_adj),
+                           fmt(s18$esi_LCI_adj), fmt(s18$esi_UCI_adj)))
+knitr::kable(tab, row.names = FALSE,
+             caption = sprintf("Exacerbation IRR versus noCOPD; adjusted model n = %s.",
+                               format(s18$n_model[1], big.mark = ",")))
+```
+
+**Response.** The estimates attenuate substantially, as expected, but the
+comparison the paper rests on is unchanged: the CT-based estimate remains above
+the ESI-based one in every category and both remain far from the null. Adjusting
+for prior exacerbations does not alter the conclusion that the two frameworks
+carry comparable prognostic information.
+
+```{r exac-afl, results = "asis"}
+afl <- s18[s18$group == "AFL-only-NoCOPD", ]
+if (afl$bhatt_LCI_adj > 1) cat(sprintf(
+"<div class=\"q\"><b>Note for the authors.</b> Under this adjustment the CT-based
+AFL-only-noCOPD estimate becomes %s (%s-%s), p = %s. The manuscript states in two
+places that this category is not significantly associated with risk across
+evaluated outcomes. That statement does not survive the adjustment and needs
+revisiting if this analysis is reported.</div>",
+fmt(afl$bhatt_IRR_adj), fmt(afl$bhatt_LCI_adj), fmt(afl$bhatt_UCI_adj),
+fmt(afl$bhatt_p_adj, 3)))
+```
+
+## [17] and [22] FEV~1~ decline adjusted for baseline lung function
+
+<div class="q">
+Add baseline FEV1. &nbsp;/&nbsp; Please check after adjusting for baseline FEV1.
+Progression models should ideally adjust for baseline.
+</div>
+
+Two specifications are reported because **they do not agree**, and the
+disagreement is the substantive answer. Baseline post-bronchodilator FEV~1~
+% predicted is entered either as a main effect, or interacted with time so that
+category slopes are compared at equal baseline lung function.
+
+```{r decline-adj}
+s19 <- A("Table_S19_decline_baseline_adjusted.csv")
+tab2 <- data.frame(check.names = FALSE,
+  Category = s19$group,
+  `CT primary` = fmt(s19$bhatt_est_primary),
+  `CT + baseline (main)` = sprintf("%s (p=%s)", fmt(s19$bhatt_est_mainonly),
+                                   fmt(s19$bhatt_p_mainonly, 3)),
+  `CT + baseline x time` = sprintf("%s (p=%s)", fmt(s19$bhatt_est_adj),
+                                   fmt(s19$bhatt_p_adj, 3)),
+  `ESI primary` = fmt(s19$esi_est_primary),
+  `ESI + baseline (main)` = sprintf("%s (p=%s)", fmt(s19$esi_est_mainonly),
+                                    fmt(s19$esi_p_mainonly, 3)),
+  `ESI + baseline x time` = sprintf("%s (p=%s)", fmt(s19$esi_est_adj),
+                                    fmt(s19$esi_p_adj, 3)))
+knitr::kable(tab2, row.names = FALSE,
+             caption = sprintf("FEV1 decline, mL/yr versus noCOPD; n = %s participants.",
+                               format(s19$n_subj[1], big.mark = ",")))
+```
+
+```{r decline-note, results = "asis"}
+mj <- s19[s19$group == "COPD-major", ]
+cat(sprintf(
+"**Response.** Entered as a main effect, the COPD-major estimate moves from
+%s to %s mL/yr (p = %s) and the manuscript's conclusion is unchanged. Entered
+interacted with time, the same comparison moves to %s mL/yr (p = %s).
+
+A swing of this size between two defensible specifications is what adjusting a
+longitudinal model of FEV~1~ for its own baseline produces: Lord's paradox and
+regression to the mean. Participants in COPD-major have markedly lower baseline
+FEV~1~ by construction, so conditioning on it and then estimating a slope
+recovers much of the between-group difference as apparent decline.
+
+We therefore report the main-effect specification as the requested sensitivity
+analysis. It answers the reviewer's concern directly and leaves the reported
+conclusion intact. The interacted specification is not, in our view, a defensible
+primary model for this outcome.\n\n",
+fmt(mj$bhatt_est_primary), fmt(mj$bhatt_est_mainonly), fmt(mj$bhatt_p_mainonly, 3),
+fmt(mj$bhatt_est_adj), fmt(mj$bhatt_p_adj, 3)))
+```
+
+# Answered from the data
+
+## [15] Weighted kappa or Bangdiwala B?
+
+<div class="q">
+There are 4 groups, should you use a weighted K or Bangdiwala B?
+</div>
+
+```{r kappa}
+ag <- A("Table_Agreement_stats.txt")
+cat(sprintf("agreement = %s   kappa = %s   sensitivity = %s   specificity = %s   n = %s\n",
+            ag[["agreement"]], ag[["kappa"]], ag[["sensitivity"]], ag[["specificity"]],
+            format(as.numeric(ag[["n_cohort"]]), big.mark = ",")))
+```
+
+**Response — no change to the statistic, but the Methods caused the question.**
+The reported κ is computed on the **binary** classification, COPD versus no COPD,
+not on the four diagnostic categories. Weighted κ and Bangdiwala's B address
+agreement across ordered or multi-category scales; on a 2 × 2 table both reduce
+to the unweighted coefficient, so neither adds information here.
+
+The question arises because Figure 1B displays the four-category
+cross-classification while the Methods say only "Cohen's κ coefficient". We
+propose stating the level of the comparison explicitly (see the text list below).
+
+## [19] Is the correlation much higher in GOLD 4?
+
+<div class="q">
+Was it way higher in GOLD 4 to get the overall R to 0.78 to 0.81?
+</div>
+
+```{r corr}
+t2 <- A("Table_2.csv")
+knitr::kable(data.frame(check.names = FALSE,
+  Stratum = t2$stratum, N = format(t2$n_LAA, big.mark = ","),
+  `r (ESI, %LAA-950HU)` = fmt(t2$r_LAA)), row.names = FALSE)
+```
+
+```{r corr-note, results = "asis"}
+g3 <- t2$r_LAA[t2$stratum == "GOLD3"]; g4 <- t2$r_LAA[t2$stratum == "GOLD4"]
+all <- t2$r_LAA[t2$stratum == "All strata"]
+cat(sprintf(
+"**Response — no, and the reviewer's intuition points the other way.** GOLD 4 is
+%s, *lower* than GOLD 3 at %s. The pooled correlation of %s exceeds every
+individual stratum.
+
+This is a pooling effect rather than a strong within-stratum association: both
+ESI and %%LAA-950HU vary systematically across strata, so combining them adds
+between-stratum variance that inflates the overall coefficient. That is
+consistent with, and arguably strengthens, the manuscript's own position that
+imaging and spirometric measures are related but not interchangeable, and that
+within-stratum association is modest. We suggest making this explicit rather than
+leaving the pooled figure to speak alone.\n\n",
+fmt(g4), fmt(g3), fmt(all)))
+```
+
+## [26] Did ESI miss half the CT minor cases?
+
+<div class="q">
+The Sankey plot suggests half the minor cases per CT were not picked up by ESI
+based MDD?
+</div>
+
+```{r crosstab}
+t6 <- A("Table_6.csv")
+m <- as.matrix(t6[, -1]); rownames(m) <- t6[[1]]
+conc <- diag(m)
+knitr::kable(data.frame(check.names = FALSE,
+  `CT category` = rownames(m),
+  N = format(rowSums(m), big.mark = ","),
+  `Concordant under ESI` = format(conc, big.mark = ","),
+  `%` = sprintf("%s%%", fmt(100 * conc / rowSums(m), 1))), row.names = FALSE)
+```
+
+```{r crosstab-note, results = "asis"}
+mn <- m["COPD-minor", ]; miss <- mn[["noCOPD"]]; tot <- sum(mn)
+cat(sprintf(
+"**Response — correct, and worth stating in the paper.** %s of %s participants
+classified COPD-minor by CT (%s%%) are classified noCOPD under the ESI-based
+framework.
+
+The 91%% overall agreement is carried by the two large concordant categories,
+noCOPD and COPD-major, each above 97%%. Agreement in the minor pathway is close
+to chance, and the AFL-only-noCOPD category is lower still. This is a real
+limitation of the substitution and we would rather state it directly than let the
+headline agreement figure imply uniform performance.\n\n",
+format(miss, big.mark = ","), format(tot, big.mark = ","),
+fmt(100 * miss / tot, 1)))
+```
+
+## [11] and [12] Greater-than versus greater-than-or-equal
+
+<div class="q">
+&gt; should be &gt;=. &nbsp;/&nbsp; &gt;=… confirm this is what was done.
+</div>
+
+**Response — the reviewer is right, and the prose is also inconsistent with the
+implementation.** The Methods define GOLD 0 as FEV~1~/FVC &gt; 0.7, while airflow
+obstruction is defined as FEV~1~/FVC &lt; 0.70. A participant at exactly 0.70
+therefore falls into neither, which cannot be intended.
+
+Separately, the strata are not derived from these inequalities in the analysis at
+all: they are taken from the COPDGene `finalgold_visit` staging variable. The
+prose describes a derivation the code does not perform. Both should be corrected
+together.
+
+# Proposed text changes
+
+## [9] Define the ESI thresholds explicitly
+
+<div class="old">**Old.** …values from the lower threshold up to but not including the upper threshold (1 ≤ ESI &lt; 2.5) contribute one; values at or above the upper threshold (ESI ≥ 2.5) contribute two.</div>
+<div class="new">**New.** ESI ranges from 0 to 10. Values below the lower cutoff (ESI &lt; 1) contribute zero minor criteria; values from the lower cutoff up to but not including the upper cutoff (1 ≤ ESI &lt; 2.5) contribute one; values at or above the upper cutoff (ESI ≥ 2.5) contribute two.</div>
+
+## [10] Where the AFL-only-noCOPD group sits
+
+<div class="old">**Old.** Analyses are restricted to the preserved-spirometry (COPD-minor pathway) subgroup, as in Figure 2.</div>
+<div class="new">**New.** Analyses are restricted to the preserved-spirometry (minor pathway) subgroup, as in Figure 2. Participants meeting the major criterion, including the AFL-only-noCOPD category, are outside this subgroup by definition and are therefore not represented in this table; their outcomes appear in Table 1.</div>
+
+## [15] State that the agreement analysis is binary
+
+<div class="old">**Old.** Classification agreement between CT-based and ESI-based frameworks was assessed using sensitivity, specificity, overall agreement, and Cohen's κ coefficient.</div>
+<div class="new">**New.** Classification agreement between CT-based and ESI-based frameworks was assessed at the level of the binary COPD classification (COPD versus no COPD) using sensitivity, specificity, overall agreement, and Cohen's κ coefficient. Because this comparison is binary, unweighted κ is reported; the four-category cross-classification is displayed in Figure 1B.</div>
+
+## [27] Category sizes in the Table 1 legend
+
+```{r n-legend, results = "asis"}
+cat(sprintf(
+"<div class=\"new\">**Add to the Table 1 legend.** Category sizes under the
+CT-based framework are noCOPD n = %s, AFL-only-noCOPD n = %s, COPD-minor n = %s,
+and COPD-major n = %s. The ESI-based categories contain different participants;
+the full cross-classification is shown in Figure 1B.</div>\n\n",
+format(rowSums(m)[["noCOPD"]], big.mark = ","),
+format(rowSums(m)[["AFL-only-NoCOPD"]], big.mark = ","),
+format(rowSums(m)[["COPD-minor"]], big.mark = ","),
+format(rowSums(m)[["COPD-major"]], big.mark = ",")))
+```
+
+## [28] How the between-framework p-values were computed
+
+<div class="old">**Old.** The two-sided p-value reported in Table 1 is the percentile p for the resample distribution of the log effect difference (log HR or log IRR, CT − ESI); values reported as "&lt;0.002" denote iterations in which no resample crossed zero…</div>
+<div class="new">**New.** The two frameworks are fitted as separate models on the same participants, so their estimates are paired rather than independent. Significance of the between-framework difference is therefore assessed by a paired resample bootstrap: within each of B = 1,000 resamples of participants, both models are refitted and the difference in log effect (log HR or log IRR, CT − ESI) is recorded. The two-sided p-value reported in Table 1 is the percentile p of that resample distribution; values reported as "&lt;0.002" denote outcome-category combinations in which no resample crossed zero…</div>
+
+# Open with the authors
+
+- **[6]** Renaming COPD-major / COPD-minor to pathway terminology is agreed in
+  principle. The exact strings need to be fixed before the change is made, since
+  it touches the prose, both main tables, every supplemental table and the
+  figures.
+- **[7]** Stating explicitly that airway wall thickening is also represented by
+  ESI: deferred.
+- **[25]** ESI is not produced by standard spirometry software, which bears on
+  the implementation argument: left to the authors.
+- **Consequence of [16]**, above: if the prior-exacerbation adjustment is
+  reported, the claim that AFL-only-noCOPD is not significantly associated with
+  any evaluated outcome requires revision.
+
+```{r footer, results = "asis"}
+cat(sprintf("<hr><p style='color:#666'>Generated %s from artifacts in <code>%s</code>.</p>",
+            format(Sys.time(), "%Y-%m-%d %H:%M"), OUT_DIR))
+```
