@@ -61,7 +61,7 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # revisiting this file fails here. Where no manuscript/ directory is present
 # this degrades to NOT-AVAILABLE rather than pretending to check something that
 # is not there.
-MANUSCRIPT_MD5 <- "a27e8e3bb0b13fc8028db7fb5e10a40a"
+MANUSCRIPT_MD5 <- "f5a84f02cac11021ba9f5370b2348fec"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
@@ -283,6 +283,40 @@ for (i in seq_len(nrow(T1))) {
 }
 ```
 
+```{r reg-table1-crude, include = FALSE}
+.SECTION <- "Table 1 (crude rate ratios)"
+# The crude columns of Table 1 were added with the prior-exacerbation
+# adjustment work and had no registry coverage; these are the eighteen values
+# printed in the "Crude RR (CT)" and "Crude RR (ESI)" columns.
+T1C <- data.frame(
+  outcome  = c(rep("All-cause mortality", 3), rep("Respiratory mortality", 3),
+               rep("Exacerbations", 3)),
+  category = rep(c("AFL-only-NoCOPD", "COPD-minor", "COPD-major"), 3),
+  ct_est = c(1.08, 1.85,  3.39,  1.70, 3.90, 56.05, 1.15, 3.09, 4.46),
+  ct_lo  = c(0.72, 1.59,  3.09,  0.00, 1.60, 36.05, 0.81, 2.68, 4.03),
+  ct_hi  = c(1.51, 2.14,  3.71,  7.01, 9.11, 111.79, 1.53, 3.59, 4.93),
+  esi_est= c(1.24, 1.77,  3.12,  3.09, 4.22, 48.19, 0.96, 3.22, 3.94),
+  esi_lo = c(0.72, 1.46,  2.87,  0.00, 1.48, 31.66, 0.58, 2.67, 3.58),
+  esi_hi = c(1.83, 2.08,  3.38, 13.01, 9.78, 91.19, 1.41, 3.87, 4.32))
+
+for (i in seq_len(nrow(T1C))) {
+  r <- T1C[i, ]
+  for (fw in c("ct", "esi")) {
+    for (part in c("est", "lo", "hi")) {
+      fld <- paste0("rr_", fw, c(est = "", lo = "_lo", hi = "_hi")[[part]])
+      reg(sprintf("T1C-%s-%s-%s-%s", r$outcome, r$category, toupper(fw), part),
+          "Table 1",
+          sprintf("crude %s, %s, %s-based %s", r$outcome, r$category,
+                  toupper(fw), part),
+          r[[paste0(fw, "_", part)]], "Table_1_raw_rates.csv",
+          sprintf('x[["%s"]][x$outcome == "%s" & x$category == "%s"]',
+                  fld, r$outcome, r$category),
+          TOL_2DP)
+    }
+  }
+}
+```
+
 ```{r reg-table2, include = FALSE}
 .SECTION <- "Table 2"
 T2 <- data.frame(
@@ -331,6 +365,65 @@ reg("T2-n-mortality-xcheck", "Table 2 legend (cross-check)",
     "preserved-spirometry subgroup size from the cross-tab equals the mortality model N",
     5289, "Table_6.csv",
     'sum(as.matrix(x[x$Bhatt %in% c("noCOPD","COPD-minor"), -1]))', TOL_EXACT)
+```
+
+```{r reg-table2-crude, include = FALSE}
+.SECTION <- "Table 2 (crude rate ratios)"
+# Table 2 holds crude rate ratios against the Both-noCOPD reference. These
+# cells are typed into the .docx from Table_2_raw_rates.csv rather than built
+# by a module, so unlike the supplement tables they can drift and are checked
+# cell by cell.
+T2C <- data.frame(
+  group = c("CT-only-COPD", "ESI-only-COPD", "Both-COPD"),
+  all_est = c(1.71, 1.28, 2.01), all_lo = c(1.38, 0.73, 1.66), all_hi = c(2.08,  1.99,  2.42),
+  rsp_est = c(3.01, 4.00, 5.26), rsp_lo = c(0.54, 0.00, 1.76), rsp_hi = c(8.65, 17.15, 13.63),
+  exa_est = c(2.21, 1.32, 4.03), exa_lo = c(1.80, 0.82, 3.30), exa_hi = c(2.73,  1.97,  4.88))
+
+for (i in seq_len(nrow(T2C))) {
+  r <- T2C[i, ]
+  for (blk in list(list("all", "rr_allcause", "all-cause mortality RR"),
+                   list("rsp", "rr_resp",     "respiratory mortality RR"),
+                   list("exa", "rr_exac",     "exacerbation RR"))) {
+    for (part in c("est", "lo", "hi")) {
+      fld <- switch(part, est = blk[[2]],
+                          lo  = paste0(blk[[2]], "_lo"),
+                          hi  = paste0(blk[[2]], "_hi"))
+      reg(sprintf("T2C-%s-%s-%s", r$group, blk[[1]], part), "Table 2",
+          sprintf("%s, %s, %s", r$group, blk[[3]], part),
+          r[[paste0(blk[[1]], "_", part)]], "Table_2_raw_rates.csv",
+          sprintf('x[["%s"]][x$group == "%s"]', fld, r$group),
+          TOL_2DP)
+    }
+  }
+}
+
+# The reference row prints "Reference" rather than 1.00; check the artifact
+# agrees that it is the reference, so a mislabeled row cannot pass.
+reg("T2C-reference-is-unity", "Table 2",
+    "Both-noCOPD row is the reference (rate ratio 1 for every outcome)",
+    TRUE, "Table_2_raw_rates.csv",
+    'all(abs(unlist(x[x$group == "Both-noCOPD", c("rr_allcause","rr_resp","rr_exac")]) - 1) < 1e-9)',
+    TOL_EXACT)
+
+# Table 2 legend: the two model Ns are registered against Table_2_model_Ns.txt
+# above. Cross-check them against the per-group counts in the rate artifact,
+# which are computed on a different path; agreement means no group was dropped.
+reg("T2C-n-mortality-xcheck", "Table 2 legend (cross-check)",
+    "per-group mortality counts sum to the 5,289 in the legend",
+    5289, "Table_2_raw_rates.csv", 'sum(x$n_mort)', TOL_EXACT)
+reg("T2C-n-exacerbation-xcheck", "Table 2 legend (cross-check)",
+    "per-group exacerbation counts sum to the 4,635 in the legend",
+    4635, "Table_2_raw_rates.csv", 'sum(x$n_exac)', TOL_EXACT)
+
+# Table 2 legend states how few respiratory deaths the discordant groups
+# contribute. This is the sentence that tells a reader not to over-read those
+# intervals, so it is checked rather than trusted.
+reg("T2C-resp-deaths-esi-only", "Table 2 legend",
+    "1 respiratory death in ESI-only-COPD",
+    1, "Table_2_raw_rates.csv", 'x$ev_resp[x$group == "ESI-only-COPD"]', TOL_EXACT)
+reg("T2C-resp-deaths-ct-only", "Table 2 legend",
+    "4 respiratory deaths in CT-only-COPD",
+    4, "Table_2_raw_rates.csv", 'x$ev_resp[x$group == "CT-only-COPD"]', TOL_EXACT)
 ```
 
 ```{r reg-prose, include = FALSE}

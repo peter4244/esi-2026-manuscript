@@ -1,0 +1,5 @@
+**ST18. Observed event rates, event counts and follow-up time in the four cross-classification groups.**
+
+Rates are events per 100 person-years, computed directly from the observed events and follow-up time shown in the same row, with no model and no adjustment. The four groups are defined by whether a participant meets the COPD definition under the CT-based framework, the ESI-based framework, both or neither, within the preserved-spirometry subgroup analyzed in Table 2. Mortality and exacerbation outcomes are analyzed on different participant sets, so n and person-years are given separately for each outcome. Respiratory mortality is reported to three decimal places because the rates are well under one event per 100 person-years, and the event counts show how few deaths several of these rates rest on. Table 2 reports the crude rate ratio of each group against the Both-noCOPD reference, computed from these rates; Table 3 reports the corresponding covariate-adjusted estimates.
+
+**Abbreviations:** CT, computed tomography; ESI, Emphysema Severity Index; COPD, chronic obstructive pulmonary disease.

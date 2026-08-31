@@ -2779,8 +2779,15 @@ raw_pair <- function(df, cat, ev, py) {
     c(raw_ratio(d, "bhatt_grp", cat, ev, py),
       raw_ratio(d, "esi_grp",   cat, ev, py))
   }, numeric(2))
-  bc <- boot[1, ][is.finite(boot[1, ]) & boot[1, ] > 0]
-  be <- boot[2, ][is.finite(boot[2, ]) & boot[2, ] > 0]
+  # A resample in which the category contributed no events is a legitimate
+  # draw with a rate ratio of zero, not a failed one. Dropping those draws
+  # truncates the interval from below and can push the lower bound above 1 on
+  # the strength of a single event: the respiratory rate ratio for
+  # AFL-only-noCOPD rests on about one death, and dropping its zero draws
+  # reported a lower bound of 1.18. Only a resample in which the *reference*
+  # contributed no events leaves the ratio undefined, and only those are cut.
+  bc <- boot[1, ][is.finite(boot[1, ])]
+  be <- boot[2, ][is.finite(boot[2, ])]
   both <- is.finite(boot[1, ]) & is.finite(boot[2, ]) & boot[1, ] > 0 & boot[2, ] > 0
   d_log <- log(boot[1, both]) - log(boot[2, both])
   p <- if (length(d_log)) 2 * min(mean(d_log <= 0), mean(d_log >= 0)) else NA_real_
@@ -2829,7 +2836,7 @@ Table: Raw event rates per 100 person-years by category, with paired CT-vs-ESI p
 |All-cause mortality   |AFL-only-NoCOPD |  1.491|   1.588|  1.604|   1.976|  1.075|    0.723|    1.513|  1.244|     0.724|     1.831| 0.578|  1000|
 |All-cause mortality   |COPD-minor      |  1.491|   1.588|  2.758|   2.807|  1.849|    1.586|    2.138|  1.767|     1.460|     2.077| 0.492|  1000|
 |All-cause mortality   |COPD-major      |  1.491|   1.588|  5.058|   4.953|  3.391|    3.089|    3.708|  3.119|     2.866|     3.382| 0.000|  1000|
-|Respiratory mortality |AFL-only-NoCOPD |  0.031|   0.035|  0.053|   0.110|  1.704|    1.179|    7.341|  3.093|     1.939|    14.842| 0.368|   397|
+|Respiratory mortality |AFL-only-NoCOPD |  0.031|   0.035|  0.053|   0.110|  1.704|    0.000|    7.006|  3.093|     0.000|    13.010| 0.368|   397|
 |Respiratory mortality |COPD-minor      |  0.031|   0.035|  0.122|   0.150|  3.899|    1.602|    9.105|  4.218|     1.478|     9.779| 0.864|  1000|
 |Respiratory mortality |COPD-major      |  0.031|   0.035|  1.759|   1.710| 56.053|   36.048|  111.788| 48.191|    31.664|    91.188| 0.298|  1000|
 |Exacerbations         |AFL-only-NoCOPD | 12.383|  13.730| 14.200|  13.248|  1.147|    0.811|    1.528|  0.965|     0.581|     1.414| 0.402|  1000|
@@ -2837,41 +2844,113 @@ Table: Raw event rates per 100 person-years by category, with paired CT-vs-ESI p
 |Exacerbations         |COPD-major      | 12.383|  13.730| 55.282|  54.137|  4.464|    4.029|    4.930|  3.943|     3.584|     4.319| 0.000|  1000|
 
 ``` r
-# Table 2: raw rates for the cross-classification groups (single classification,
-# so no CT-vs-ESI pairing applies here).
-ex_disc$py <- ex_disc$Years_Followed
+# Table 2: crude rate ratios for the cross-classification groups, against the
+# Both-noCOPD reference. One classification here rather than two, so there is
+# no CT-vs-ESI pairing; the interval is an ordinary subject-resample percentile
+# bootstrap, and the reference rate is recomputed inside every resample so the
+# interval carries the reference's own sampling error rather than treating it
+# as fixed.
+ex_disc$py       <- ex_disc$Years_Followed
 mort_disc$py_all <- mort_disc$days_followed / 365.25
-t2_raw <- do.call(rbind, lapply(
-  c("Both-noCOPD", "CT-only-COPD", "ESI-only-COPD", "Both-COPD"), function(g) {
-    m <- mort_disc[mort_disc$discord == g, , drop = FALSE]
-    e <- ex_disc[ex_disc$discord == g, , drop = FALSE]
-    ref_m <- mort_disc[mort_disc$discord == "Both-noCOPD", , drop = FALSE]
-    ref_e <- ex_disc[ex_disc$discord == "Both-noCOPD", , drop = FALSE]
-    ra <- 100 * sum(m$vital_status) / sum(m$py_all)
-    rr <- 100 * sum(m$event_resp)   / sum(m$py_all)
-    re <- 100 * sum(e$Total_Exacerbations) / sum(e$Years_Followed)
-    data.frame(group = g,
-               raw_allcause = ra, raw_resp = rr, raw_exac = re,
-               rr_allcause = ra / (100 * sum(ref_m$vital_status) / sum(ref_m$py_all)),
-               rr_resp     = rr / (100 * sum(ref_m$event_resp)   / sum(ref_m$py_all)),
-               rr_exac     = re / (100 * sum(ref_e$Total_Exacerbations) / sum(ref_e$Years_Followed)),
-               stringsAsFactors = FALSE)
-  }))
+
+DISC_GROUPS <- c("Both-noCOPD", "CT-only-COPD", "ESI-only-COPD", "Both-COPD")
+DISC_REF    <- "Both-noCOPD"
+
+disc_rate <- function(df, g, ev, py) {
+  keep <- df$discord == g
+  if (!any(keep)) return(NA_real_)
+  d <- sum(df[[py]][keep])
+  if (!is.finite(d) || d <= 0) return(NA_real_)
+  100 * sum(df[[ev]][keep]) / d
+}
+
+disc_ratio <- function(df, g, ev, py) {
+  num <- disc_rate(df, g, ev, py)
+  den <- disc_rate(df, DISC_REF, ev, py)
+  if (is.na(num) || is.na(den) || den == 0) return(NA_real_)
+  num / den
+}
+
+# Returns a group x {est, lo, hi} matrix for one outcome. A single resample
+# feeds every group, which keeps the four ratios internally consistent within
+# each replicate.
+disc_boot <- function(df, ev, py, B = RAW_B) {
+  est <- vapply(DISC_GROUPS, function(g) disc_ratio(df, g, ev, py), numeric(1))
+  reps <- vapply(seq_len(B), function(b) {
+    idx <- sample.int(nrow(df), nrow(df), replace = TRUE)
+    d   <- df[idx, , drop = FALSE]
+    vapply(DISC_GROUPS, function(g) disc_ratio(d, g, ev, py), numeric(1))
+  }, numeric(length(DISC_GROUPS)))
+  ci <- t(vapply(seq_along(DISC_GROUPS), function(i) {
+    v <- reps[i, ]
+    v <- v[is.finite(v)]            # see raw_pair: zero-event draws are kept
+    if (length(v) < 2) return(c(NA_real_, NA_real_, 0))
+    c(unname(quantile(v, .025)), unname(quantile(v, .975)), sum(v > 0))
+  }, numeric(3)))
+  data.frame(group = DISC_GROUPS, est = unname(est),
+             lo = ci[, 1], hi = ci[, 2], B_eff = ci[, 3],
+             stringsAsFactors = FALSE)
+}
+
+set.seed(BOOTSTRAP_SEED)
+b_all  <- disc_boot(mort_disc, "vital_status",        "py_all")
+b_resp <- disc_boot(mort_disc, "event_resp",          "py_all")
+b_exac <- disc_boot(ex_disc,   "Total_Exacerbations", "Years_Followed")
+
+# Counts and person-years behind each rate. A rate table without its
+# denominators cannot be audited, and the respiratory column in particular
+# turns on whether a group contributed one event or twenty.
+disc_n  <- function(df, g) sum(df$discord == g)
+disc_ev <- function(df, g, ev) sum(df[[ev]][df$discord == g])
+disc_py <- function(df, g, py) sum(df[[py]][df$discord == g])
+
+t2_raw <- do.call(rbind, lapply(DISC_GROUPS, function(g) {
+  i <- match(g, DISC_GROUPS)
+  data.frame(
+    group = g,
+    n_mort = disc_n(mort_disc, g), n_exac = disc_n(ex_disc, g),
+    py_mort = disc_py(mort_disc, g, "py_all"),
+    py_exac = disc_py(ex_disc,   g, "Years_Followed"),
+    ev_allcause = disc_ev(mort_disc, g, "vital_status"),
+    ev_resp     = disc_ev(mort_disc, g, "event_resp"),
+    ev_exac     = disc_ev(ex_disc,   g, "Total_Exacerbations"),
+    raw_allcause = disc_rate(mort_disc, g, "vital_status",        "py_all"),
+    raw_resp     = disc_rate(mort_disc, g, "event_resp",          "py_all"),
+    raw_exac     = disc_rate(ex_disc,   g, "Total_Exacerbations", "Years_Followed"),
+    rr_allcause    = b_all$est[i],  rr_allcause_lo = b_all$lo[i],  rr_allcause_hi = b_all$hi[i],
+    rr_resp        = b_resp$est[i], rr_resp_lo     = b_resp$lo[i], rr_resp_hi     = b_resp$hi[i],
+    rr_exac        = b_exac$est[i], rr_exac_lo     = b_exac$lo[i], rr_exac_hi     = b_exac$hi[i],
+    B_eff_allcause = b_all$B_eff[i], B_eff_resp = b_resp$B_eff[i], B_eff_exac = b_exac$B_eff[i],
+    stringsAsFactors = FALSE)
+}))
+
+# Every printed rate must be reproducible from the counts printed beside it.
+stopifnot(
+  all(abs(t2_raw$raw_allcause - 100 * t2_raw$ev_allcause / t2_raw$py_mort) < 1e-9),
+  all(abs(t2_raw$raw_resp     - 100 * t2_raw$ev_resp     / t2_raw$py_mort) < 1e-9),
+  all(abs(t2_raw$raw_exac     - 100 * t2_raw$ev_exac     / t2_raw$py_exac) < 1e-9))
+
+# The reference group's ratio is 1 by construction; a drift here means the
+# reference rate and the numerator rate were computed off different rows.
+stopifnot(all(abs(unlist(t2_raw[t2_raw$group == DISC_REF,
+                                c("rr_allcause", "rr_resp", "rr_exac")]) - 1) < 1e-12))
+
 write.csv(t2_raw, file.path(OUT_DIR, "Table_2_raw_rates.csv"), row.names = FALSE)
 kable(t2_raw, digits = 3, row.names = FALSE,
-      caption = "Raw event rates per 100 person-years by cross-classification group.")
+      caption = paste("Crude rate ratios versus Both-noCOPD by cross-classification",
+                      "group, with raw rates per 100 person-years."))
 ```
 
 
 
-Table: Raw event rates per 100 person-years by cross-classification group.
+Table: Crude rate ratios versus Both-noCOPD by cross-classification group, with raw rates per 100 person-years.
 
-|group         | raw_allcause| raw_resp| raw_exac| rr_allcause| rr_resp| rr_exac|
-|:-------------|------------:|--------:|--------:|-----------:|-------:|-------:|
-|Both-noCOPD   |        1.483|    0.030|   12.306|       1.000|   1.000|   1.000|
-|CT-only-COPD  |        2.537|    0.089|   27.211|       1.710|   3.011|   2.211|
-|ESI-only-COPD |        1.892|    0.118|   16.285|       1.276|   4.000|   1.323|
-|Both-COPD     |        2.979|    0.156|   49.568|       2.009|   5.264|   4.028|
+|group         | n_mort| n_exac|   py_mort| py_exac| ev_allcause| ev_resp| ev_exac| raw_allcause| raw_resp| raw_exac| rr_allcause| rr_allcause_lo| rr_allcause_hi| rr_resp| rr_resp_lo| rr_resp_hi| rr_exac| rr_exac_lo| rr_exac_hi| B_eff_allcause| B_eff_resp| B_eff_exac|
+|:-------------|------:|------:|---------:|-------:|-----------:|-------:|-------:|------------:|--------:|--------:|-----------:|--------------:|--------------:|-------:|----------:|----------:|-------:|----------:|----------:|--------------:|----------:|----------:|
+|Both-noCOPD   |   4109|   3639| 40589.782| 33601.2|         602|      12|    4135|        1.483|    0.030|   12.306|       1.000|          1.000|          1.000|   1.000|      1.000|      1.000|   1.000|      1.000|      1.000|           1000|       1000|       1000|
+|CT-only-COPD  |    538|    454|  4493.725|  3550.1|         114|       4|     966|        2.537|    0.089|   27.211|       1.710|          1.380|          2.082|   3.011|      0.540|      8.649|   2.211|      1.795|      2.730|           1000|        979|       1000|
+|ESI-only-COPD |     94|     78|   845.558|   663.2|          16|       1|     108|        1.892|    0.118|   16.285|       1.276|          0.728|          1.989|   4.000|      0.000|     17.146|   1.323|      0.816|      1.966|           1000|        630|       1000|
+|Both-COPD     |    548|    464|  4498.196|  3437.7|         134|       7|    1704|        2.979|    0.156|   49.568|       2.009|          1.663|          2.416|   5.264|      1.762|     13.630|   4.028|      3.303|      4.877|           1000|       1000|       1000|
 
 
 ``` r

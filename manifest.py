@@ -93,6 +93,7 @@ SUPP_TABLES = [
     "s15_continuous_fev1_decline",
     "s16_esi_trajectory",
     "s17_bronchodilator_delta_esi",
+    "s18_crossclass_raw_rates",
 ]
 
 # ============================================================================
