@@ -406,7 +406,7 @@ assess airflow obstruction.
 knitr::kable(row.names = FALSE, data.frame(check.names = FALSE,
   `#` = c("6", "9", "10", "11, 12", "13, 14", "15", "27", "28", "-"),
   Change = c(
-    "COPD-minor and COPD-major renamed to COPD, minor pathway and COPD, major pathway throughout the prose, both tables and the figure legends. noCOPD and AFL-only-noCOPD are unchanged.",
+    "COPD-minor and COPD-major renamed to COPD minor pathway and COPD major pathway throughout the prose, both tables and the figure legends. noCOPD and AFL-only-noCOPD are unchanged.",
     "The ESI scoring rule now states the 0-10 range explicitly and uses \"cutoff\" for both thresholds.",
     "The Table 2 legend records that participants meeting the major criterion, including AFL-only-noCOPD, are outside the preserved-spirometry subgroup by construction.",
     "GOLD 0 is defined with >= rather than >, and the Methods now record that spirometric strata are taken from the COPDGene staging variable rather than by applying cut-points.",

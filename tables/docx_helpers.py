@@ -123,8 +123,8 @@ CATEGORY_DISPLAY = {
     "noCOPD":          "noCOPD",
     "AFL-only-NoCOPD": "AFL-only-noCOPD",
     "AFL-only-noCOPD": "AFL-only-noCOPD",
-    "COPD-minor":      "COPD, minor pathway",
-    "COPD-major":      "COPD, major pathway",
+    "COPD-minor":      "COPD minor pathway",
+    "COPD-major":      "COPD major pathway",
 }
 
 
