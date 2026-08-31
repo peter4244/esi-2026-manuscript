@@ -62,9 +62,11 @@ table { font-size: 0.94em; }
 
 # What this is
 
-Responses to 21 comments and 8 tracked edits from S. P. Bhatt, made on
-**ESI manuscript draft v12 2026.8.22**. The current draft is **v13 2026.8.26**,
-so a few comments are already overtaken.
+Responses to 21 comments and 8 tracked edits from S. P. Bhatt. The reviewed file
+is named **v12 2026.8.22** but its contents are partway through v13: it carries
+the never-smoker correction, the added authors and the two-decimal p-values, but
+not the Limitations addition or the removal of the data file names. The current
+draft is **v15 2026.8.31**, so several comments are already addressed.
 
 Comment text is transcribed from the reviewed `.docx`; every **number** is read
 live from the analysis artifacts in `OUT_DIR`, so this document cannot report a
@@ -108,13 +110,13 @@ D <- data.frame(check.names = FALSE,
     "Add N to each category",
     "How were the <0.002 p-values calculated?"),
   Status = c(
-    "Answered below", "Done in v13", "Agreed - wording to confirm",
-    "Deferred", "No change needed", "Text proposed",
-    "Text proposed", "Correction needed", "Correction needed",
-    "Done in v13", "Done in v13", "Answered below - no change needed",
-    "Analysis done", "Analysis done", "Answered below - he is right",
-    "Analysis done", "No action", "Left to the authors",
-    "Answered below - he is right", "Text proposed", "Text proposed"))
+    "Observation - no change requested", "OPEN - authors to decide", "Applied in v15",
+    "Deferred by the authors", "No change needed", "Applied in v15",
+    "Applied in v15", "Applied in v15", "Applied in v15",
+    "Applied in v15", "Applied in v15", "Answered - no change needed",
+    "Analysis run - wording pending", "Analysis run", "Answered - he is right",
+    "Analysis run", "No action", "OPEN - authors to decide",
+    "Answered - he is right", "Applied in v15", "Applied in v15"))
 knitr::kable(D, row.names = FALSE)
 ```
 
@@ -127,50 +129,14 @@ Exacerbation models should ideally be adjusted for prior exacerbations. This wil
 also make results consistent with the JAMA paper.
 </div>
 
-Baseline exacerbation frequency is recorded for every participant, so no one is
-lost to the adjustment. `prior_exac` is `Exacerbation_Frequency` at the baseline
-visit; everything else is the Table 1 covariate set.
+**The analysis has been run; the response is not yet settled.** Baseline
+exacerbation frequency is recorded for every participant, so no one is lost to
+the adjustment, and the models are fitted and reproducible alongside the rest of
+the analysis.
 
-**Models fitted**
-
-```{r exac-models}
-show_models("exac_primary_ct", "exac_primary_esi", "exac_adjusted_ct", "exac_adjusted_esi")
-```
-
-**Result**
-
-```{r exac-adj}
-s18 <- A("Table_S18_exac_prior_adjusted.csv")
-tab <- data.frame(check.names = FALSE,
-  Category = s18$group,
-  `CT primary`  = fmt(s18$bhatt_IRR_primary),
-  `CT adjusted` = sprintf("%s (%s-%s)", fmt(s18$bhatt_IRR_adj),
-                          fmt(s18$bhatt_LCI_adj), fmt(s18$bhatt_UCI_adj)),
-  `ESI primary`  = fmt(s18$esi_IRR_primary),
-  `ESI adjusted` = sprintf("%s (%s-%s)", fmt(s18$esi_IRR_adj),
-                           fmt(s18$esi_LCI_adj), fmt(s18$esi_UCI_adj)))
-knitr::kable(tab, row.names = FALSE,
-             caption = sprintf("Exacerbation IRR versus noCOPD; adjusted model n = %s.",
-                               format(s18$n_model[1], big.mark = ",")))
-```
-
-**Response.** The estimates attenuate substantially, as expected, but the
-comparison the paper rests on is unchanged: the CT-based estimate remains above
-the ESI-based one in every category and both remain far from the null. Adjusting
-for prior exacerbations does not alter the conclusion that the two frameworks
-carry comparable prognostic information.
-
-```{r exac-afl, results = "asis"}
-afl <- s18[s18$group == "AFL-only-NoCOPD", ]
-if (afl$bhatt_LCI_adj > 1) cat(sprintf(
-"<div class=\"q\"><b>Note for the authors.</b> Under this adjustment the CT-based
-AFL-only-noCOPD estimate becomes %s (%s-%s), p = %s. The manuscript states in two
-places that this category is not significantly associated with risk across
-evaluated outcomes. That statement does not survive the adjustment and needs
-revisiting if this analysis is reported.</div>",
-fmt(afl$bhatt_IRR_adj), fmt(afl$bhatt_LCI_adj), fmt(afl$bhatt_UCI_adj),
-fmt(afl$bhatt_p_adj, 3)))
-```
+The adjustment changes one statement in the manuscript beyond the estimates
+themselves, so the authors are agreeing the wording of that result before it is
+reported. This section will be completed once that is settled.
 
 ## [17] and [22] FEV~1~ decline adjusted for baseline lung function
 
@@ -426,6 +392,59 @@ format(rowSums(m)[["COPD-major"]], big.mark = ",")))
 
 <div class="old">**Old.** The two-sided p-value reported in Table 1 is the percentile p for the resample distribution of the log effect difference (log HR or log IRR, CT − ESI); values reported as "&lt;0.002" denote iterations in which no resample crossed zero…</div>
 <div class="new">**New.** The two frameworks are fitted as separate models on the same participants, so their estimates are paired rather than independent. Significance of the between-framework difference is therefore assessed by a paired resample bootstrap: within each of B = 1,000 resamples of participants, both models are refitted and the difference in log effect (log HR or log IRR, CT − ESI) is recorded. The two-sided p-value reported in Table 1 is the percentile p of that resample distribution; values reported as "&lt;0.002" denote outcome-category combinations in which no resample crossed zero…</div>
+
+# What changed in v15, and what did not
+
+The draft has moved from the reviewed file to **v15 2026.8.31**. Massimo
+Pistolesi's v14 edits are incorporated, including a new Discussion sentence
+noting that ESI comes from the same spirometric examination already used to
+assess airflow obstruction.
+
+## Applied in v15
+
+```{r applied}
+knitr::kable(row.names = FALSE, data.frame(check.names = FALSE,
+  `#` = c("6", "9", "10", "11, 12", "13, 14", "15", "27", "28", "-"),
+  Change = c(
+    "COPD-minor and COPD-major renamed to COPD, minor pathway and COPD, major pathway throughout the prose, both tables and the figure legends. noCOPD and AFL-only-noCOPD are unchanged.",
+    "The ESI scoring rule now states the 0-10 range explicitly and uses \"cutoff\" for both thresholds.",
+    "The Table 2 legend records that participants meeting the major criterion, including AFL-only-noCOPD, are outside the preserved-spirometry subgroup by construction.",
+    "GOLD 0 is defined with >= rather than >, and the Methods now record that spirometric strata are taken from the COPDGene staging variable rather than by applying cut-points.",
+    "The four COPDGene data file names are removed from Methods and appear in a new Supplement section, COPDGene files used, with what each file provides.",
+    "Methods state that agreement is assessed on the binary COPD classification, which is why unweighted kappa is reported.",
+    "The Table 1 legend gives the category sizes under the CT-based framework.",
+    "Methods state that the two frameworks are fitted separately on the same participants and that the bootstrap is paired.",
+    "Figure 1 is regenerated with the new category names and its legend maps the abbreviated panel labels.")))
+```
+
+## Not applied, and why
+
+```{r not-applied}
+knitr::kable(row.names = FALSE, data.frame(check.names = FALSE,
+  `#` = c("1", "3", "7", "8", "16", "17, 22", "19", "24", "25", "26"),
+  Status = c(
+    "No change requested",
+    "OPEN",
+    "Deferred",
+    "No change needed",
+    "Analysis run, wording pending",
+    "Analysis run, not yet in the manuscript",
+    "Answered, no change made",
+    "No action",
+    "OPEN",
+    "Answered, no change made"),
+  Reason = c(
+    "Read as an observation on the agreement figure rather than a request. The related point about airway assessment is comment 7.",
+    "The suggestion is to call the never-smoking group healthy volunteers rather than controls. The draft still reads controls; the authors have not yet ruled on it.",
+    "Stating explicitly that airway wall thickening is also represented by ESI. The authors have deferred this for now.",
+    "Reusing the training-derived cut-points on the whole cohort. Supplemental Table 1 already reports the held-out 20% split alongside the full cohort, so the in-sample and independent estimates are both visible.",
+    "The adjustment changes one statement in the manuscript beyond the estimates themselves. The authors are agreeing that wording before the result is reported.",
+    "The main-effect specification is the one we would report. It has not been added to the manuscript pending a decision on whether to report it as a sensitivity analysis.",
+    "The pooling explanation is given above. No manuscript change has been made; a sentence could be added if the authors want the point stated in the paper.",
+    "No change required.",
+    "That ESI is not produced by standard spirometry software bears on the implementation argument. The v14 Discussion sentence notes that the framework needs only spirometry and symptoms, which is related but does not answer the availability point.",
+    "The minor-pathway agreement is close to chance while the two large categories are above 97%. No manuscript change has been made; the authors may prefer to state this directly rather than let the overall agreement figure stand alone.")))
+```
 
 # Open with the authors
 
