@@ -67,8 +67,8 @@ Thumbs.db
 # overwrite is unrecoverable. Superseded drafts under manuscript/Old/ stay
 # ignored. Both are excluded from the Changit snapshot, which is built from an
 # explicit file manifest, not from what git tracks.
-!manuscript/ESI manuscript draft v13 2026.8.26_PJC.docx
-!manuscript/ESI manuscript supplement v13 2026.8.26_PJC.docx
+!manuscript/ESI manuscript draft v15 2026.8.31_PJC.docx
+!manuscript/ESI manuscript supplement v15 2026.8.31_PJC.docx
 *.doc
 *.pptx
 *.ppt

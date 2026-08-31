@@ -26,7 +26,7 @@ hand — fails loudly.
 The manuscript is a `.docx`, so the `claim` and `expected` columns are a
 **transcription** of the printed document, made once, by hand, from:
 
-- `manuscript/ESI manuscript draft v13 2026.8.26_PJC.docx`
+- `manuscript/ESI manuscript draft v15 2026.8.31_PJC.docx`
 
 The transcription is laid out below to mirror the printed tables so a reader can
 check it against the document by eye. Everything downstream of the transcription
@@ -50,7 +50,7 @@ source(CONFIG, local = FALSE)
 if (!exists("OUT_DIR")) stop("config '", CONFIG, "' does not define OUT_DIR")
 if (!dir.exists(OUT_DIR)) stop("OUT_DIR does not exist: ", OUT_DIR)
 
-MANUSCRIPT_VERSION <- "ESI manuscript draft v13 2026.8.26_PJC.docx"
+MANUSCRIPT_VERSION <- "ESI manuscript draft v15 2026.8.31_PJC.docx"
 MANUSCRIPT_PATH    <- file.path("manuscript", MANUSCRIPT_VERSION)
 ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 
@@ -61,7 +61,7 @@ ANALYSIS_SRC       <- "esi_manuscript_analysis_2026.7.17_noILD.Rmd"
 # revisiting this file fails here. Where no manuscript/ directory is present
 # this degrades to NOT-AVAILABLE rather than pretending to check something that
 # is not there.
-MANUSCRIPT_MD5 <- "3c016ac68a3422bfc1113ce023243043"
+MANUSCRIPT_MD5 <- "0f8bce2107fd527b9199d154c8205623"
 
 cat("OUT_DIR:  ", OUT_DIR, "\n",
     "Registry transcribed from: ", MANUSCRIPT_VERSION, "\n", sep = "")
