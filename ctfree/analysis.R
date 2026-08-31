@@ -20,10 +20,11 @@
 # labels, never against mortality or exacerbations, so the risk profiles in
 # Part 3 are an independent check rather than a restatement of the fit.
 #
-# EXPLORATORY. Writes only to exploration/.
+# Artifacts land in ctfree/assets/ and are the only thing the claims
+# registry in ctfree/verify.R is allowed to read. Run from the repo root.
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({library(dplyr); library(survival); library(MASS)})
-OUT <- file.path("exploration", "ctfree_schemas")
+OUT <- file.path("ctfree", "assets")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 source("config_paths.R")
 CV_REPEATS <- 5L; CV_FOLDS <- 5L; CV_SEED <- 20260901L
@@ -103,6 +104,22 @@ cat(sprintf("  held-out macro-F1: schema 3 %.4f | schema 4 %.4f | v15 draft %.4f
             mean(cv$f3), mean(cv$f4), mean(cv$f_draft)))
 cat(sprintf("  schema 4 minus schema 3: %+.4f (%+.4f to %+.4f across folds)\n",
             mean(dd), quantile(dd, .025), quantile(dd, .975)))
+write.csv(data.frame(
+  schema = c("S3", "S4", "S4_v15draft"),
+  k = c(k3, p4$k, 3), t_low = c(NA, p4$t_low, 1.00), t_high = c(NA, p4$t_high, 2.50),
+  macroF1_insample = c(macroF1(ref, s3(d, k3)),
+                       macroF1(ref, s4(d, p4$k, p4$t_low, p4$t_high)),
+                       macroF1(ref, s4(d, 3, 1.00, 2.50))),
+  macroF1_heldout = c(mean(cv$f3), mean(cv$f4), mean(cv$f_draft)),
+  stringsAsFactors = FALSE), file.path(OUT, "schema_fit.csv"), row.names = FALSE)
+write.csv(data.frame(diff_mean = mean(dd), diff_lo = unname(quantile(dd, .025)),
+                     diff_hi = unname(quantile(dd, .975)), n_folds = nrow(cv)),
+          file.path(OUT, "schema_fit_cv_diff.csv"), row.names = FALSE)
+writeLines(c(sprintf("n_cohort=%d", nrow(d)),
+             sprintf("n_afl=%d", sum(d$afl)),
+             sprintf("n_noafl=%d", sum(!d$afl))),
+           file.path(OUT, "cohort.txt"))
+
 cat(sprintf("  parameters selected: k3 %s | k4 %s | T_low %s | T_high %s\n\n",
             paste(unique(cv$k3), collapse = "/"), paste(unique(cv$k4), collapse = "/"),
             paste(names(sort(table(cv$tl), decreasing = TRUE))[1:2], collapse = "/"),
@@ -119,7 +136,14 @@ NAMES <- c(S1 = "1  Fixed ratio (FEV1/FVC < 0.70)",
            S2 = "2  MD-COPD with CT  [reference]",
            S3 = "3  MD-COPD without CT",
            S4 = "4  MD-COPD with ESI")
-for (s in c("S1", "S2", "S3", "S4")) { cat(sprintf("%-34s", NAMES[[s]])); print(table(d[[s]])) }
+lab_rows <- list()
+for (s in c("S1", "S2", "S3", "S4")) {
+  cat(sprintf("%-34s", NAMES[[s]])); print(table(d[[s]]))
+  tb <- table(d[[s]])
+  for (g in names(tb)) lab_rows[[length(lab_rows) + 1]] <-
+    data.frame(schema = s, category = g, n = as.integer(tb[[g]]), stringsAsFactors = FALSE)
+}
+write.csv(do.call(rbind, lab_rows), file.path(OUT, "schema_labels.csv"), row.names = FALSE)
 
 cat("\n################ PART 3: risk within each schema's own categories ################\n")
 COV <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
@@ -135,6 +159,7 @@ exa <- d %>% inner_join(ex %>% dplyr::select(pid, Total_Exacerbations, Years_Fol
   left_join(pr, by = "pid") %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
+risk_rows <- list(); disc_rows <- list()
 for (s in c("S1", "S2", "S3", "S4")) {
   cat(sprintf("\n=== %s ===\n", NAMES[[s]]))
   m1 <- coxph(as.formula(sprintf("Surv(py, vital_status) ~ %s + %s", s, COV)), data = mort)
@@ -151,7 +176,24 @@ for (s in c("S1", "S2", "S3", "S4")) {
             exp(ce[r,1]-1.96*ce[r,2]), exp(ce[r,1]+1.96*ce[r,2])) else "reference"
     cat(sprintf("  %-12s %6d %7d %22s %24s %22s\n", g, sum(ix), sum(mort$vital_status[ix]), f(cm), f(cr), fe))
   }
+  for (g in levels(d[[s]])) {
+    r <- paste0(s, g); ix <- mort[[s]] == g
+    gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
+    risk_rows[[length(risk_rows) + 1]] <- data.frame(
+      schema = s, category = g, n = sum(ix), deaths = sum(mort$vital_status[ix]),
+      all_HR = gv(cm, 1), all_LCI = gv(cm, 3), all_UCI = gv(cm, 4),
+      resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
+      exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
+      exac_LCI = if (r %in% rownames(ce)) exp(ce[r, 1] - 1.96 * ce[r, 2]) else NA_real_,
+      exac_UCI = if (r %in% rownames(ce)) exp(ce[r, 1] + 1.96 * ce[r, 2]) else NA_real_,
+      stringsAsFactors = FALSE)
+  }
+  disc_rows[[length(disc_rows) + 1]] <- data.frame(
+    schema = s, c_allcause = summary(m1)$concordance[1],
+    c_resp = summary(m2)$concordance[1], exac_AIC = AIC(n1), stringsAsFactors = FALSE)
   cat(sprintf("  C-index all-cause %.4f | respiratory %.4f | exacerbation AIC %.1f\n",
               summary(m1)$concordance[1], summary(m2)$concordance[1], AIC(n1)))
 }
+write.csv(do.call(rbind, risk_rows), file.path(OUT, "schema_risk.csv"), row.names = FALSE)
+write.csv(do.call(rbind, disc_rows), file.path(OUT, "schema_discrimination.csv"), row.names = FALSE)
 cat(sprintf("\nwrote %s\n", normalizePath(OUT)))

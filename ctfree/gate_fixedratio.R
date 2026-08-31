@@ -14,10 +14,10 @@
 # by likelihood ratio test on 2 degrees of freedom, not just by eyeballing
 # C-indices. Both are reported.
 #
-# Writes only to exploration/. Changes nothing.
+# Artifacts land in ctfree/assets/. Run from the repo root.
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({library(dplyr); library(survival); library(MASS)})
-OUT <- file.path("exploration", "ctfree_gate")
+OUT <- file.path("ctfree", "assets")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 source("config_paths.R")
 
@@ -110,8 +110,13 @@ cox_pair <- function(ev, label) {
   s0 <- summary(m0)$conf.int
   cat(sprintf("    %-16s HR %5.2f (%.2f-%.2f)  [fixed-ratio model]\n\n",
               "COPD", s0["fixed_ratioCOPD", 1], s0["fixed_ratioCOPD", 3], s0["fixed_ratioCOPD", 4]))
+  gate_rows[[length(gate_rows) + 1]] <<- data.frame(
+    outcome = label, c_fixedratio = c0[1], c_mdcopd = c1[1],
+    lrt_chisq = lr, lrt_df = df,
+    lrt_p = pchisq(lr, df, lower.tail = FALSE), stringsAsFactors = FALSE)
   invisible(NULL)
 }
+gate_rows <- list()
 cox_pair("vital_status", "ALL-CAUSE MORTALITY")
 cox_pair("event_resp",   "RESPIRATORY MORTALITY")
 
@@ -138,4 +143,11 @@ cat(sprintf("    %-16s IRR %5.2f (%.2f-%.2f)  [fixed-ratio model]\n", "COPD",
             exp(s0["fixed_ratioCOPD", 1]),
             exp(s0["fixed_ratioCOPD", 1] - 1.96 * s0["fixed_ratioCOPD", 2]),
             exp(s0["fixed_ratioCOPD", 1] + 1.96 * s0["fixed_ratioCOPD", 2])))
+gate_rows[[length(gate_rows) + 1]] <- data.frame(
+  outcome = "EXACERBATIONS", c_fixedratio = NA_real_, c_mdcopd = NA_real_,
+  lrt_chisq = as.numeric(lr), lrt_df = df,
+  lrt_p = pchisq(as.numeric(lr), df, lower.tail = FALSE), stringsAsFactors = FALSE)
+write.csv(do.call(rbind, gate_rows), file.path(OUT, "gate_fixedratio.csv"), row.names = FALSE)
+write.csv(data.frame(aic_fixedratio = AIC(n0), aic_mdcopd = AIC(n1)),
+          file.path(OUT, "gate_exac_aic.csv"), row.names = FALSE)
 cat(sprintf("\nwrote %s\n", normalizePath(OUT)))

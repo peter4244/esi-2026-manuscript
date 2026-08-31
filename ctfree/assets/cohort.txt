@@ -1,0 +1,3 @@
+n_cohort=9402
+n_afl=4113
+n_noafl=5289
