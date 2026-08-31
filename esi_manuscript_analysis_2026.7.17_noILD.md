@@ -2641,6 +2641,23 @@ Table: FEV1 decline (mL/yr), primary vs additionally adjusted for baseline FEV1 
 |COPD-major      |             1.270|       -17.414|        1.089|        0.00|           1.089|     -16.418|      1.051|     0.000|             -1.092|            0.203|           -1.088|          0.192|   9402|
 
 ``` r
+# ---- (c) the fitted model formulas ----------------------------------------
+# Written out rather than retyped anywhere downstream, so the response document
+# shows the model that was actually fitted and cannot describe a different one.
+.f <- function(fit) gsub("\\s+", " ", paste(deparse(stats::formula(fit)), collapse = " "))
+writeLines(c(
+  sprintf("exac_primary_ct=%s",    .f(nbB)),
+  sprintf("exac_primary_esi=%s",   .f(nbE)),
+  sprintf("exac_adjusted_ct=%s",   .f(nbB_adj)),
+  sprintf("exac_adjusted_esi=%s",  .f(nbE_adj)),
+  sprintf("decline_primary_ct=%s",   .f(lmm_bhatt)),
+  sprintf("decline_primary_esi=%s",  .f(lmm_esi)),
+  sprintf("decline_basemain_ct=%s",  .f(lmmB_adj0)),
+  sprintf("decline_basemain_esi=%s", .f(lmmE_adj0)),
+  sprintf("decline_basetime_ct=%s",  .f(lmmB_adj)),
+  sprintf("decline_basetime_esi=%s", .f(lmmE_adj))),
+  file.path(OUT_DIR, "Table_S18_S19_model_formulas.txt"))
+
 cat(sprintf("Reviewer sensitivity: exacerbation model n = %d; decline model n = %d participants\n",
             nrow(ex_adj), dplyr::n_distinct(dec_adj$pid)))
 ```
@@ -2669,6 +2686,7 @@ required_csvs <- c(
   "Table_2_model_Ns.txt",
   "Table_S18_exac_prior_adjusted.csv",
   "Table_S19_decline_baseline_adjusted.csv",
+  "Table_S18_S19_model_formulas.txt",
   # Supplement outputs
   "Table_1_Cindex_Equivalence.csv",             # A2 — Table 1 footnote
   "Supp_Table_HR_Difference_Bootstrap.csv",     # A3 — Supp Table S8
@@ -2699,7 +2717,7 @@ if (length(missing) > 0) {
 ```
 
 ```
-## Completeness check PASS: all 31 required files present.
+## Completeness check PASS: all 32 required files present.
 ```
 
 ``` r

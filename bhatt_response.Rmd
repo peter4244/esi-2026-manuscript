@@ -30,6 +30,26 @@ A <- function(f) {
   }
 }
 fmt <- function(x, d = 2) formatC(x, format = "f", digits = d)
+
+# Model formulas are read from the artifact the analysis writes by deparsing the
+# fitted objects, so what is displayed here is what was actually fitted.
+FML <- tryCatch(A("Table_S18_S19_model_formulas.txt"), error = function(e) NULL)
+show_models <- function(...) {
+  keys <- c(...)
+  if (is.null(FML)) { cat("(model formulas unavailable; re-run the analysis)\n"); return(invisible()) }
+  labs <- c(exac_primary_ct = "Primary, CT-based", exac_primary_esi = "Primary, ESI-based",
+            exac_adjusted_ct = "Adjusted, CT-based", exac_adjusted_esi = "Adjusted, ESI-based",
+            decline_primary_ct = "Primary, CT-based", decline_primary_esi = "Primary, ESI-based",
+            decline_basemain_ct = "+ baseline as main effect, CT-based",
+            decline_basemain_esi = "+ baseline as main effect, ESI-based",
+            decline_basetime_ct = "+ baseline interacted with time, CT-based",
+            decline_basetime_esi = "+ baseline interacted with time, ESI-based")
+  for (k in keys) {
+    if (!k %in% names(FML)) next
+    cat(labs[[k]], "\n", sep = "")
+    cat("  ", FML[[k]], "\n\n", sep = "")
+  }
+}
 ```
 
 <style>
@@ -109,7 +129,16 @@ also make results consistent with the JAMA paper.
 </div>
 
 Baseline exacerbation frequency is recorded for every participant, so no one is
-lost to the adjustment.
+lost to the adjustment. `prior_exac` is `Exacerbation_Frequency` at the baseline
+visit; everything else is the Table 1 covariate set.
+
+**Models fitted**
+
+```{r exac-models}
+show_models("exac_primary_ct", "exac_primary_esi", "exac_adjusted_ct", "exac_adjusted_esi")
+```
+
+**Result**
 
 ```{r exac-adj}
 s18 <- A("Table_S18_exac_prior_adjusted.csv")
@@ -154,7 +183,19 @@ Progression models should ideally adjust for baseline.
 Two specifications are reported because **they do not agree**, and the
 disagreement is the substantive answer. Baseline post-bronchodilator FEV~1~
 % predicted is entered either as a main effect, or interacted with time so that
-category slopes are compared at equal baseline lung function.
+category slopes are compared at equal baseline lung function. `FEV1pp_base` is
+baseline post-bronchodilator FEV~1~ % predicted; the decline models use baseline
+height rather than BMI, as elsewhere in the paper.
+
+**Models fitted**
+
+```{r decline-models}
+show_models("decline_primary_ct", "decline_basemain_ct", "decline_basetime_ct")
+```
+
+The ESI-based models are identical with `esi_grp` in place of `bhatt_grp`.
+
+**Result**
 
 ```{r decline-adj}
 s19 <- A("Table_S19_decline_baseline_adjusted.csv")
@@ -351,8 +392,3 @@ format(rowSums(m)[["COPD-major"]], big.mark = ",")))
 - **Consequence of [16]**, above: if the prior-exacerbation adjustment is
   reported, the claim that AFL-only-noCOPD is not significantly associated with
   any evaluated outcome requires revision.
-
-```{r footer, results = "asis"}
-cat(sprintf("<hr><p style='color:#666'>Generated %s from artifacts in <code>%s</code>.</p>",
-            format(Sys.time(), "%Y-%m-%d %H:%M"), OUT_DIR))
-```
