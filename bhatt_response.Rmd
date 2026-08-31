@@ -72,7 +72,6 @@ value the analysis no longer produces.
 
 ```{r provenance}
 p <- tryCatch(A("PROVENANCE.txt"), error = function(e) NULL)
-cat("artifacts   : ", OUT_DIR, "\n", sep = "")
 if (!is.null(p)) {
   cat("produced by : ", p[["analysis_source"]], "\n",
       "analysis md5: ", p[["analysis_md5"]], "\n",
@@ -333,15 +332,64 @@ fmt(100 * miss / tot, 1)))
 &gt; should be &gt;=. &nbsp;/&nbsp; &gt;=… confirm this is what was done.
 </div>
 
-**Response — the reviewer is right, and the prose is also inconsistent with the
-implementation.** The Methods define GOLD 0 as FEV~1~/FVC &gt; 0.7, while airflow
-obstruction is defined as FEV~1~/FVC &lt; 0.70. A participant at exactly 0.70
-therefore falls into neither, which cannot be intended.
+Every threshold comparison in the analysis was audited, not only the two the
+comment marks. The operators below are read from the analysis source at render
+time, so this table is the code rather than a description of it.
 
-Separately, the strata are not derived from these inequalities in the analysis at
-all: they are taken from the COPDGene `finalgold_visit` staging variable. The
-prose describes a derivation the code does not perform. Both should be corrected
-together.
+```{r operator-audit}
+src <- readLines(file.path(".", "esi_manuscript_analysis_2026.7.17_noILD.Rmd"), warn = FALSE)
+grab <- function(pat) {
+  hit <- grep(pat, src, value = TRUE)
+  if (!length(hit)) return("<not found>")
+  trimws(gsub(",\\s*$", "", hit[1]))
+}
+AUD <- data.frame(check.names = FALSE,
+  Criterion = c("Airflow obstruction (major criterion)", "Visual emphysema",
+                "Airway wall thickening", "mMRC dyspnea", "SGRQ total",
+                "Chronic bronchitis", "COPD-major", "COPD-minor",
+                "AFL-only-noCOPD", "ESI two-threshold score"),
+  `As implemented` = c(
+    grab("major_criterion = FEV1_FVC_post"), grab("emph_yn = "), grab("wall_yn = "),
+    grab("dysp_yn = "), grab("qol_yn  = "), grab("cb_yn   = "),
+    "major_criterion & n_minor >= 1", "!major_criterion & n_minor >= 3",
+    "major_criterion & n_minor == 0",
+    "ESI >= 2.5 -> 2; ESI >= 1.0 -> 1; otherwise 0"))
+knitr::kable(AUD, row.names = FALSE)
+```
+
+**Response — the code already does what the reviewer asks; the Methods text does
+not describe the code.** Every criterion is implemented with `>=`. The single
+`<` is airflow obstruction, `FEV1/FVC < 0.70`, which is the GOLD definition and
+whose complement is correctly `>= 0.70`. No re-analysis is required.
+
+Two corrections are needed in the prose, and the second is the larger one.
+
+**First**, the Methods define GOLD 0 as "FEV1 % predicted &gt;80% and
+FEV1/FVC&gt;0.7". Both should be `>=`. As written, a participant with
+FEV1/FVC of exactly 0.70 belongs to neither the obstructed group nor GOLD 0.
+
+**Second**, and not visible from the manuscript, the strata are not derived from
+those inequalities at all. There is no threshold comparison anywhere in the
+stratum assignment: strata are taken directly from the COPDGene `finalgold_visit`
+staging variable.
+
+```{r strata-code}
+i <- grep("finalgold_visit == ", src)
+cat(paste(trimws(src[min(i):max(i)]), collapse = "\n"), "\n")
+```
+
+So the honest answer to "confirm this is what was done" is that the operators are
+correct but the derivation described in Methods is not the one performed. We
+propose describing the strata by their source rather than by re-stating cut-points
+the analysis never applies.
+
+<div class="old">**Old.** …and subjects with preserved lung function (FEV1 % predicted &gt;80% and FEV1/FVC&gt;0.7) were referred to as GOLD 0 subjects.</div>
+<div class="new">**New.** …and subjects with preserved lung function (FEV~1~ % predicted ≥ 80% and FEV~1~/FVC ≥ 0.70) were referred to as GOLD 0 subjects. Spirometric strata were assigned from the COPDGene `finalgold_visit` staging variable rather than by applying these cut-points independently.</div>
+
+One further inconsistency found during the audit, unrelated to the comment: the
+ESI-ceiling sensitivity analysis excludes participants using `ESI < 9.999` in two
+places and `ESI < 10` in two others. The intent is identical and no result
+changes, but the two literals should be reconciled.
 
 # Proposed text changes
 
