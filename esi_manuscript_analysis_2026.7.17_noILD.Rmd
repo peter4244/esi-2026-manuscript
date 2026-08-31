@@ -1010,6 +1010,24 @@ force a re-run.
 ```{r hr-diff-bootstrap}
 B_BOOTSTRAP <- 1000
 CACHE_DIR   <- file.path(OUT_DIR, "_cache")
+
+# A bootstrap cache must invalidate when the MODELS change, not only when the
+# data does. Adding a covariate to the exacerbation models changed neither the
+# row count nor the exacerbation total nor B, so a fingerprint built from those
+# alone was reused and the stored bootstrap kept describing the previous model
+# specification. Table 1 then printed adjusted estimates beside a p-value
+# computed from unadjusted fits, with nothing to flag it.
+#
+# The fingerprint now carries a digest of the fitted formulas themselves, so any
+# change to an outcome, exposure, covariate or offset invalidates it whether or
+# not anyone remembers to bump a version number.
+model_digest <- function(...) {
+  txt <- vapply(list(...), function(f)
+    paste(deparse(if (inherits(f, "formula")) f else stats::formula(f)), collapse = " "),
+    character(1))
+  substr(digest::digest(paste(gsub("\\s+", " ", txt), collapse = " | ")), 1, 12)
+}
+
 CACHE_PATH  <- file.path(CACHE_DIR, "bootstrap_hr_diff.rds")
 if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
 
@@ -1021,7 +1039,11 @@ if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
               B = B_BOOTSTRAP,
-              table_version = 3L)
+              models = model_digest(cox_bhatt_all, cox_esi_all,
+                                    cox_bhatt_resp, cox_esi_resp),
+              categories = paste(sort(c("AFL-only-NoCOPD","COPD-minor","COPD-major")),
+                                 collapse = ","),
+              table_version = 5L)
 .cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("Bootstrap cache does not match the current data; recomputing.")
@@ -1038,7 +1060,7 @@ if (!is.null(.cached)) {
   ids_seq <- seq_len(n)
 
   outcomes <- list(all = "vital_status", resp = "event_resp")
-  cats     <- c("COPD-minor", "COPD-major")
+  cats     <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
 
   # storage: list of matrices [B x length(cats)] per outcome, one for CT and one for ESI
   store <- list()
@@ -1199,7 +1221,10 @@ CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 .want_irr <- list(n = nrow(ex_b),
                   total_exac = sum(ex_b$Total_Exacerbations),
                   B = B_BOOTSTRAP,
-                  table_version = 4L)
+                  models = model_digest(nb_bhatt, nb_esi),
+                  categories = paste(sort(c("AFL-only-NoCOPD","COPD-minor","COPD-major")),
+                                     collapse = ","),
+                  table_version = 6L)
 .cached_irr <- if (file.exists(CACHE_PATH_IRR)) readRDS(CACHE_PATH_IRR) else NULL
 if (!is.null(.cached_irr) && !identical(.cached_irr$fingerprint, .want_irr)) {
   message("IRR bootstrap cache does not match the current data or table schema; recomputing.")
@@ -1212,7 +1237,7 @@ if (!is.null(.cached_irr)) {
 } else {
   set.seed(BOOTSTRAP_SEED)
   n_ex <- nrow(ex_b)
-  cats <- c("COPD-minor", "COPD-major")
+  cats <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
 
   store_irr <- list(
     bhatt = matrix(NA_real_, nrow = B_BOOTSTRAP, ncol = length(cats),
@@ -2121,13 +2146,13 @@ checks <- list(
   selfcheck("COPD-major all-cause HR (ESI)", t8_all$esi_HR[t8_all$group == "COPD-major"],   2.39, tol = 0.02),
   selfcheck("COPD-major resp HR (CT)",       t8_resp$bhatt_HR[t8_resp$group == "COPD-major"], 36.27, tol = 0.25),
   selfcheck("COPD-major resp HR (ESI)",      t8_resp$esi_HR[t8_resp$group == "COPD-major"],   30.95, tol = 0.25),
-  selfcheck("COPD-major exac IRR (CT)",      t_bhatt_ex$bhatt_IRR[t_bhatt_ex$group == "COPD-major"], 5.07, tol = 0.05),
-  selfcheck("COPD-major exac IRR (ESI)",     t_bhatt_ex$esi_IRR[t_bhatt_ex$group == "COPD-major"],   4.47, tol = 0.05),
+  selfcheck("COPD-major exac IRR (CT)",      t_bhatt_ex$bhatt_IRR[t_bhatt_ex$group == "COPD-major"], 3.82, tol = 0.05),
+  selfcheck("COPD-major exac IRR (ESI)",     t_bhatt_ex$esi_IRR[t_bhatt_ex$group == "COPD-major"],   3.45, tol = 0.05),
   selfcheck("Both-COPD all-cause HR",  t_grp_mort$all_HR[t_grp_mort$group  == "Both-COPD"],                    2.02, tol = 0.02),
   selfcheck("CT-only all-cause HR", t_grp_mort$all_HR[t_grp_mort$group  == "CT-only-COPD (ESI missed)"], 1.53, tol = 0.02),
   selfcheck("ESI-only all-cause HR",   t_grp_mort$all_HR[t_grp_mort$group  == "ESI-only-COPD (Bhatt missed)"], 1.26, tol = 0.03),
   selfcheck("ESI-only CVD HR",         t_cs_disc$HR[t_cs_disc$cause == "CVD" & t_cs_disc$group == "ESI-only-COPD"], 2.29, tol = 0.05),
-  selfcheck("Both-COPD exac IRR",      t_disc_ex$IRR[t_disc_ex$group == "Both-COPD"],                              3.17, tol = 0.05)
+  selfcheck("Both-COPD exac IRR",      t_disc_ex$IRR[t_disc_ex$group == "Both-COPD"],                              2.07, tol = 0.05)
 )
 selfcheck_tbl <- do.call(rbind, checks)
 write.csv(selfcheck_tbl, file.path(OUT_DIR, "SELFCHECK.csv"), row.names = FALSE)

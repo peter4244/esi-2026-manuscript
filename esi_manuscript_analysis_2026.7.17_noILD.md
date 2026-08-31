@@ -1084,6 +1084,24 @@ force a re-run.
 ``` r
 B_BOOTSTRAP <- 1000
 CACHE_DIR   <- file.path(OUT_DIR, "_cache")
+
+# A bootstrap cache must invalidate when the MODELS change, not only when the
+# data does. Adding a covariate to the exacerbation models changed neither the
+# row count nor the exacerbation total nor B, so a fingerprint built from those
+# alone was reused and the stored bootstrap kept describing the previous model
+# specification. Table 1 then printed adjusted estimates beside a p-value
+# computed from unadjusted fits, with nothing to flag it.
+#
+# The fingerprint now carries a digest of the fitted formulas themselves, so any
+# change to an outcome, exposure, covariate or offset invalidates it whether or
+# not anyone remembers to bump a version number.
+model_digest <- function(...) {
+  txt <- vapply(list(...), function(f)
+    paste(deparse(if (inherits(f, "formula")) f else stats::formula(f)), collapse = " "),
+    character(1))
+  substr(digest::digest(paste(gsub("\\s+", " ", txt), collapse = " | ")), 1, 12)
+}
+
 CACHE_PATH  <- file.path(CACHE_DIR, "bootstrap_hr_diff.rds")
 if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
 
@@ -1095,7 +1113,11 @@ if (!dir.exists(CACHE_DIR)) dir.create(CACHE_DIR, recursive = TRUE)
               deaths = sum(mort_b$vital_status == 1),
               resp_events = sum(mort_b$event_resp == 1),
               B = B_BOOTSTRAP,
-              table_version = 3L)
+              models = model_digest(cox_bhatt_all, cox_esi_all,
+                                    cox_bhatt_resp, cox_esi_resp),
+              categories = paste(sort(c("AFL-only-NoCOPD","COPD-minor","COPD-major")),
+                                 collapse = ","),
+              table_version = 5L)
 .cached <- if (file.exists(CACHE_PATH)) readRDS(CACHE_PATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("Bootstrap cache does not match the current data; recomputing.")
@@ -1112,7 +1134,7 @@ if (!is.null(.cached)) {
   ids_seq <- seq_len(n)
 
   outcomes <- list(all = "vital_status", resp = "event_resp")
-  cats     <- c("COPD-minor", "COPD-major")
+  cats     <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
 
   # storage: list of matrices [B x length(cats)] per outcome, one for CT and one for ESI
   store <- list()
@@ -1265,12 +1287,14 @@ kable(boot_res$table %>%
 
 Table: Paired-bootstrap change in logHR (CT minus ESI). B = 1000; effective resamples 1000 for all-cause and 416 for respiratory. The two differ because resamples whose Cox fit warned were dropped, and those are the sparse-event ones, so the respiratory interval rests on the retained subset.
 
-|outcome     |category   |  HR_CT| HR_ESI| obs_logHR_diff| mean_logHR_diff| ci_lo_logHR| ci_hi_logHR| HR_diff_unlogged| two_sided_p|two_sided_p_reported |
-|:-----------|:----------|------:|------:|--------------:|---------------:|-----------:|-----------:|----------------:|-----------:|:--------------------|
-|all-cause   |COPD-minor |  1.907|  1.943|         -0.019|          -0.016|      -0.179|       0.135|           -0.036|       0.848|0.85                 |
-|all-cause   |COPD-major |  2.591|  2.395|          0.079|           0.079|       0.045|       0.115|            0.197|          NA|<0.002               |
-|respiratory |COPD-minor |  4.804|  5.684|         -0.168|          -0.146|      -1.026|       0.764|           -0.880|       0.702|0.70                 |
-|respiratory |COPD-major | 36.266| 30.952|          0.158|           0.163|      -0.182|       0.510|            5.314|       0.293|0.29                 |
+|outcome     |category        |  HR_CT| HR_ESI| obs_logHR_diff| mean_logHR_diff| ci_lo_logHR| ci_hi_logHR| HR_diff_unlogged| two_sided_p|two_sided_p_reported |
+|:-----------|:---------------|------:|------:|--------------:|---------------:|-----------:|-----------:|----------------:|-----------:|:--------------------|
+|all-cause   |AFL-only-NoCOPD |  0.897|  0.913|         -0.018|          -0.016|      -0.573|       0.583|           -0.016|       0.938|0.94                 |
+|all-cause   |COPD-minor      |  1.907|  1.943|         -0.019|          -0.016|      -0.179|       0.135|           -0.036|       0.848|0.85                 |
+|all-cause   |COPD-major      |  2.591|  2.395|          0.079|           0.079|       0.045|       0.115|            0.197|          NA|<0.002               |
+|respiratory |AFL-only-NoCOPD |  1.417|  2.192|         -0.436|          -0.491|      -1.806|       0.748|           -0.775|       0.457|0.46                 |
+|respiratory |COPD-minor      |  4.804|  5.684|         -0.168|          -0.146|      -1.026|       0.764|           -0.880|       0.702|0.70                 |
+|respiratory |COPD-major      | 36.266| 30.952|          0.158|           0.163|      -0.182|       0.510|            5.314|       0.293|0.29                 |
 
 ## Section 6d — Per-category paired-bootstrap IRR difference (exacerbations)
 
@@ -1291,7 +1315,10 @@ CACHE_PATH_IRR <- file.path(CACHE_DIR, "bootstrap_irr_diff.rds")
 .want_irr <- list(n = nrow(ex_b),
                   total_exac = sum(ex_b$Total_Exacerbations),
                   B = B_BOOTSTRAP,
-                  table_version = 4L)
+                  models = model_digest(nb_bhatt, nb_esi),
+                  categories = paste(sort(c("AFL-only-NoCOPD","COPD-minor","COPD-major")),
+                                     collapse = ","),
+                  table_version = 6L)
 .cached_irr <- if (file.exists(CACHE_PATH_IRR)) readRDS(CACHE_PATH_IRR) else NULL
 if (!is.null(.cached_irr) && !identical(.cached_irr$fingerprint, .want_irr)) {
   message("IRR bootstrap cache does not match the current data or table schema; recomputing.")
@@ -1304,7 +1331,7 @@ if (!is.null(.cached_irr)) {
 } else {
   set.seed(BOOTSTRAP_SEED)
   n_ex <- nrow(ex_b)
-  cats <- c("COPD-minor", "COPD-major")
+  cats <- c("AFL-only-NoCOPD", "COPD-minor", "COPD-major")
 
   store_irr <- list(
     bhatt = matrix(NA_real_, nrow = B_BOOTSTRAP, ncol = length(cats),
@@ -1422,10 +1449,11 @@ kable(boot_irr$table %>%
 
 Table: Paired-bootstrap ΔlogIRR (CT − ESI) — B = 1000, B_effective = 1000.
 
-|outcome       |category   | IRR_CT| IRR_ESI| obs_logIRR_diff| mean_logIRR_diff| ci_lo_logIRR| ci_hi_logIRR| IRR_diff_unlogged| two_sided_p|two_sided_p_reported |
-|:-------------|:----------|------:|-------:|---------------:|----------------:|------------:|------------:|-----------------:|-----------:|:--------------------|
-|exacerbations |COPD-minor |  2.718|   2.774|          -0.020|           -0.020|       -0.167|        0.117|            -0.055|       0.796|0.80                 |
-|exacerbations |COPD-major |  5.053|   4.468|           0.123|            0.123|        0.080|        0.166|             0.585|          NA|<0.002               |
+|outcome       |category        | IRR_CT| IRR_ESI| obs_logIRR_diff| mean_logIRR_diff| ci_lo_logIRR| ci_hi_logIRR| IRR_diff_unlogged| two_sided_p|two_sided_p_reported |
+|:-------------|:---------------|------:|-------:|---------------:|----------------:|------------:|------------:|-----------------:|-----------:|:--------------------|
+|exacerbations |AFL-only-NoCOPD |  1.346|   1.006|           0.291|            0.292|       -0.123|        0.794|             0.340|       0.196|0.20                 |
+|exacerbations |COPD-minor      |  2.165|   2.096|           0.032|            0.034|       -0.120|        0.183|             0.069|       0.680|0.68                 |
+|exacerbations |COPD-major      |  3.824|   3.448|           0.103|            0.104|        0.064|        0.146|             0.376|          NA|<0.002               |
 
 
 ``` r
@@ -2475,13 +2503,13 @@ checks <- list(
   selfcheck("COPD-major all-cause HR (ESI)", t8_all$esi_HR[t8_all$group == "COPD-major"],   2.39, tol = 0.02),
   selfcheck("COPD-major resp HR (CT)",       t8_resp$bhatt_HR[t8_resp$group == "COPD-major"], 36.27, tol = 0.25),
   selfcheck("COPD-major resp HR (ESI)",      t8_resp$esi_HR[t8_resp$group == "COPD-major"],   30.95, tol = 0.25),
-  selfcheck("COPD-major exac IRR (CT)",      t_bhatt_ex$bhatt_IRR[t_bhatt_ex$group == "COPD-major"], 5.07, tol = 0.05),
-  selfcheck("COPD-major exac IRR (ESI)",     t_bhatt_ex$esi_IRR[t_bhatt_ex$group == "COPD-major"],   4.47, tol = 0.05),
+  selfcheck("COPD-major exac IRR (CT)",      t_bhatt_ex$bhatt_IRR[t_bhatt_ex$group == "COPD-major"], 3.82, tol = 0.05),
+  selfcheck("COPD-major exac IRR (ESI)",     t_bhatt_ex$esi_IRR[t_bhatt_ex$group == "COPD-major"],   3.45, tol = 0.05),
   selfcheck("Both-COPD all-cause HR",  t_grp_mort$all_HR[t_grp_mort$group  == "Both-COPD"],                    2.02, tol = 0.02),
   selfcheck("CT-only all-cause HR", t_grp_mort$all_HR[t_grp_mort$group  == "CT-only-COPD (ESI missed)"], 1.53, tol = 0.02),
   selfcheck("ESI-only all-cause HR",   t_grp_mort$all_HR[t_grp_mort$group  == "ESI-only-COPD (Bhatt missed)"], 1.26, tol = 0.03),
   selfcheck("ESI-only CVD HR",         t_cs_disc$HR[t_cs_disc$cause == "CVD" & t_cs_disc$group == "ESI-only-COPD"], 2.29, tol = 0.05),
-  selfcheck("Both-COPD exac IRR",      t_disc_ex$IRR[t_disc_ex$group == "Both-COPD"],                              3.17, tol = 0.05)
+  selfcheck("Both-COPD exac IRR",      t_disc_ex$IRR[t_disc_ex$group == "Both-COPD"],                              2.07, tol = 0.05)
 )
 selfcheck_tbl <- do.call(rbind, checks)
 write.csv(selfcheck_tbl, file.path(OUT_DIR, "SELFCHECK.csv"), row.names = FALSE)
@@ -2516,13 +2544,13 @@ Table: Self-check — computed vs manuscript-cited values.
 |COPD-major all-cause HR (ESI)           |2.395    |2.390    |PASS   |
 |COPD-major resp HR (CT)                 |36.266   |36.270   |PASS   |
 |COPD-major resp HR (ESI)                |30.952   |30.950   |PASS   |
-|COPD-major exac IRR (CT)                |3.824    |5.070    |FAIL   |
-|COPD-major exac IRR (ESI)               |3.448    |4.470    |FAIL   |
+|COPD-major exac IRR (CT)                |3.824    |3.820    |PASS   |
+|COPD-major exac IRR (ESI)               |3.448    |3.450    |PASS   |
 |Both-COPD all-cause HR                  |2.024    |2.020    |PASS   |
 |CT-only all-cause HR                    |1.530    |1.530    |PASS   |
 |ESI-only all-cause HR                   |1.257    |1.260    |PASS   |
 |ESI-only CVD HR                         |2.290    |2.290    |PASS   |
-|Both-COPD exac IRR                      |2.074    |3.170    |FAIL   |
+|Both-COPD exac IRR                      |2.074    |2.070    |PASS   |
 
 ``` r
 cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
@@ -2533,7 +2561,7 @@ cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
 
 ```
 ## 
-## Self-check summary: 26 PASS, 3 FAIL (of 29 total)
+## Self-check summary: 29 PASS, 0 FAIL (of 29 total)
 ```
 
 # Section 14 — Completeness check
@@ -3293,18 +3321,18 @@ sessionInfo()
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] sandwich_3.1-1      generics_0.1.4      lattice_0.22-7     
-##  [4] magrittr_2.0.5      evaluate_1.0.5      grid_4.5.2         
-##  [7] RColorBrewer_1.1-3  purrr_1.2.0         codetools_0.2-20   
-## [10] numDeriv_2016.8-1.1 textshaping_1.0.4   reformulas_0.4.4   
-## [13] Rdpack_2.6.6        cli_3.6.5           rlang_1.1.7        
-## [16] rbibutils_2.4.1     splines_4.5.2       withr_3.0.2        
-## [19] otel_0.2.0          tools_4.5.2         nloptr_2.2.1       
-## [22] minqa_1.2.8         boot_1.3-32         vctrs_0.7.2        
-## [25] R6_2.6.1            zoo_1.8-15          lifecycle_1.0.5    
-## [28] ragg_1.5.0          pkgconfig_2.0.3     pillar_1.11.1      
-## [31] gtable_0.3.6        glue_1.8.0          Rcpp_1.1.1         
-## [34] systemfonts_1.3.1   xfun_0.55           tibble_3.3.1       
-## [37] tidyselect_1.2.1    dichromat_2.0-0.1   farver_2.1.2       
-## [40] nlme_3.1-168        labeling_0.4.3      compiler_4.5.2     
-## [43] S7_0.2.1
+##  [4] digest_0.6.39       magrittr_2.0.5      evaluate_1.0.5     
+##  [7] grid_4.5.2          RColorBrewer_1.1-3  purrr_1.2.0        
+## [10] codetools_0.2-20    numDeriv_2016.8-1.1 textshaping_1.0.4  
+## [13] reformulas_0.4.4    Rdpack_2.6.6        cli_3.6.5          
+## [16] rlang_1.1.7         rbibutils_2.4.1     splines_4.5.2      
+## [19] withr_3.0.2         otel_0.2.0          tools_4.5.2        
+## [22] nloptr_2.2.1        minqa_1.2.8         boot_1.3-32        
+## [25] vctrs_0.7.2         R6_2.6.1            zoo_1.8-15         
+## [28] lifecycle_1.0.5     ragg_1.5.0          pkgconfig_2.0.3    
+## [31] pillar_1.11.1       gtable_0.3.6        glue_1.8.0         
+## [34] Rcpp_1.1.1          systemfonts_1.3.1   xfun_0.55          
+## [37] tibble_3.3.1        tidyselect_1.2.1    dichromat_2.0-0.1  
+## [40] farver_2.1.2        nlme_3.1-168        labeling_0.4.3     
+## [43] compiler_4.5.2      S7_0.2.1
 ```
