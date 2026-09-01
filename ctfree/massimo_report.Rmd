@@ -1,0 +1,176 @@
+---
+title: "Why the ESI classification rule has been refitted"
+subtitle: "Supporting detail for the CT-free MD-COPD manuscript"
+output:
+  html_document:
+    theme: null
+    highlight: null
+    self_contained: true
+    css: !expr NULL
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, comment = "")
+options(stringsAsFactors = FALSE)
+# knitr sets the working directory to this file's own location, so the paths
+# are derived from it directly rather than through _locate.R, whose commandArgs
+# lookup would resolve against the render script and the pre-knit directory.
+HERE   <- normalizePath(if (file.exists("_locate.R")) "." else "ctfree")
+ROOT   <- dirname(HERE)
+ASSETS <- file.path(HERE, "assets")
+V15    <- file.path(ROOT, "manuscript_assets")
+
+need <- function(p, f) { x <- file.path(p, f)
+  if (!file.exists(x)) stop("missing artifact: ", x, "\nrun ctfree/analysis.R first")
+  x }
+t6  <- read.csv(need(V15, "Table_6.csv"), check.names = FALSE)
+ag  <- readLines(need(V15, "Table_Agreement_stats.txt"))
+xc  <- read.csv(need(ASSETS, "crossclass.csv"))
+fit <- read.csv(need(ASSETS, "schema_fit.csv"))
+rec <- read.csv(need(ASSETS, "reclassification.csv"))
+rsk <- read.csv(need(ASSETS, "schema_risk.csv"))
+stat <- function(k) as.numeric(sub("^[^=]+=", "", ag[grep(paste0("^", k, "="), ag)]))
+
+CT <- c("noCOPD", "AFL-only-NoCOPD", "COPD-minor", "COPD-major")
+M <- as.matrix(t6[, -1]); rownames(M) <- CT; colnames(M) <- CT
+N <- sum(M)
+O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
+K <- matrix(xc$n[xc$schema == "S4"], 4, 4, byrow = TRUE, dimnames = list(O, O))
+pct <- function(x) sprintf("%.1f%%", 100 * x)
+cm  <- function(x) format(x, big.mark = ",")
+kb  <- function(d, ...) knitr::kable(d, format = "html", align = "lrrrrr",
+                                     table.attr = 'class="t"', ...)
+```
+
+<style>
+/* Explicit background and color: an attachment opened in an unknown client
+   must not inherit a dark theme and become unreadable. */
+html{background:#fff}
+body{font-family:Helvetica,Arial,sans-serif;line-height:1.5;max-width:52em;
+     margin:2em auto;padding:0 1em;color:#222;background:#fff}
+h1{font-size:1.5em;border-bottom:2px solid #333;padding-bottom:.3em}
+h2{font-size:1.15em;margin-top:2em;color:#111}
+table.t{border-collapse:collapse;margin:1em 0;font-size:.92em}
+table.t th{background:#f0f0f0;border-bottom:2px solid #999;padding:.4em .7em;text-align:right}
+table.t th:first-child{text-align:left}
+table.t td{border-bottom:1px solid #ddd;padding:.35em .7em;text-align:right}
+table.t td:first-child{text-align:left}
+.bad{color:#b00;font-weight:600}
+.good{color:#060;font-weight:600}
+.note{background:#f7f7f7;border-left:3px solid #999;padding:.6em 1em;margin:1.2em 0}
+</style>
+
+## 1. The agreement we reported, and what it measured
+
+We reported **`r pct(sum(diag(M))/N)` agreement** and **kappa `r sprintf("%.2f", stat("kappa"))`**
+between the CT-based MD-COPD classification and our ESI-based version. Those
+figures are correct. They were computed at the binary level, COPD versus no
+COPD, which the Methods stated. Agreement within each of the four diagnostic
+categories was never reported.
+
+## 2. Agreement within each category
+
+Rows are the CT-based classification, columns the ESI-based one.
+
+```{r xtab}
+d <- as.data.frame.matrix(addmargins(M))
+names(d)[5] <- "total"; d <- cbind(`CT-based` = c(CT, "total"), d)
+kb(d, row.names = FALSE)
+```
+
+```{r diag}
+dg <- data.frame(Category = CT,
+                 Concordant = as.integer(diag(M)),
+                 `CT-based n` = as.integer(rowSums(M)),
+                 Agreement = pct(diag(M) / rowSums(M)), check.names = FALSE)
+kb(dg[order(-diag(M)/rowSums(M)), ], row.names = FALSE)
+```
+
+The two large categories agree almost perfectly. The two that MD-COPD adds to
+conventional spirometry do not: our rule reproduced
+<span class="bad">`r pct(M["COPD-minor","COPD-minor"]/sum(M["COPD-minor",]))`</span>
+of COPD-minor and
+<span class="bad">`r pct(M["AFL-only-NoCOPD","AFL-only-NoCOPD"]/sum(M["AFL-only-NoCOPD",]))`</span>
+of AFL-only-noCOPD.
+
+<div class="note">
+**Why the overall figure looks so good.** noCOPD and COPD-major are
+`r pct((sum(M["noCOPD",])+sum(M["COPD-major",]))/N)` of the cohort and supply
+`r pct((M["noCOPD","noCOPD"]+M["COPD-major","COPD-major"])/sum(diag(M)))` of all
+concordance. Collapsing to a binary also merges COPD-minor with COPD-major and
+AFL-only-noCOPD with noCOPD, so both disagreements above sit inside the merge
+and cannot show.
+</div>
+
+## 3. Why the thresholds were never fitted for this
+
+The ESI cut-points came from a classification tree fitted to predict the
+**visual CT structural score**, not the MD-COPD category. The ten-candidate grid
+that followed was scored on **binary** COPD agreement. Neither step included
+per-category agreement, so the two categories where the rule performs worst
+were outside what was optimized. This is a limit of scope in the original
+fitting rather than an error in it.
+
+## 4. The refit
+
+Both thresholds were refitted over the full parameter space, using only the
+CT-based labels, with no mortality or exacerbation data, and validated by five
+repeats of five-fold cross-validation.
+
+```{r fitted}
+f <- fit[fit$schema %in% c("S4_v15draft", "S4"), ]
+f <- f[order(f$schema != "S4_v15draft"), ]
+kb(data.frame(
+  Rule = c("Original: ESI ≥ 1.00, ≥ 3 of 4, two-threshold scoring",
+           "Revised: ESI ≥ 1.25, ≥ 2 of 4"),
+  `Held-out macro-F1` = sprintf("%.3f", f$macroF1_heldout), check.names = FALSE),
+  row.names = FALSE)
+```
+
+The count threshold moves from three to two because dropping the two CT
+criteria and adding one ESI criterion changes the scale of the count: three was
+calibrated for five criteria, not four. The revised rule is also simpler, a
+single ESI threshold in place of the 0/1/2 scoring, which we found was doing
+almost no work.
+
+```{r gain}
+g <- data.frame(
+  Category = c("COPD-minor", "AFL-only-noCOPD"),
+  Original = c(sprintf("%d of %d (%s)", M["COPD-minor","COPD-minor"],
+                       sum(M["COPD-minor",]), pct(M["COPD-minor","COPD-minor"]/sum(M["COPD-minor",]))),
+               sprintf("%d of %d (%s)", M["AFL-only-NoCOPD","AFL-only-NoCOPD"],
+                       sum(M["AFL-only-NoCOPD",]), pct(M["AFL-only-NoCOPD","AFL-only-NoCOPD"]/sum(M["AFL-only-NoCOPD",])))),
+  Revised = c(sprintf("%d of %d (%s)", K["COPD-minor","COPD-minor"],
+                      sum(K[, "COPD-minor"]), pct(K["COPD-minor","COPD-minor"]/sum(K[,"COPD-minor"]))),
+              sprintf("%d of %d (%s)", K["AFL-only","AFL-only"],
+                      sum(K[, "AFL-only"]), pct(K["AFL-only","AFL-only"]/sum(K[,"AFL-only"])))))
+kb(g, row.names = FALSE)
+```
+
+## 5. What still falls short
+
+AFL-only-noCOPD remains the weakest category at
+<span class="bad">`r pct(K["AFL-only","AFL-only"]/sum(K[,"AFL-only"]))`</span>,
+and the manuscript says so. It is `r cm(sum(K[, "AFL-only"]))` participants,
+`r pct(sum(K[,"AFL-only"])/N)` of the cohort, and the interval on any estimate
+within it is correspondingly wide.
+
+<div class="note">
+**Why this matters clinically, and why ESI is needed at all.** For
+`r sprintf("%.1f%%", rec$ct_only_pct[1])` of COPD-major, a CT finding is the only
+minor criterion met. Drop the CT criteria without replacing them and
+<span class="bad">`r cm(rec$major_to_aflonly[rec$schema=="S3"])`</span>
+participants leave COPD-major for AFL-only-noCOPD. With ESI in their place that
+falls to <span class="good">`r cm(rec$major_to_aflonly[rec$schema=="S4"])`</span>.
+The category receiving them carries
+`r sprintf("%.1f", rsk$resp_HR[rsk$schema=="S3" & rsk$category=="AFL-only"])`
+times the respiratory mortality of its reference when CT is simply dropped, and
+no significant excess when ESI replaces it.
+</div>
+
+<p style="color:#777;font-size:.85em;margin-top:2.5em">
+Every value above is read at render time from the analysis artifacts in
+<code>ctfree/assets/</code> and <code>manuscript_assets/</code>. Regenerate with
+<code>Rscript ctfree/analysis.R</code> then
+<code>Rscript ctfree/render_massimo_report.R</code>.
+</p>

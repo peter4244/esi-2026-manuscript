@@ -125,3 +125,4 @@ build_log_*.txt
 # Rendered response report (regenerate with render_bhatt_response.R)
 bhatt_response.html
 exploration/
+ctfree/massimo_report.html

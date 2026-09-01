@@ -104,6 +104,12 @@ COPD-major smaller and more severe while mislabeling the people it removes. We
 state this in the Results rather than the supplement, because a reviewer will
 find it and the answer is better made by us.
 
+I have attached a short report, `massimo_report.html`, that lays out the two
+points above with the full tables: the per-category agreement of the original
+rule, the arithmetic behind why the overall figure looked so good, and the
+before-and-after of the refit. Every number in it is read from the analysis
+artifacts when it is generated, so it cannot drift from the manuscript.
+
 I will send the draft separately. Happy to go through any of this on a call.
 
 Best,
