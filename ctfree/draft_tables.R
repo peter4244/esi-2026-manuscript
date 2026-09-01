@@ -9,6 +9,7 @@ lab  <- read.csv(file.path(ASSETS, "schema_labels.csv"), stringsAsFactors = FALS
 risk <- read.csv(file.path(ASSETS, "schema_risk.csv"),  stringsAsFactors = FALSE)
 disc <- read.csv(file.path(ASSETS, "schema_discrimination.csv"), stringsAsFactors = FALSE)
 fit  <- read.csv(file.path(ASSETS, "schema_fit.csv"),   stringsAsFactors = FALSE)
+crd  <- read.csv(file.path(ASSETS, "schema_crude.csv"), stringsAsFactors = FALSE)
 cvd  <- read.csv(file.path(ASSETS, "schema_fit_cv_diff.csv"), stringsAsFactors = FALSE)
 gate <- read.csv(file.path(ASSETS, "gate_fixedratio.csv"), stringsAsFactors = FALSE)
 S    <- readRDS(file.path(ASSETS, "schema_labels.rds"))
@@ -71,21 +72,40 @@ for (s in c("S3", "S4")) {
             100 * sum(diag(tb)) / sum(tb)))
 }
 
-w("\n## Table 3. Risk within each schema's own categories\n")
-w("| Schema | Category | n | All-cause HR (95% CI) | Respiratory HR (95% CI) | Exacerbation IRR (95% CI) |")
-w("|---|---|---|---|---|---|")
-NM <- c(S1="1 Fixed ratio", S2="2 MD-COPD with CT", S3="3 without CT", S4="4 with ESI")
+NM <- c(S1 = "1 Fixed ratio", S2 = "2 MD-COPD with CT",
+        S3 = "3 without CT", S4 = "4 with ESI")
+w("\n## Table 3. Crude and adjusted risk within each schema's own categories\n")
+w("Each estimate is against that schema's own noCOPD reference. Crude ratios are")
+w("the observed event rate in the category divided by the observed rate in the")
+w("reference, with 95% percentile intervals from a subject resample bootstrap;")
+w("adjusted estimates are hazard ratios (mortality) and incidence-rate ratios")
+w("(exacerbations) from models carrying age, sex, race, current smoking status,")
+w("pack-years and body mass index, with prior exacerbation frequency added for")
+w("exacerbations. Reading each pair together shows how much of an association the")
+w("covariates account for.\n")
+cr <- function(s, g, o) { r <- crd[crd$schema==s & crd$category==g & crd$outcome==o, ]
+  if (!nrow(r) || is.na(r$rr)) return("—")
+  if (g == "noCOPD") return("reference")
+  sprintf("%.2f (%.2f–%.2f)", r$rr, r$lo, r$hi) }
+w(paste("| Schema | Category | n | All-cause crude RR | All-cause adjusted HR |",
+        "Respiratory crude RR | Respiratory adjusted HR |",
+        "Exacerbation crude RR | Exacerbation adjusted IRR |"))
+w(paste0("|---|---|---|", paste(rep("---", 6), collapse = "|"), "|"))
 for (s in c("S1","S2","S3","S4")) {
-  cats <- if (s=="S1") c("noCOPD","COPD") else O
+  cats <- if (s == "S1") c("noCOPD","COPD") else O
   for (i in seq_along(cats)) { g <- cats[i]
-    r <- risk[risk$schema==s & risk$category==g, ]
-    w(sprintf("| %s | %s | %s | %s | %s | %s |",
-      if (i==1) NM[[s]] else "", g, format(r$n, big.mark=","),
-      ci(s,g,"all"), ci(s,g,"resp"), ci(s,g,"exac"))) }
-  d <- disc[disc$schema==s, ]
-  w(sprintf("| | *discrimination* | | *C = %.4f* | *C = %.4f* | *AIC = %.0f* |",
-            d$c_allcause, d$c_resp, d$exac_AIC))
+    r <- risk[risk$schema == s & risk$category == g, ]
+    w(sprintf("| %s | %s | %s | %s | %s | %s | %s | %s | %s |",
+      if (i == 1) NM[[s]] else "", g, format(r$n, big.mark = ","),
+      cr(s,g,"all"),  ci(s,g,"all"),
+      cr(s,g,"resp"), ci(s,g,"resp"),
+      cr(s,g,"exac"), ci(s,g,"exac"))) }
 }
+w("\n**Discrimination**\n")
+w("| Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |")
+w("|---|---|---|---|")
+for (s in c("S1","S2","S3","S4")) { d <- disc[disc$schema == s, ]
+  w(sprintf("| %s | %.4f | %.4f | %.0f |", NM[[s]], d$c_allcause, d$c_resp, d$exac_AIC)) }
 
 w("\n## Table 4. Fitting the CT-free schemas to approximate MD-COPD\n")
 w("| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |")

@@ -198,6 +198,65 @@ for (s in c("S1", "S2", "S3", "S4")) {
   cat(sprintf("  C-index all-cause %.4f | respiratory %.4f | exacerbation AIC %.1f\n",
               summary(m1)$concordance[1], summary(m2)$concordance[1], AIC(n1)))
 }
+# ---------------------------------------------------------------------------
+# Crude rate ratios, on the same scale as the adjusted estimates.
+#
+# An adjusted hazard ratio is what the classification contributes beyond the
+# covariates; the crude rate ratio is what participants in that category
+# actually experienced. Both belong in the table, and putting them on one
+# scale, each against its own schema's noCOPD reference, is what makes the
+# effect of adjustment readable rather than a change of units.
+#
+# Interval convention: a resample in which a category contributes no events is
+# a legitimate draw with a rate ratio of zero, not a failed one. Dropping such
+# draws truncates the interval from below and can push a lower bound above 1 on
+# the strength of a single event. Only a resample in which the REFERENCE has no
+# events leaves the ratio undefined, and only those are cut.
+CRUDE_B <- 1000L
+set.seed(CV_SEED)
+
+crude_ratio <- function(sch, ev, py, dat) {
+  g   <- dat[[sch]]
+  num <- rowsum(dat[[ev]], g, reorder = FALSE)
+  den <- rowsum(dat[[py]], g, reorder = FALSE)
+  r   <- setNames(as.vector(num) / as.vector(den), rownames(num))
+  ref <- r[["noCOPD"]]
+  if (!is.finite(ref) || ref <= 0) return(setNames(rep(NA_real_, length(r)), names(r)))
+  r / ref
+}
+
+crude_rows <- list()
+for (spec in list(list("all",  "vital_status",        "py",             mort),
+                  list("resp", "ev_resp",             "py",             mort),
+                  list("exac", "Total_Exacerbations", "Years_Followed", exa))) {
+  key <- spec[[1]]; ev <- spec[[2]]; py <- spec[[3]]; dat <- spec[[4]]
+  boot <- vector("list", CRUDE_B)
+  for (b in seq_len(CRUDE_B)) {
+    idx <- sample.int(nrow(dat), nrow(dat), replace = TRUE)
+    dd  <- dat[idx, , drop = FALSE]
+    boot[[b]] <- lapply(c("S1","S2","S3","S4"), function(s) crude_ratio(s, ev, py, dd))
+  }
+  for (si in seq_along(c("S1","S2","S3","S4"))) {
+    s   <- c("S1","S2","S3","S4")[si]
+    est <- crude_ratio(s, ev, py, dat)
+    for (g in names(est)) {
+      v <- vapply(boot, function(bb) { z <- bb[[si]]
+        if (g %in% names(z)) z[[g]] else NA_real_ }, numeric(1))
+      v <- v[is.finite(v)]
+      crude_rows[[length(crude_rows) + 1]] <- data.frame(
+        schema = s, category = g, outcome = key, rr = unname(est[[g]]),
+        lo = if (length(v) > 1) unname(quantile(v, .025)) else NA_real_,
+        hi = if (length(v) > 1) unname(quantile(v, .975)) else NA_real_,
+        B_eff = sum(v > 0), stringsAsFactors = FALSE)
+    }
+  }
+}
+crude <- do.call(rbind, crude_rows)
+# The reference category's ratio is 1 by construction; drift means the
+# numerator and denominator were computed off different rows.
+stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
+write.csv(crude, file.path(OUT, "schema_crude.csv"), row.names = FALSE)
+
 write.csv(do.call(rbind, risk_rows), file.path(OUT, "schema_risk.csv"), row.names = FALSE)
 write.csv(do.call(rbind, disc_rows), file.path(OUT, "schema_discrimination.csv"), row.names = FALSE)
 cat(sprintf("\nwrote %s\n", normalizePath(OUT)))
