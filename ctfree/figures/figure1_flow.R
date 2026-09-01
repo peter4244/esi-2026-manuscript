@@ -28,6 +28,8 @@ PAL <- c("noCOPD" = "#7F7F7F", "AFL-only" = "#9467BD",
          "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
 # Strata below this height get no label rather than an overflowing one.
 LABEL_MIN  <- 0.035 * nrow(S)
+W_OUT <- 0.30   # outer column width
+W_MID <- 0.40   # shared centre column, wider but not double
 STRAT_LAB  <- c("noCOPD" = "noCOPD", "AFL-only" = "AFL-only",
                 "COPD-minor" = "minor", "COPD-major" = "major")
 
@@ -40,29 +42,53 @@ panel <- function(target, side) {
   # together the two middle strata read as one shared column.
   ax <- if (side == "left") aes(y = n, axis1 = alt, axis2 = md)
         else                aes(y = n, axis1 = md,  axis2 = alt)
-  hide_at <- if (side == "left") -99 else 1   # right panel's axis1 is the shared column
+  # Stratum rectangles, computed rather than left to geom_stratum. Strata stack
+  # with the first factor level at the top, so the extents run cumulatively down
+  # from the cohort total.
+  stack <- function(v) { n <- as.numeric(table(factor(v, levels = O)))
+    data.frame(cat = factor(O, levels = O), n = n,
+               ymax = sum(n) - c(0, cumsum(n)[-length(n)]),
+               ymin = sum(n) - cumsum(n), stringsAsFactors = FALSE) }
+  outer_x  <- if (side == "left") 1 else 2
+  centre_x <- if (side == "left") 2 else 1
+  r_out <- transform(stack(S[[target]]),
+                     xmin = outer_x - W_OUT / 2, xmax = outer_x + W_OUT / 2,
+                     xlab = outer_x)
+  # The left panel draws the whole shared centre column, so the label sits at
+  # its true centre instead of being clipped at the join. The right panel draws
+  # none, and its expansion is zero on that side, so its ribbons begin exactly
+  # where the column ends and the two read as continuous.
+  r_out$lab <- ifelse(r_out$n >= LABEL_MIN, STRAT_LAB[as.character(r_out$cat)], "")
+  rects <- if (side == "left") {
+    r_mid <- transform(stack(S$S2),
+                       xmin = centre_x - W_MID / 2, xmax = centre_x + W_MID / 2,
+                       xlab = centre_x)
+    r_mid$lab <- ifelse(r_mid$n >= LABEL_MIN, STRAT_LAB[as.character(r_mid$cat)], "")
+    rbind(r_out, r_mid)
+  } else r_out
   labs_x <- if (side == "left") c("MD-COPD without CT", "MD-COPD with CT")
             else               c("", "MD-COPD with ESI")
   ggplot(d, ax) +
-    # Strata carry the category colour and the label sits inside in white, as
-    # in the v15 figure. Drawing them without a border also removes the seam
-    # where the two panels meet: two adjacent blocks of the same colour read as
-    # the single shared column they represent.
-    geom_alluvium(aes(fill = md, alpha = moved), width = 0.30,
+    # geom_stratum takes one width for every axis, which forces the shared
+    # centre column to twice the width of the outer ones. Drawing the strata as
+    # explicit rectangles gives each column its own width: the reference is
+    # wider, because it is shared and is what the others are measured against,
+    # but not double.
+    geom_alluvium(aes(fill = md, alpha = moved), width = W_OUT,
                   curve_type = "sigmoid") +
-    geom_stratum(aes(fill = after_stat(stratum)), width = 0.30, color = NA) +
-    geom_text(stat = "stratum",
-              aes(label = ifelse(after_stat(x) == hide_at |
-                                 after_stat(count) < LABEL_MIN, "",
-                                 STRAT_LAB[as.character(after_stat(stratum))])),
+    geom_rect(data = rects, inherit.aes = FALSE,
+              aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = cat)) +
+    geom_text(data = subset(rects, lab != ""), inherit.aes = FALSE,
+              aes(x = xlab, y = (ymin + ymax) / 2, label = lab),
               size = BODY_FS_NATIVE / .pt * 0.62, family = "Arial",
               colour = "white", fontface = "bold") +
     scale_alpha_manual(values = c(`TRUE` = 0.85, `FALSE` = 0.16), guide = "none") +
     # No expansion on the facing edge, so the two centre strata butt together
     # and read as the single shared reference column they are.
+    coord_cartesian(clip = "off") +
     scale_x_discrete(limits = labs_x,
-                     expand = if (side == "left") expansion(mult = c(0.12, 0.00))
-                              else                expansion(mult = c(0.00, 0.26))) +
+                     expand = if (side == "left") expansion(add = c(0.22, W_MID / 2))
+                              else                expansion(add = c(0.00, 0.30))) +
     scale_y_continuous(labels = function(v) format(v, big.mark = ",")) +
     scale_fill_manual(values = PAL, guide = "none") +
     labs(y = if (side == "left") "Participants" else NULL) +
