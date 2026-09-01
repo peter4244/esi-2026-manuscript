@@ -31,16 +31,19 @@ objective, over their full parameter spaces, outcome-blind, and cross-validated
 
 ## Running it
 
-From the repository root, in order:
+All three resolve their own location, so they run from any working directory
+and the paths below can be pasted anywhere. In order:
 
 ```
-Rscript ctfree/gate_fixedratio.R   # does MD-COPD beat the fixed ratio at all
-Rscript ctfree/analysis.R          # fit, cross-validate and score the four schemas
-Rscript ctfree/verify.R            # check every claim against the artifacts
+Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/gate_fixedratio.R
+Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/analysis.R
+Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verify.R
 ```
 
-`config_paths.R` supplies the five COPDGene inputs and is git-ignored; the
-classification analysis needs only two of them.
+The first asks whether MD-COPD beats the fixed ratio at all, the second fits
+and scores the four schemas, the third checks every claim against the
+artifacts. `config_paths.R` supplies the five COPDGene inputs and is
+git-ignored; the classification analysis needs only two of them.
 
 ## Files
 
@@ -50,6 +53,7 @@ classification analysis needs only two of them.
 | `gate_fixedratio.R` | the nested likelihood ratio test the reframe presupposes |
 | `analysis.R` | schema fitting, cross-validation, labels and risk |
 | `verify.R` | the registry; fails loudly on drift |
+| `_locate.R` | resolves the paper's own directory so nothing depends on the caller's cwd |
 | `assets/` | artifacts, and `VERIFICATION.csv` |
 
 ## Three traps, recorded so they are not walked into again

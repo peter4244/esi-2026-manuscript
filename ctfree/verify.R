@@ -3,8 +3,11 @@
 # with the v15 manuscript's. Every claim in ctfree/CLAIMS.md is evaluated
 # against ctfree/assets/ as it exists now, and any drift fails the run.
 #
-# Usage, from the repo root:  Rscript ctfree/verify.R
-ASSETS <- file.path("ctfree", "assets")
+# Runs from any working directory:  Rscript /abs/path/to/ctfree/verify.R
+# Locate this script's own directory, so it runs from any working directory.
+.b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
+                 else "ctfree", "_locate.R"))
 REGISTRY_N <- 35L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 

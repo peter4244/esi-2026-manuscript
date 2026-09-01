@@ -24,9 +24,13 @@
 # registry in ctfree/verify.R is allowed to read. Run from the repo root.
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({library(dplyr); library(survival); library(MASS)})
-OUT <- file.path("ctfree", "assets")
+# Locate this script's own directory, so it runs from any working directory.
+.b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
+                 else "ctfree", "_locate.R"))
+OUT <- ASSETS
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
-source("config_paths.R")
+source(CONFIG)
 CV_REPEATS <- 5L; CV_FOLDS <- 5L; CV_SEED <- 20260901L
 
 read_any <- function(p, ...) { h <- readLines(p, n = 1, warn = FALSE)
