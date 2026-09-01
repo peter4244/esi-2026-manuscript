@@ -44,21 +44,31 @@ w(sprintf("\nMD-COPD reference counts are %s, %s, %s and %s.\n",
           n_of("S2","noCOPD"), n_of("S2","AFL-only"), n_of("S2","COPD-minor"), n_of("S2","COPD-major")))
 
 w("## Table 2. Where participants move when CT is removed\n")
-w("Rows are MD-COPD with CT. Columns are the CT-free schema.\n")
+w("The reference classification runs across the columns; the CT-free schema being")
+w("evaluated runs down the rows. Diagonal cells are participants both schemas")
+w("place in the same category.\n")
+NM2 <- c(S3 = "MD-COPD without CT", S4 = "MD-COPD with ESI")
 for (s in c("S3", "S4")) {
-  w(sprintf("\n**%s**\n", if (s == "S3") "Schema 3, MD-COPD without CT" else "Schema 4, MD-COPD with ESI"))
-  tb <- table(factor(S$S2, levels = O), factor(S[[s]], levels = O))
-  w(paste0("| MD-COPD with CT | ", paste(O, collapse = " | "), " | total |"))
+  w(sprintf("\n**%s. %s**\n",
+            if (s == "S3") "Schema 3" else "Schema 4", NM2[[s]]))
+  # Rows are the CT-free schema, columns MD-COPD with CT.
+  tb <- table(factor(S[[s]], levels = O), factor(S$S2, levels = O))
+  w(paste0("| ", NM2[[s]], " &darr;&nbsp;&nbsp;/&nbsp;&nbsp;MD-COPD with CT &rarr; | ",
+           paste(O, collapse = " | "), " | **total** |"))
   w(paste0("|---|", paste(rep("---", length(O) + 1), collapse = "|"), "|"))
   for (g in O) {
     v <- tb[g, ]
     cells <- vapply(O, function(h) { n <- v[[h]]
-      if (h == g) sprintf("**%s**", format(n, big.mark=",")) else format(n, big.mark=",") }, "")
-    w(sprintf("| %s | %s | %s |", g, paste(cells, collapse=" | "), format(sum(v), big.mark=",")))
+      if (h == g) sprintf("**%s**", format(n, big.mark = ",")) else format(n, big.mark = ",") }, "")
+    w(sprintf("| **%s** | %s | **%s** |", g, paste(cells, collapse = " | "),
+              format(sum(v), big.mark = ",")))
   }
-  w(sprintf("| **stays in the same category** | %s of %s (%.1f%%) | | | | |",
-            format(sum(diag(tb)), big.mark=","), format(sum(tb), big.mark=","),
-            100*sum(diag(tb))/sum(tb)))
+  w(sprintf("| **total** | %s | **%s** |",
+            paste(vapply(O, function(h) format(sum(tb[, h]), big.mark = ","), ""), collapse = " | "),
+            format(sum(tb), big.mark = ",")))
+  w(sprintf("\nConcordant with MD-COPD in %s of %s participants (%.1f%%).\n",
+            format(sum(diag(tb)), big.mark = ","), format(sum(tb), big.mark = ","),
+            100 * sum(diag(tb)) / sum(tb)))
 }
 
 w("\n## Table 3. Risk within each schema's own categories\n")
@@ -92,7 +102,10 @@ w("## Table 5. MD-COPD versus the fixed ratio (nested likelihood ratio test)\n")
 w("| Outcome | C-index, fixed ratio | C-index, MD-COPD | LR χ² (2 df) | p |")
 w("|---|---|---|---|---|")
 for (i in seq_len(nrow(gate))) { r <- gate[i, ]
-  w(sprintf("| %s | %s | %s | %.1f | %s |", r$outcome,
+  nm <- c("ALL-CAUSE MORTALITY" = "All-cause mortality",
+          "RESPIRATORY MORTALITY" = "Respiratory mortality",
+          "EXACERBATIONS" = "Exacerbations")[[r$outcome]]
+  w(sprintf("| %s | %s | %s | %.1f | %s |", nm,
     if (is.na(r$c_fixedratio)) "—" else sprintf("%.4f", r$c_fixedratio),
     if (is.na(r$c_mdcopd)) "—" else sprintf("%.4f", r$c_mdcopd),
     r$lrt_chisq, format.pval(r$lrt_p, digits=2, eps=1e-16))) }

@@ -15,28 +15,36 @@ MD-COPD reference counts are 4,203, 170, 1,086 and 3,943.
 
 ## Table 2. Where participants move when CT is removed
 
-Rows are MD-COPD with CT. Columns are the CT-free schema.
+The reference classification runs across the columns; the CT-free schema being
+evaluated runs down the rows. Diagonal cells are participants both schemas
+place in the same category.
 
 
-**Schema 3, MD-COPD without CT**
+**Schema 3. MD-COPD without CT**
 
-| MD-COPD with CT | noCOPD | AFL-only | COPD-minor | COPD-major | total |
+| MD-COPD without CT &darr;&nbsp;&nbsp;/&nbsp;&nbsp;MD-COPD with CT &rarr; | noCOPD | AFL-only | COPD-minor | COPD-major | **total** |
 |---|---|---|---|---|---|
-| noCOPD | **3,864** | 0 | 339 | 0 | 4,203 |
-| AFL-only | 0 | **170** | 0 | 0 | 170 |
-| COPD-minor | 117 | 0 | **969** | 0 | 1,086 |
-| COPD-major | 0 | 949 | 0 | **2,994** | 3,943 |
-| **stays in the same category** | 7,997 of 9,402 (85.1%) | | | | |
+| **noCOPD** | **3,864** | 0 | 117 | 0 | **3,981** |
+| **AFL-only** | 0 | **170** | 0 | 949 | **1,119** |
+| **COPD-minor** | 339 | 0 | **969** | 0 | **1,308** |
+| **COPD-major** | 0 | 0 | 0 | **2,994** | **2,994** |
+| **total** | 4,203 | 170 | 1,086 | 3,943 | **9,402** |
 
-**Schema 4, MD-COPD with ESI**
+Concordant with MD-COPD in 7,997 of 9,402 participants (85.1%).
 
-| MD-COPD with CT | noCOPD | AFL-only | COPD-minor | COPD-major | total |
+
+**Schema 4. MD-COPD with ESI**
+
+| MD-COPD with ESI &darr;&nbsp;&nbsp;/&nbsp;&nbsp;MD-COPD with CT &rarr; | noCOPD | AFL-only | COPD-minor | COPD-major | **total** |
 |---|---|---|---|---|---|
-| noCOPD | **3,805** | 0 | 398 | 0 | 4,203 |
-| AFL-only | 0 | **77** | 0 | 93 | 170 |
-| COPD-minor | 98 | 0 | **988** | 0 | 1,086 |
-| COPD-major | 0 | 233 | 0 | **3,710** | 3,943 |
-| **stays in the same category** | 8,580 of 9,402 (91.3%) | | | | |
+| **noCOPD** | **3,805** | 0 | 98 | 0 | **3,903** |
+| **AFL-only** | 0 | **77** | 0 | 233 | **310** |
+| **COPD-minor** | 398 | 0 | **988** | 0 | **1,386** |
+| **COPD-major** | 0 | 93 | 0 | **3,710** | **3,803** |
+| **total** | 4,203 | 170 | 1,086 | 3,943 | **9,402** |
+
+Concordant with MD-COPD in 8,580 of 9,402 participants (91.3%).
+
 
 ## Table 3. Risk within each schema's own categories
 
@@ -75,6 +83,6 @@ Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
 
 | Outcome | C-index, fixed ratio | C-index, MD-COPD | LR χ² (2 df) | p |
 |---|---|---|---|---|
-| ALL-CAUSE MORTALITY | 0.6945 | 0.7034 | 110.2 | <1e-16 |
-| RESPIRATORY MORTALITY | 0.8454 | 0.8527 | 53.9 | 2e-12 |
-| EXACERBATIONS | — | — | 162.4 | <1e-16 |
+| All-cause mortality | 0.6945 | 0.7034 | 110.2 | <1e-16 |
+| Respiratory mortality | 0.8454 | 0.8527 | 53.9 | 2e-12 |
+| Exacerbations | — | — | 162.4 | <1e-16 |
