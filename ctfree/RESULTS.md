@@ -13,7 +13,7 @@ stripped before submission.
 
 The analytic cohort comprised 9,402 COPDGene participants with complete
 baseline data on all diagnostic criteria of the multidimensional framework
-(Supplemental Table 4) {COH-01}. The cohort spanned the full COPDGene spectrum,
+(Supplemental Table S1) {COH-01}. The cohort spanned the full COPDGene spectrum,
 including 106 never-smokers, 4,054 smokers without airflow obstruction (GOLD 0),
 1,129 participants with PRISm, and 4,113 participants with GOLD 1 to 4 airflow
 obstruction. Mean baseline ESI increased monotonically with severity across the
@@ -27,7 +27,7 @@ CT measures of emphysema, including the percentage of low attenuation area below
 (r = 0.81). The strength of these relationships varied according to disease
 severity, with weak correlations observed in groups with minimal structural
 abnormalities (GOLD 0, r = 0.08) and stronger relationships among participants
-with established airflow obstruction (GOLD 3, r = 0.58; Supplemental Table 5).
+with established airflow obstruction (GOLD 3, r = 0.58; Supplemental Table S2).
 
 ## What the multidimensional framework adds to the fixed ratio
 
@@ -78,7 +78,7 @@ achieved a held-out macro-averaged F1 of 0.753 against 0.720 for the
 symptoms-only schema, a difference of 0.033 (95% across folds 0.016 to 0.050)
 {FIT-04a, FIT-04b, FIT-05a, FIT-05b}. The fitted rule uses a single ESI
 threshold of 1.25 and a count of two of four minor criteria {FIT-01, FIT-02a,
-FIT-02b, FIT-03} (Supplemental Table S2).
+FIT-02b, FIT-03} (Supplemental Table S4).
 
 ## Discrimination favors the schema that should not be used
 
@@ -88,7 +88,7 @@ Discrimination did not track the quality of the classification. The
 symptoms-only schema had the highest C-index of the four for all-cause
 mortality (0.722 against 0.703 for the CT-based framework) and the highest for
 respiratory mortality, and the lowest exacerbation AIC {DISC-01, DISC-01b}
-(Supplemental Table S1). The ESI-based schema also discriminated marginally
+(Supplemental Table S5). The ESI-based schema also discriminated marginally
 better than the CT-based reference {DISC-02, DISC-03}.
 
 A C-index does not test what the categories are called. It tests how well they

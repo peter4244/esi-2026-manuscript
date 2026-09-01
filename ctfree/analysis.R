@@ -152,6 +152,17 @@ reclass$ct_only_major <- ct_only
 reclass$ct_only_pct <- 100 * ct_only / n_major
 write.csv(reclass, file.path(OUT, "reclassification.csv"), row.names = FALSE)
 
+# Full cross-classification of each CT-free schema against the reference, long
+# form so the supplement table can be built without recomputing anything.
+xtab <- do.call(rbind, lapply(c("S3", "S4"), function(s) {
+  tb <- table(factor(d[[s]], levels = O), factor(d$S2, levels = O))
+  do.call(rbind, lapply(O, function(rw) data.frame(
+    schema = s, row_cat = rw, col_cat = O,
+    n = as.integer(tb[rw, O]), stringsAsFactors = FALSE)))
+}))
+stopifnot(sum(xtab$n) == 2 * nrow(d))
+write.csv(xtab, file.path(OUT, "crossclass.csv"), row.names = FALSE)
+
 cat("################ PART 2: how each schema labels the same 9,402 people ################\n\n")
 NAMES <- c(S1 = "1  Fixed ratio (FEV1/FVC < 0.70)",
            S2 = "2  MD-COPD with CT  [reference]",

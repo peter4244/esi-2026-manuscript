@@ -16,6 +16,7 @@ Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/fig
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verify.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/check_edges.R
 python3 /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/build_manuscript.py
+python3 /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/build_supplement.py
 ```
 
 ## Tables
@@ -26,8 +27,11 @@ python3 /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/build_manus
 | Table 2, reclassification | `draft_tables.R` | `schema_labels.rds` | LAB-* | Agreement between classifications |
 | Table 3, crude and adjusted risk | `draft_tables.R` | `schema_risk.csv`, `schema_crude.csv` | RISK-01 to RISK-06 | Statistical analysis |
 | Results sentence, fixed ratio | `draft_tables.R` | `gate_fixedratio.csv` | GATE-01 to GATE-05 | Comparison with the fixed ratio |
-| Table S1, discrimination | `draft_tables.R` | `schema_discrimination.csv` | DISC-01, DISC-01b, DISC-02, DISC-03 | Comparison with the fixed ratio |
-| Table S2, threshold fitting | `draft_tables.R` | `schema_fit.csv`, `schema_fit_cv_diff.csv` | FIT-01 to FIT-06 | Fitting the CT-free schemas |
+| Table S1, baseline characteristics | `build_supplement.py` | `manuscript_assets/Table_S2_baseline_characteristics.csv` *(earlier analysis)* | — | Study population |
+| Table S2, ESI and quantitative CT | `build_supplement.py` | `manuscript_assets/Supp_Table_CT_correlations.csv` *(earlier analysis)* | — | Study population |
+| Table S3, reclassification | `build_supplement.py` | `crossclass.csv` | RECL-01, RECL-02, LAB-* | Agreement between classifications |
+| Table S4, threshold fitting | `build_supplement.py` | `schema_fit.csv`, `schema_fit_cv_diff.csv` | FIT-01 to FIT-06 | Fitting the CT-free schemas |
+| Table S5, discrimination | `build_supplement.py` | `schema_discrimination.csv` | DISC-01, DISC-01b, DISC-02, DISC-03 | Comparison with the fixed ratio |
 
 ## Figures
 
@@ -54,11 +58,11 @@ clipping and says so in its own header.
 | `verify.R` | `VERIFICATION.csv` | 35 claims. Fails the run on drift. Falsification-tested. |
 | `figures/check_edges.R` | console | Fails if ink touches the canvas edge. |
 | `INTRODUCTION.md`, `METHODS.md`, `RESULTS.md` | prose sources | Annotated with claim ids and v15 provenance; both stripped at build. |
+| `build_supplement.py` | `manuscript/CT-free MD-COPD supplement draft v1.docx` | Five supplemental tables plus the COPDGene file list. Checks that every `Supplemental Table Sn` cited in the main text is produced here and vice versa; falsification-tested. |
 | `build_manuscript.py` | `manuscript/CT-free MD-COPD manuscript draft v1.docx` | Builds the document from METHODS.md, RESULTS.md, the artifacts and the figure PNGs. Nothing is hand-edited into the .docx, so a rebuild never destroys work; that is what retired the parent directory's builder. Strips claim ids and provenance markers from the prose. |
 | `_locate.R` | | Resolves the paper directory so nothing depends on the caller's cwd. |
 
 ## Not yet mapped
 
 - Legends for Figures 2 to 4.
-- The Supplement list of COPDGene data files, carried over from v15.
 - Any figure showing ESI against quantitative CT, if that v15 material is kept.
