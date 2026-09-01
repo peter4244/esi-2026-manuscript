@@ -135,6 +135,23 @@ d$S3 <- s3(d, k3)
 d$S4 <- s4(d, p4$k, p4$t_low, p4$t_high)
 saveRDS(d[, c("pid", "S1", "S2", "S3", "S4")], file.path(OUT, "schema_labels.rds"))
 
+# Reclassification counts the Results quotes directly, and the share of
+# COPD-major that qualifies only through a CT finding, which is the reason a
+# CT-free schema can lose that category at all.
+reclass <- do.call(rbind, lapply(c("S3", "S4"), function(s) data.frame(
+  schema = s,
+  major_to_aflonly = sum(d$S2 == "COPD-major" & d[[s]] == "AFL-only"),
+  minor_to_nocopd  = sum(d$S2 == "COPD-minor" & d[[s]] == "noCOPD"),
+  nocopd_to_minor  = sum(d$S2 == "noCOPD"     & d[[s]] == "COPD-minor"),
+  aflonly_kept     = sum(d$S2 == "AFL-only"   & d[[s]] == "AFL-only"),
+  concordant       = sum(d$S2 == d[[s]]), stringsAsFactors = FALSE)))
+n_major   <- sum(d$S2 == "COPD-major")
+ct_only   <- sum(d$S2 == "COPD-major" & d$om == 0)   # no symptom criterion at all
+reclass$n_major <- n_major
+reclass$ct_only_major <- ct_only
+reclass$ct_only_pct <- 100 * ct_only / n_major
+write.csv(reclass, file.path(OUT, "reclassification.csv"), row.names = FALSE)
+
 cat("################ PART 2: how each schema labels the same 9,402 people ################\n\n")
 NAMES <- c(S1 = "1  Fixed ratio (FEV1/FVC < 0.70)",
            S2 = "2  MD-COPD with CT  [reference]",

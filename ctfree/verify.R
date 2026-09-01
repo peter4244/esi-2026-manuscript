@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 35L
+REGISTRY_N <- 47L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -86,6 +86,52 @@ reg("LAB-03", "Labels", "S4 holds COPD-major at 3,803", 3803, "schema_labels.csv
     L("S4", "COPD-major"), TOL_EXACT)
 reg("LAB-04", "Labels", "S3 calls 1,119 AFL-only against the reference's 170",
     1119, "schema_labels.csv", L("S3", "AFL-only"), TOL_EXACT)
+
+# --- reclassification counts the Results quotes ---------------------------
+RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
+reg("RECL-01", "Reclassification", "949 COPD-major become AFL-only-noCOPD without CT",
+    949, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)
+reg("RECL-02", "Reclassification", "233 do so with ESI", 233,
+    "reclassification.csv", RC("S4", "major_to_aflonly"), TOL_EXACT)
+reg("RECL-03", "Reclassification",
+    "24.1% of COPD-major qualify only through a CT finding", 24.1,
+    "reclassification.csv", 'x$ct_only_pct[1]', TOL_1DP)
+reg("RECL-04", "Reclassification", "that is 949 of 3,943 participants", 949,
+    "reclassification.csv", 'x$ct_only_major[1]', TOL_EXACT)
+# The two counts are the same number for a reason: without a structural
+# criterion, exactly the participants whose only minor criteria were CT
+# findings are the ones who lose the category. If these ever diverge the
+# explanation in the Results is wrong.
+reg("RECL-05", "Reclassification",
+    "the CT-only COPD-major group is exactly the group schema 3 loses",
+    TRUE, "reclassification.csv",
+    'x$ct_only_major[1] == x$major_to_aflonly[x$schema == "S3"]', TOL_EXACT)
+reg("RECL-06", "Reclassification", "schema 3 keeps all 170 true AFL-only", 170,
+    "reclassification.csv", RC("S3", "aflonly_kept"), TOL_EXACT)
+
+# --- crude rate ratios quoted alongside the adjusted ----------------------
+CR <- function(sch, cat, out, fld)
+  sprintf('x$%s[x$schema == "%s" & x$category == "%s" & x$outcome == "%s"]',
+          fld, sch, cat, out)
+reg("CRUDE-01", "Crude estimates",
+    "without CT, AFL-only crude all-cause rate ratio 1.56", 1.56,
+    "schema_crude.csv", CR("S3", "AFL-only", "all", "rr"), TOL_2DP)
+reg("CRUDE-02", "Crude estimates",
+    "and its interval excludes 1, so the label is false unadjusted too",
+    TRUE, "schema_crude.csv",
+    sprintf('%s > 1', CR("S3", "AFL-only", "all", "lo")), TOL_EXACT)
+reg("CRUDE-03", "Crude estimates",
+    "without CT, AFL-only crude respiratory rate ratio 9.64", 9.64,
+    "schema_crude.csv", CR("S3", "AFL-only", "resp", "rr"), TOL_2DP)
+reg("CRUDE-04", "Crude estimates",
+    "with ESI, AFL-only crude all-cause rate ratio 1.30", 1.30,
+    "schema_crude.csv", CR("S4", "AFL-only", "all", "rr"), TOL_2DP)
+reg("CRUDE-05", "Crude estimates",
+    "and its interval includes 1", TRUE, "schema_crude.csv",
+    sprintf('%s < 1', CR("S4", "AFL-only", "all", "lo")), TOL_EXACT)
+reg("CRUDE-06", "Crude estimates",
+    "with CT, AFL-only crude all-cause rate ratio 1.08", 1.08,
+    "schema_crude.csv", CR("S2", "AFL-only", "all", "rr"), TOL_2DP)
 
 # --- risk: do the labels mean what they say -------------------------------
 R <- function(s, cat, fld) sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, s, cat)
