@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""Build the CT-free manuscript .docx from source.
+
+Unlike the v15 build, this one stays runnable. Its prose lives in METHODS.md
+and RESULTS.md, its tables are constructed from the artifacts in assets/ rather
+than typed, and its figures are the PNGs the figure scripts emit. Nothing here
+is hand-edited into the .docx, so rebuilding never destroys anything, which is
+what retired build_manuscript.py in the parent directory.
+
+Prose files carry two kinds of editorial marking that must not reach the
+document: claim ids in braces, {RISK-01}, which tie a sentence to its registry
+entry, and provenance notes, **[v15 para 67, verbatim]**, which record reuse.
+Both are stripped here so the sources stay annotated while the output is clean.
+
+Usage, from anywhere:
+    python3 /abs/path/to/ctfree/build_manuscript.py
+"""
+import csv
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, ROOT)
+
+from docx import Document                                    # noqa: E402
+from docx.shared import Pt, Inches, RGBColor                 # noqa: E402
+from docx.oxml import OxmlElement                            # noqa: E402
+from docx.oxml.ns import qn                                  # noqa: E402
+from docx.enum.text import WD_ALIGN_PARAGRAPH                # noqa: E402
+from docx.enum.table import WD_ALIGN_VERTICAL                # noqa: E402
+
+from tables.docx_helpers import FONT_NAME, CONTENT_WIDTH_IN  # noqa: E402
+
+ASSETS = os.path.join(HERE, "assets")
+FIGS   = os.path.join(HERE, "figures")
+OUT    = os.path.join(HERE, "manuscript",
+                      "CT-free MD-COPD manuscript draft v1.docx")
+BODY_FS, TBL_FS = 11, 9
+CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
+SCHEMA_NAME = {"S1": "1  Fixed ratio", "S2": "2  MD-COPD with CT",
+               "S3": "3  MD-COPD without CT", "S4": "4  MD-COPD with ESI"}
+
+CLAIM_ID   = re.compile(r"\s*\{[A-Z][A-Za-z0-9-]*(?:,\s*[A-Z][A-Za-z0-9-]*)*\}")
+PROVENANCE = re.compile(r"^\*\(.*\)\*$|^\*\*\[v15.*\]\*\*$")
+
+
+def load(name):
+    with open(os.path.join(ASSETS, name)) as f:
+        return list(csv.DictReader(f))
+
+
+def init_document():
+    doc = Document()
+    for s in doc.sections:
+        s.page_width, s.page_height = Inches(8.5), Inches(11)
+        s.top_margin = s.bottom_margin = Inches(1)
+        s.left_margin = s.right_margin = Inches(1)
+    normal = doc.styles["Normal"]
+    normal.font.name = FONT_NAME
+    normal.font.size = Pt(BODY_FS)
+    rPr = normal.element.get_or_add_rPr()
+    rF = rPr.find(qn("w:rFonts"))
+    if rF is None:
+        rF = OxmlElement("w:rFonts"); rPr.append(rF)
+    for k in ("w:ascii", "w:hAnsi", "w:cs"):
+        rF.set(qn(k), FONT_NAME)
+    for name, size in [("Heading 1", 14), ("Heading 2", 12), ("Heading 3", 11)]:
+        st = doc.styles[name]
+        st.font.name, st.font.size, st.font.bold = FONT_NAME, Pt(size), True
+        st.font.color.rgb = RGBColor(0, 0, 0)
+        st.paragraph_format.space_before = Pt(12)
+        st.paragraph_format.space_after = Pt(4)
+    normal.paragraph_format.space_after = Pt(8)
+    normal.paragraph_format.line_spacing = 1.0
+    return doc
+
+
+def emphasis(par, text, size=BODY_FS):
+    """Render **bold** spans; everything else plain."""
+    for i, chunk in enumerate(re.split(r"(\*\*[^*]+\*\*)", text)):
+        if not chunk:
+            continue
+        r = par.add_run(chunk[2:-2] if chunk.startswith("**") else chunk)
+        r.bold = chunk.startswith("**")
+        r.font.name, r.font.size = FONT_NAME, Pt(size)
+
+
+def add_prose(doc, md_path, skip_after=None):
+    """Render a prose source, stopping at `skip_after` so the editorial
+    'Still to write' and 'Open' sections never reach the document."""
+    with open(md_path) as f:
+        lines = f.read().split("\n")
+    # Everything before the first section heading is editorial front matter
+    # explaining the annotations, and belongs in the source rather than the
+    # document.
+    first = next((i for i, l in enumerate(lines) if l.startswith("## ")), 0)
+    lines = lines[first:]
+    para, emitted = [], 0
+
+    def flush():
+        nonlocal para, emitted
+        if not para:
+            return
+        text = CLAIM_ID.sub("", " ".join(para)).strip()
+        para = []
+        if not text or PROVENANCE.match(text):
+            return
+        emphasis(doc.add_paragraph(), text)
+        emitted += 1
+
+    for ln in lines:
+        t = ln.rstrip()
+        if t.startswith("#"):
+            title = t.lstrip("#").strip()
+            if skip_after and title.lower().startswith(skip_after.lower()):
+                flush()
+                return emitted
+            flush()
+            if t.startswith("## "):
+                doc.add_paragraph(title, style="Heading 2")
+        elif t.startswith("---") or t.startswith("|") or t.startswith("```"):
+            flush()
+        elif not t.strip():
+            flush()
+        else:
+            para.append(t.strip())
+    flush()
+    return emitted
+
+
+def set_cell_margins(tbl, inches):
+    """Word's default cell padding is 0.08 inch a side, which is 0.16 inch of
+    every column lost to whitespace. At nine columns that is the difference
+    between a number fitting on one line and wrapping mid-value."""
+    tblPr = tbl._element.find(qn("w:tblPr"))
+    mar = tblPr.find(qn("w:tblCellMar"))
+    if mar is None:
+        mar = OxmlElement("w:tblCellMar"); tblPr.append(mar)
+    for side in ("top", "left", "bottom", "right"):
+        el = mar.find(qn("w:" + side))
+        if el is None:
+            el = OxmlElement("w:" + side); mar.append(el)
+        el.set(qn("w:w"), str(int(round(inches * 1440))))
+        el.set(qn("w:type"), "dxa")
+
+
+def add_table(doc, headers, rows, widths, body_fs=TBL_FS, pad_in=0.05):
+    assert abs(sum(widths) - CONTENT_WIDTH_IN) < 0.02, sum(widths)
+    t = doc.add_table(rows=1 + len(rows), cols=len(headers))
+    t.style = "Table Grid"
+    grid = t._element.find(qn("w:tblGrid"))
+    for gc, w in zip(grid.findall(qn("w:gridCol")), widths):
+        gc.set(qn("w:w"), str(int(round(w * 1440))))
+        gc.set(qn("w:type"), "dxa")
+    tblPr = t._element.find(qn("w:tblPr"))
+    lay = tblPr.find(qn("w:tblLayout"))
+    if lay is None:
+        lay = OxmlElement("w:tblLayout"); tblPr.append(lay)
+    lay.set(qn("w:type"), "fixed")
+    set_cell_margins(t, pad_in)
+    for i, row in enumerate([headers] + rows):
+        for j, val in enumerate(row):
+            cell = t.rows[i].cells[j]
+            cell.width = Inches(widths[j])
+            cell.text = ""
+            p = cell.paragraphs[0]
+            p.paragraph_format.space_before = Pt(1)
+            p.paragraph_format.space_after = Pt(1)
+            if j:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(str(val))
+            r.bold = (i == 0)
+            r.font.name, r.font.size = FONT_NAME, Pt(body_fs)
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    return t
+
+
+def legend(doc, label, text):
+    p = doc.add_paragraph()
+    r = p.add_run(label + " ")
+    r.bold = True
+    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS - 1)
+    r2 = p.add_run(text)
+    r2.font.name, r2.font.size = FONT_NAME, Pt(BODY_FS - 1)
+
+
+# --------------------------------------------------------------------------
+# Tables, built from the artifacts
+# --------------------------------------------------------------------------
+def table1(doc):
+    lab = {(r["schema"], r["category"]): int(r["n"]) for r in load("schema_labels.csv")}
+    n = lambda s, c: f"{lab[(s, c)]:,}" if (s, c) in lab else "—"
+    rows = [
+        ["1  Fixed ratio", "none; COPD is airflow limitation",
+         n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
+        ["2  MD-COPD with CT", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
+         n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
+        ["3  MD-COPD without CT", "dyspnea, SGRQ, chronic bronchitis (≥2)",
+         n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
+        ["4  MD-COPD with ESI", "ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2)",
+         n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
+    add_table(doc, ["Schema", "Minor criteria", "noCOPD", "AFL-only-noCOPD",
+                    "COPD-minor", "COPD-major"],
+              rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
+    legend(doc, "Table 1.",
+           "Four classification schemas applied to the same 9,402 participants. The "
+           "major criterion is post-bronchodilator FEV₁/FVC below 0.70 in every "
+           "schema, so no participant changes pathway between them. Schema 2 is the "
+           "reference the two CT-free schemas approximate.")
+
+
+def table3(doc):
+    risk = {(r["schema"], r["category"]): r for r in load("schema_risk.csv")}
+    crd = {(r["schema"], r["category"], r["outcome"]): r for r in load("schema_crude.csv")}
+
+    def ci(s, c, stem):
+        r = risk.get((s, c))
+        est = "exac_IRR" if stem == "exac" else stem + "_HR"
+        if not r or r[est] in ("", "NA"):
+            return "reference"
+        return (f"{float(r[est]):.2f} ({float(r[stem+'_LCI']):.2f}–"
+                f"{float(r[stem+'_UCI']):.2f})")
+
+    def cr(s, c, o):
+        r = crd.get((s, c, o))
+        if not r or r["rr"] in ("", "NA"):
+            return "—"
+        if c == "noCOPD":
+            return "reference"
+        return f"{float(r['rr']):.2f} ({float(r['lo']):.2f}–{float(r['hi']):.2f})"
+
+    # Nine columns of interval strings cannot fit a 6.5 inch text block, so
+    # outcome becomes a row dimension rather than three column pairs. That
+    # keeps every value on one line at 9 pt without going landscape.
+    rows = []
+    for okey, olabel, adj in [("all", "All-cause mortality", "HR"),
+                              ("resp", "Respiratory mortality", "HR"),
+                              ("exac", "Exacerbations", "IRR")]:
+        first_of_outcome = True
+        for s in ["S1", "S2", "S3", "S4"]:
+            cats = ["noCOPD", "COPD"] if s == "S1" else CATS
+            for i, c in enumerate(cats):
+                rows.append([olabel if first_of_outcome else "",
+                             SCHEMA_NAME[s] if i == 0 else "", c,
+                             f"{int(risk[(s, c)]['n']):,}",
+                             cr(s, c, okey), ci(s, c, okey)])
+                first_of_outcome = False
+    add_table(doc, ["Outcome", "Schema", "Category", "n",
+                    "Crude RR (95% CI)", "Adjusted HR or IRR (95% CI)"],
+              rows, [1.05, 1.15, 0.88, 0.58, 1.38, 1.46])
+    legend(doc, "Table 3.",
+           "Crude and adjusted risk within each schema's own categories, against that "
+           "schema's own noCOPD group. Column pairs are all-cause mortality, "
+           "respiratory mortality and exacerbations. Crude ratios are observed event "
+           "rates with 95% percentile intervals from a subject resample bootstrap; "
+           "adjusted estimates carry age, sex, race, current smoking status, "
+           "pack-years and body mass index, with prior exacerbation frequency added "
+           "for exacerbations.")
+
+
+def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):
+    doc.add_picture(png, width=Inches(width))
+    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    legend(doc, label, text)
+
+
+def main():
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    doc = init_document()
+
+    p = doc.add_paragraph()
+    r = p.add_run("Preserving the diagnostic benefit of a multidimensional COPD "
+                  "framework without chest CT")
+    r.bold = True
+    r.font.name, r.font.size = FONT_NAME, Pt(14)
+    doc.add_paragraph("Draft v1. Prose from METHODS.md and RESULTS.md; tables and "
+                      "figures generated from ctfree/assets/.")
+
+    doc.add_paragraph("METHODS", style="Heading 1")
+    n_m = add_prose(doc, os.path.join(HERE, "METHODS.md"), skip_after="Still to write")
+    doc.add_paragraph("RESULTS", style="Heading 1")
+    n_r = add_prose(doc, os.path.join(HERE, "RESULTS.md"), skip_after="Open")
+
+    doc.add_page_break()
+    doc.add_paragraph("TABLES", style="Heading 1")
+    table1(doc)
+    doc.add_paragraph()
+    table3(doc)
+
+    doc.add_page_break()
+    doc.add_paragraph("FIGURES", style="Heading 1")
+    with open(os.path.join(FIGS, "figure1_flow_legend.md")) as f:
+        fig1 = [l for l in f.read().split("\n") if l.strip()]
+    add_figure(doc, os.path.join(FIGS, "figure1_flow.png"), "Figure 1.",
+               CLAIM_ID.sub("", fig1[-1]))
+    for i, (png, cat) in enumerate(
+            [("figure2_aflonly.png", "AFL-only-noCOPD"),
+             ("figure3_copdminor.png", "COPD-minor"),
+             ("figure4_copdmajor.png", "COPD-major")], start=2):
+        add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
+                   f"Crude (open) and adjusted (filled) risk for the {cat} category "
+                   f"under each schema, against that schema's own noCOPD group. "
+                   f"The fixed ratio has a single COPD category and so appears only "
+                   f"alongside COPD-major.")
+
+    doc.save(OUT)
+    print(f"wrote {OUT}\n  {n_m} Methods paragraphs, {n_r} Results paragraphs")
+    assert n_m > 10 and n_r > 10, "prose came out suspiciously short"
+
+
+if __name__ == "__main__":
+    main()

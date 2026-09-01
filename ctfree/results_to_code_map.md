@@ -15,6 +15,7 @@ Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/fig
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/figure2_risk.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verify.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/check_edges.R
+python3 /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/build_manuscript.py
 ```
 
 ## Tables
@@ -52,6 +53,7 @@ clipping and says so in its own header.
 | `figures/figure2_risk.R` | `figure2_aflonly.png`, `figure3_copdminor.png`, `figure4_copdmajor.png` | One figure per category. |
 | `verify.R` | `VERIFICATION.csv` | 35 claims. Fails the run on drift. Falsification-tested. |
 | `figures/check_edges.R` | console | Fails if ink touches the canvas edge. |
+| `build_manuscript.py` | `manuscript/CT-free MD-COPD manuscript draft v1.docx` | Builds the document from METHODS.md, RESULTS.md, the artifacts and the figure PNGs. Nothing is hand-edited into the .docx, so a rebuild never destroys work; that is what retired the parent directory's builder. Strips claim ids and provenance markers from the prose. |
 | `_locate.R` | | Resolves the paper directory so nothing depends on the caller's cwd. |
 
 ## Not yet mapped
