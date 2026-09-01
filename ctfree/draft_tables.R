@@ -101,16 +101,24 @@ for (i in which(fit$schema %in% c("S3", "S4"))) { r <- fit[i, ]
 w(sprintf("\nSchema 4 exceeds schema 3 by %.4f (%.4f to %.4f) across %d held-out folds.\n",
           cvd$diff_mean, cvd$diff_lo, cvd$diff_hi, cvd$n_folds))
 
-w("## Table 5. MD-COPD versus the fixed ratio (nested likelihood ratio test)\n")
-w("| Outcome | C-index, fixed ratio | C-index, MD-COPD | LR χ² (2 df) | p |")
-w("|---|---|---|---|---|")
-for (i in seq_len(nrow(gate))) { r <- gate[i, ]
-  nm <- c("ALL-CAUSE MORTALITY" = "All-cause mortality",
-          "RESPIRATORY MORTALITY" = "Respiratory mortality",
-          "EXACERBATIONS" = "Exacerbations")[[r$outcome]]
-  w(sprintf("| %s | %s | %s | %.1f | %s |", nm,
-    if (is.na(r$c_fixedratio)) "—" else sprintf("%.4f", r$c_fixedratio),
-    if (is.na(r$c_mdcopd)) "—" else sprintf("%.4f", r$c_mdcopd),
-    r$lrt_chisq, format.pval(r$lrt_p, digits=2, eps=1e-16))) }
+# Table 5 was a three-row table whose only unique content was three
+# chi-square values; the C-indices it repeated are already in Table 3. It is a
+# Results sentence, drafted here from the same artifact so the numbers in the
+# prose still come from a verified source rather than being typed.
+w("\n## Results sentence, replacing the former Table 5\n")
+w("> MD-COPD improved on the fixed ratio for every outcome. Because fixed-ratio")
+w("> COPD comprises exactly the AFL-only-noCOPD and COPD-major categories, the")
+w("> two models are nested, and the four-category classification added")
+g <- function(o) gate$lrt_chisq[gate$outcome == o]
+w(sprintf("> information beyond the fixed ratio for all-cause mortality"))
+w(sprintf("> (likelihood ratio chi-square %.1f on 2 df), respiratory mortality (%.1f)",
+          g("ALL-CAUSE MORTALITY"), g("RESPIRATORY MORTALITY")))
+w(sprintf("> and exacerbations (%.1f), all p < 0.001. The gain in discrimination was",
+          g("EXACERBATIONS")))
+w(sprintf("> small, with the C-index rising from %.3f to %.3f for all-cause mortality,",
+          gate$c_fixedratio[gate$outcome == "ALL-CAUSE MORTALITY"],
+          gate$c_mdcopd[gate$outcome == "ALL-CAUSE MORTALITY"]))
+w("> so the framework's advantage lies in reclassifying an identifiable")
+w("> minority correctly rather than in improved prediction overall.\n")
 close(out)
 cat("wrote", file.path(CTFREE, "DRAFT_TABLES.md"), "\n")

@@ -78,10 +78,16 @@ Concordant with MD-COPD in 8,580 of 9,402 participants (91.3%).
 
 Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
 
-## Table 5. MD-COPD versus the fixed ratio (nested likelihood ratio test)
 
-| Outcome | C-index, fixed ratio | C-index, MD-COPD | LR χ² (2 df) | p |
-|---|---|---|---|---|
-| All-cause mortality | 0.6945 | 0.7034 | 110.2 | <1e-16 |
-| Respiratory mortality | 0.8454 | 0.8527 | 53.9 | 2e-12 |
-| Exacerbations | — | — | 162.4 | <1e-16 |
+## Results sentence, replacing the former Table 5
+
+> MD-COPD improved on the fixed ratio for every outcome. Because fixed-ratio
+> COPD comprises exactly the AFL-only-noCOPD and COPD-major categories, the
+> two models are nested, and the four-category classification added
+> information beyond the fixed ratio for all-cause mortality
+> (likelihood ratio chi-square 110.2 on 2 df), respiratory mortality (53.9)
+> and exacerbations (162.4), all p < 0.001. The gain in discrimination was
+> small, with the C-index rising from 0.694 to 0.703 for all-cause mortality,
+> so the framework's advantage lies in reclassifying an identifiable
+> minority correctly rather than in improved prediction overall.
+
