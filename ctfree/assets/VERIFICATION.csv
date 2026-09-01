@@ -44,6 +44,8 @@
 "RISK-04b","Label meaning","S4 AFL-only shows no significant excess on any outcome","TRUE","TRUE","schema_risk.csv","PASS",""
 "RISK-05","Label meaning","S4 COPD-minor HR 1.94 tracks S2's 1.91","1.94","1.93813571063502","schema_risk.csv","PASS",""
 "RISK-06","Label meaning","S4 COPD-major HR 2.76","2.76","2.76436737585572","schema_risk.csv","PASS",""
+"RISK-07","Label meaning","the CT schema's COPD-major all-cause HR is 2.59","2.59","2.59118188534158","schema_risk.csv","PASS",""
+"RISK-08","Label meaning","without CT the same category's HR rises to 3.34, being smaller and more severe","3.34","3.3399697141012","schema_risk.csv","PASS",""
 "DISC-01","Discrimination","S3 has the best all-cause C-index, 0.722","0.722","0.721910822938944","schema_discrimination.csv","PASS",""
 "DISC-01b","Discrimination","S3 out-discriminates every other schema, which the paper must state","TRUE","TRUE","schema_discrimination.csv","PASS",""
 "DISC-02","Discrimination","S4 discriminates better than S2 on all-cause","TRUE","TRUE","schema_discrimination.csv","PASS",""

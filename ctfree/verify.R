@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 49L
+REGISTRY_N <- 51L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -169,6 +169,14 @@ reg("RISK-05", "Label meaning", "S4 COPD-minor HR 1.94 tracks S2's 1.91", 1.94,
     "schema_risk.csv", R("S4", "COPD-minor", "all_HR"), TOL_2DP)
 reg("RISK-06", "Label meaning", "S4 COPD-major HR 2.76", 2.76,
     "schema_risk.csv", R("S4", "COPD-major", "all_HR"), TOL_2DP)
+
+reg("RISK-07", "Label meaning", "the CT schema's COPD-major all-cause HR is 2.59",
+    2.59, "schema_risk.csv",
+    'x$all_HR[x$schema == "S2" & x$category == "COPD-major"]', TOL_2DP)
+reg("RISK-08", "Label meaning",
+    "without CT the same category's HR rises to 3.34, being smaller and more severe",
+    3.34, "schema_risk.csv",
+    'x$all_HR[x$schema == "S3" & x$category == "COPD-major"]', TOL_2DP)
 
 # --- discrimination -------------------------------------------------------
 D <- function(s, fld) sprintf('x$%s[x$schema == "%s"]', fld, s)

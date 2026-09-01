@@ -57,16 +57,15 @@ diagnostic framework.
 
 *(new; replaces v15 ¶46, whose objective was diagnostic agreement)*
 
-The clinical value of a multidimensional framework is what it adds to the
-diagnostic standard it would replace, which in practice is the fixed ratio of
-post-bronchodilator FEV₁/FVC below 0.70. MD-COPD departs from that standard in
-two specific ways: it withholds a COPD diagnosis from participants with airflow
-limitation and no other abnormality, and it extends one to participants with
-preserved spirometry and substantial symptom or structural burden. Whether a
-CT-free classification is useful therefore depends not on how closely it
-reproduces the CT-based categories, but on whether it preserves those two
-corrections, and on whether the categories it produces still carry the risk
-their labels imply.
+A multidimensional framework has to be judged against the standard it would
+replace. In practice that standard is the fixed ratio, post-bronchodilator
+FEV₁/FVC below 0.70. MD-COPD changes two things about it. It withholds a COPD
+diagnosis from participants who have airflow limitation and nothing else, and
+it gives one to participants with preserved spirometry and a high symptom or
+structural burden. A CT-free version of the framework is worth having if it
+keeps both changes and if its categories still carry the risk their names
+imply. Reproducing the CT-based categories is a means to that, not the test
+itself.
 
 We addressed this in the COPDGene cohort by comparing four classifications of
 the same participants: the fixed ratio alone, the CT-based MD-COPD framework,

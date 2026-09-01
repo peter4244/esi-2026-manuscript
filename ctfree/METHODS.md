@@ -107,13 +107,14 @@ was refitted along with the ESI threshold, and both schemas were fitted over
 their full parameter space by the same objective. Fitting one and not the other
 would favor whichever was allowed to adapt.
 
-The objective was the macro-averaged F1 across the four categories: each
-category weighted equally, with precision balanced against recall within each.
-Cohen's κ, mean recall and the C-index were each considered and rejected. All
-three are maximized by a schema that assigns a large number of participants to
-AFL-only-noCOPD in order to capture the small number who genuinely belong
-there, because none of them penalizes over-calling a small category, and the
-resulting category carries substantially elevated respiratory mortality.
+The objective was the macro-averaged F1 across the four categories. Each
+category is weighted equally, and precision is balanced against recall within
+each. Cohen's κ and mean recall were tested first and rejected. Neither
+penalizes over-calling a small category. Both therefore select a schema that
+assigns 1,119 participants to AFL-only-noCOPD in order to capture the 170 who
+belong there, and that category carries 6.6 times the respiratory mortality of
+its reference. The C-index has the same weakness as a measure of schema
+quality, and is reported in the Results rather than used for fitting.
 
 Fitting used only the schema 2 labels. No mortality or exacerbation data
 entered threshold selection, so the risk profiles reported in the Results are
@@ -126,12 +127,13 @@ each training fold and scored on the held-out fold.
 
 *(new; replaces v15 ¶61, which assessed agreement only at the binary level)*
 
-Agreement was assessed at the level of the four diagnostic categories rather
-than the binary COPD classification. A binary comparison merges COPD-minor with
-COPD-major and AFL-only-noCOPD with noCOPD, which conceals disagreement in
-precisely the two categories the multidimensional framework introduces. The
-full cross-classification of each CT-free schema against the CT-based framework
-is reported, with per-category concordance and the direction of reclassification.
+Agreement was assessed across the four diagnostic categories, not the binary
+COPD classification. A binary comparison merges COPD-minor with COPD-major and
+AFL-only-noCOPD with noCOPD. Those merges hide disagreement in the two
+categories MD-COPD adds to the fixed ratio, which are the categories at issue
+here. We report the full cross-classification of each CT-free schema against
+the CT-based framework, with concordance in each category and the direction of
+reclassification.
 
 ## Clinical outcomes
 
@@ -161,10 +163,10 @@ report. Every schema was fitted with the same covariates, and every estimate is
 expressed against that schema's own noCOPD category.
 
 Crude rate ratios are reported beside the adjusted estimates. The adjusted
-estimate is what the classification contributes beyond the covariates; the
-crude ratio is the event rate participants in that category actually
-experienced, and for the AFL-only-noCOPD category it is the quantity that
-determines whether the label is defensible. Crude intervals are 95% percentile
+estimate gives the contribution of the classification after the covariates. The
+crude ratio gives the event rate participants in that category actually had.
+For AFL-only-noCOPD the crude ratio is the one that matters, because that
+category asserts the participants in it do not have COPD. Crude intervals are 95% percentile
 intervals from a subject resample bootstrap (B = 1,000) in which the reference
 rate is recomputed within every resample. A resample in which a category
 contributes no events is retained as a draw with a rate ratio of zero; only

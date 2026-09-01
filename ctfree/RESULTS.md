@@ -40,16 +40,20 @@ information beyond the fixed ratio for all-cause mortality (likelihood ratio
 χ² = 110.2 on 2 df) {GATE-01}, respiratory mortality (χ² = 53.9) {GATE-02} and
 exacerbations (χ² = 162.4) {GATE-03}, all P < 0.001.
 
-The gain in discrimination was small: the C-index for all-cause mortality rose
-from 0.694 to 0.703 {GATE-04, GATE-05}. The framework's advantage lies not in
-predicting better overall but in reclassifying a specific minority correctly,
-and the two reclassifications move in opposite directions. The fixed ratio
-labels 170 participants as having COPD who show no excess mortality
+The gain in discrimination was small. The C-index for all-cause mortality rose
+from 0.694 to 0.703 {GATE-04, GATE-05}. MD-COPD does not predict better across
+the cohort. It corrects the fixed ratio in two groups.
+
+The first group is 170 participants with airflow limitation and no other
+abnormality. The fixed ratio calls them COPD. They have no excess mortality
 (AFL-only-noCOPD, adjusted all-cause HR 0.90, 95% CI 0.62 to 1.30; crude rate
-ratio 1.08, 0.73 to 1.49) {RISK-01, CRUDE-06}, and labels 1,086 participants as
-not having COPD who carry nearly double the risk (COPD-minor, HR 1.91, 1.64 to
-2.22) {LAB-01a, LAB-01b}. A CT-free classification is useful only insofar as it
-preserves both corrections.
+ratio 1.08, 0.73 to 1.49) {RISK-01, CRUDE-06}. MD-COPD withholds the diagnosis.
+
+The second group is 1,086 participants with preserved spirometry and at least
+three minor criteria. The fixed ratio calls them healthy. Their mortality is
+nearly double the reference (COPD-minor, HR 1.91, 1.64 to 2.22) {LAB-01a,
+LAB-01b}. MD-COPD gives them the diagnosis. A CT-free classification has to
+keep both corrections.
 
 ## What is lost when the CT criteria are removed
 
@@ -57,11 +61,10 @@ preserves both corrections.
 
 Removing the CT criteria without replacing them costs the COPD-major category
 949 of its 3,943 participants, who are reclassified as AFL-only-noCOPD
-{RECL-01, LAB-02}. Those 949 are precisely the participants whose only minor
-criteria were CT findings: for 24.1% of the COPD-major category, a CT finding is the
-only minor criterion met, no symptom criterion being present {RECL-03,
-RECL-04, RECL-05}. Without either CT or a structural surrogate there is nothing
-left to detect them.
+{RECL-01, LAB-02}. Those 949 are the participants whose only minor criterion
+was a CT finding {RECL-05}. They account for 24.1% of the COPD-major category
+{RECL-03, RECL-04}. None of them has a symptom criterion. Remove CT without
+replacing it and nothing is left to identify them.
 
 Replacing the CT criteria with ESI reduces that loss from 949 to 233 {RECL-02}
 and holds the COPD-major category at 3,803 against the reference's 3,943
@@ -88,11 +91,11 @@ respiratory mortality, and the lowest exacerbation AIC {DISC-01, DISC-01b}
 (Supplemental Table S1). The ESI-based schema also discriminated marginally
 better than the CT-based reference {DISC-02, DISC-03}.
 
-The explanation is that a summary measure of discrimination is indifferent to
-what the categories are called. The symptoms-only schema separates risk more
-sharply because it concentrates the COPD-major category into a smaller, more
-selected group, and it does so by moving 949 participants into a category
-labeled as not having COPD.
+A C-index does not test what the categories are called. It tests how well they
+rank risk. The symptoms-only schema ranks risk well because its COPD-major
+category is smaller and more severe: 2,994 participants rather than 3,943, with
+an adjusted hazard ratio of 3.34 against 2.59 {RISK-07, RISK-08}. It gets there by moving 949
+participants into a category named as not having COPD.
 
 ## Whether the category labels remain true
 
