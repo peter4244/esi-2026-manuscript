@@ -16,6 +16,7 @@ suppressPackageStartupMessages({ library(dplyr); library(ggplot2) })
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 HERE <- if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1]))) else "ctfree/figures"
 source(file.path(dirname(dirname(HERE)), "figures", "style.R"))
+source(file.path(dirname(dirname(HERE)), "figures", "validate_layout.R"))
 ASSETS <- file.path(dirname(HERE), "assets")
 
 risk <- read.csv(file.path(ASSETS, "schema_risk.csv"),  stringsAsFactors = FALSE)
@@ -92,6 +93,9 @@ make_fig <- function(cat_wanted, schemas, file) {
           panel.grid.major.y = element_blank(),
           plot.margin = margin(4, 12, 4, 4))
   out <- file.path(HERE, file)
+  # Every text element must still clear the docx readability floor once the
+  # figure is scaled to the 6.5 inch content width. Errors rather than warns.
+  validate_layout(p, out)
   ggsave(out, p, width = NATIVE_W, height = 3.5, dpi = 300, bg = "white")
   cat("wrote", out, "\n")
 }
