@@ -26,6 +26,10 @@ S <- readRDS(file.path(ASSETS, "schema_labels.rds"))
 O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
 PAL <- c("noCOPD" = "#7F7F7F", "AFL-only" = "#9467BD",
          "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
+# Strata below this height get no label rather than an overflowing one.
+LABEL_MIN  <- 0.035 * nrow(S)
+STRAT_LAB  <- c("noCOPD" = "noCOPD", "AFL-only" = "AFL-only",
+                "COPD-minor" = "minor", "COPD-major" = "major")
 
 O_REV <- rev(O)   # reversed so the shared middle column stacks identically
 
@@ -40,15 +44,20 @@ panel <- function(target, side) {
   labs_x <- if (side == "left") c("MD-COPD without CT", "MD-COPD with CT")
             else               c("", "MD-COPD with ESI")
   ggplot(d, ax) +
-    geom_alluvium(aes(fill = md, alpha = moved), width = 0.30, knot.pos = 0.36) +
-    geom_stratum(width = 0.30, fill = "white", color = "grey40", linewidth = 0.35) +
-    # The centre column appears in both panels. Label it once, on the left, so
-    # the pair reads as one shared reference rather than two separate columns.
+    # Strata carry the category colour and the label sits inside in white, as
+    # in the v15 figure. Drawing them without a border also removes the seam
+    # where the two panels meet: two adjacent blocks of the same colour read as
+    # the single shared column they represent.
+    geom_alluvium(aes(fill = md, alpha = moved), width = 0.30,
+                  curve_type = "sigmoid") +
+    geom_stratum(aes(fill = after_stat(stratum)), width = 0.30, color = NA) +
     geom_text(stat = "stratum",
-              aes(label = ifelse(after_stat(x) == hide_at, "",
-                                 as.character(after_stat(stratum)))),
-              size = BODY_FS_NATIVE / .pt * 0.58, family = "Arial") +
-    scale_alpha_manual(values = c(`TRUE` = 0.80, `FALSE` = 0.12), guide = "none") +
+              aes(label = ifelse(after_stat(x) == hide_at |
+                                 after_stat(count) < LABEL_MIN, "",
+                                 STRAT_LAB[as.character(after_stat(stratum))])),
+              size = BODY_FS_NATIVE / .pt * 0.62, family = "Arial",
+              colour = "white", fontface = "bold") +
+    scale_alpha_manual(values = c(`TRUE` = 0.85, `FALSE` = 0.16), guide = "none") +
     # No expansion on the facing edge, so the two centre strata butt together
     # and read as the single shared reference column they are.
     scale_x_discrete(limits = labs_x,
