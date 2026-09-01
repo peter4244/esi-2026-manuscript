@@ -29,7 +29,12 @@ PAL <- c("noCOPD" = "#7F7F7F", "AFL-only" = "#9467BD",
 df <- S %>%
   count(without_CT = factor(S3, levels = O),
         md_copd    = factor(S2, levels = O),
-        with_ESI   = factor(S4, levels = O))
+        with_ESI   = factor(S4, levels = O)) %>%
+  # Almost everyone stays put, so drawing every ribbon at equal weight buries
+  # the movement the figure exists to show under two enormous concordant
+  # blocks. Paths that change category anywhere are drawn solid; paths that
+  # agree across all three schemas recede to a pale ground.
+  mutate(moved = without_CT != md_copd | with_ESI != md_copd)
 
 lost_left  <- sum(S$S2 == "COPD-major" & S$S3 == "AFL-only")
 lost_right <- sum(S$S2 == "COPD-major" & S$S4 == "AFL-only")
@@ -37,13 +42,14 @@ conc_left  <- sum(S$S2 == S$S3); conc_right <- sum(S$S2 == S$S4)
 n <- nrow(S)
 
 p <- ggplot(df, aes(y = n, axis1 = without_CT, axis2 = md_copd, axis3 = with_ESI)) +
-  geom_alluvium(aes(fill = md_copd), width = 0.22, alpha = 0.62, knot.pos = 0.3) +
-  geom_stratum(width = 0.22, fill = "white", color = "grey35", linewidth = 0.3) +
+  geom_alluvium(aes(fill = md_copd, alpha = moved), width = 0.26, knot.pos = 0.34) +
+  geom_stratum(width = 0.26, fill = "white", color = "grey30", linewidth = 0.35) +
   geom_text(stat = "stratum", aes(label = after_stat(stratum)),
-            size = BODY_FS_NATIVE / .pt * 0.68, family = "Arial") +
+            size = BODY_FS_NATIVE / .pt * 0.60, family = "Arial") +
+  scale_alpha_manual(values = c(`TRUE` = 0.80, `FALSE` = 0.13), guide = "none") +
   scale_x_discrete(limits = c("MD-COPD without CT", "MD-COPD with CT",
                               "MD-COPD with ESI"),
-                   expand = expansion(mult = c(0.10, 0.10))) +
+                   expand = expansion(mult = c(0.09, 0.09))) +
   scale_y_continuous(labels = function(v) format(v, big.mark = ",")) +
   scale_fill_manual(values = PAL, guide = "none") +
   labs(y = "Participants",
@@ -51,8 +57,10 @@ p <- ggplot(df, aes(y = n, axis1 = without_CT, axis2 = md_copd, axis3 = with_ESI
          "Concordant with MD-COPD: %s of %s without CT (%.1f%%), %s with ESI (%.1f%%)",
          format(conc_left, big.mark = ","), format(n, big.mark = ","),
          100 * conc_left / n, format(conc_right, big.mark = ","), 100 * conc_right / n),
-       caption = sprintf(
-         "COPD-major reclassified as AFL-only-noCOPD: %d without CT, %d with ESI",
+       caption = sprintf(paste(
+         "Solid ribbons change category; pale ribbons agree throughout.",
+         "\nCOPD-major reclassified as AFL-only-noCOPD:",
+         "%d without CT, %d with ESI."),
          lost_left, lost_right)) +
   theme_esi() +
   theme(axis.title.x = element_blank(),
@@ -64,6 +72,6 @@ p <- ggplot(df, aes(y = n, axis1 = without_CT, axis2 = md_copd, axis3 = with_ESI
         plot.margin = margin(4, 20, 4, 4))
 
 out <- file.path(HERE, "figure1_flow.png")
-ggsave(out, p, width = NATIVE_W, height = 5.0, dpi = 300, bg = "white")
+ggsave(out, p, width = NATIVE_W, height = 4.8, dpi = 300, bg = "white")
 cat(sprintf("wrote %s  (COPD-major lost: %d without CT, %d with ESI)\n",
             out, lost_left, lost_right))

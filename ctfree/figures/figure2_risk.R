@@ -1,11 +1,15 @@
 #!/usr/bin/env Rscript
-# Figure 2 (draft) — do the category labels mean what they say?
+# Figures 2 to 4 (draft) — one per diagnostic category.
 #
-# The point of AFL-only-noCOPD is to identify people the fixed ratio calls COPD
-# who do not have it. A schema is only usable if that category is genuinely low
-# risk. Plotting every schema's categories on one axis makes the failure
-# visible: without CT, AFL-only-noCOPD carries clearly elevated respiratory
-# mortality and exacerbation risk, so the label is false. With ESI it does not.
+# A single figure holding every schema, every category and both estimate types
+# was unreadable: 32 intervals per panel, and the comparison that matters,
+# whether a category's label is honest, was buried among the ones that do not
+# vary. Split by category, each figure asks one question of one group across
+# the schemas that actually define it.
+#
+# Reference is that schema's own noCOPD group throughout. The fixed ratio has
+# only a single COPD category, so it appears only alongside COPD-major, the
+# category it corresponds to; it has no AFL-only or COPD-minor to show.
 #
 # MOCKUP STAGE: relaxed rigor, no validator gate yet.
 suppressPackageStartupMessages({ library(dplyr); library(ggplot2) })
@@ -16,66 +20,70 @@ ASSETS <- file.path(dirname(HERE), "assets")
 
 risk <- read.csv(file.path(ASSETS, "schema_risk.csv"),  stringsAsFactors = FALSE)
 crd  <- read.csv(file.path(ASSETS, "schema_crude.csv"), stringsAsFactors = FALSE)
-SCH <- c(S1 = "1  Fixed ratio", S2 = "2  MD-COPD with CT",
-         S3 = "3  without CT", S4 = "4  with ESI")
-OUTC <- list(c("all", "All-cause mortality", "Hazard ratio"),
-             c("resp", "Respiratory mortality", "Hazard ratio"),
-             c("exac", "Exacerbations", "Incidence-rate ratio"))
-# Crude and adjusted on one scale. An adjusted estimate is what the
-# classification adds beyond the covariates; the crude ratio is what people in
-# that category actually experienced, and for the AFL-only-noCOPD label the
-# crude value is the one that decides whether the label is honest.
-long <- do.call(rbind, lapply(OUTC, function(o) {
-  est <- if (o[1] == "exac") "exac_IRR" else paste0(o[1], "_HR")
-  d <- risk[!is.na(risk[[est]]) & risk$category != "noCOPD", ]
-  adj <- data.frame(schema = SCH[d$schema], category = d$category,
-             est = d[[est]], lo = d[[paste0(o[1], "_LCI")]], hi = d[[paste0(o[1], "_UCI")]],
-             outcome = o[2], type = "Adjusted", stringsAsFactors = FALSE)
-  k <- crd[crd$outcome == o[1] & crd$category != "noCOPD" & !is.na(crd$rr), ]
-  cru <- data.frame(schema = SCH[k$schema], category = k$category,
-             est = k$rr, lo = k$lo, hi = k$hi,
-             outcome = o[2], type = "Crude", stringsAsFactors = FALSE)
-  rbind(cru, adj) }))
-long$type <- factor(long$type, levels = c("Crude", "Adjusted"))
-# A crude lower bound of exactly zero is a real result: it marks a category in
-# which a resample can contain no events at all. It cannot be drawn on a log
-# axis, so it is clamped to the panel floor and flagged with an arrow rather
-# than silently dropped.
-long$open_lo <- !is.na(long$lo) & long$lo <= 0
-long$lo <- ifelse(long$open_lo, NA_real_, long$lo)
-long$outcome  <- factor(long$outcome, levels = vapply(OUTC, `[`, "", 2))
-long$schema   <- factor(long$schema, levels = rev(SCH))
-long$category <- factor(long$category,
-                        levels = c("COPD", "COPD-major", "COPD-minor", "AFL-only"))
-PAL <- c("COPD" = "#1F77B4", "AFL-only" = "#9467BD",
-         "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
+SCH  <- c(S1 = "Fixed ratio", S2 = "MD-COPD with CT",
+          S3 = "MD-COPD without CT", S4 = "MD-COPD with ESI")
+OUTC <- list(c("all", "All-cause mortality"), c("resp", "Respiratory mortality"),
+             c("exac", "Exacerbations"))
+PAL  <- c("AFL-only" = "#9467BD", "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
 
-pd <- position_dodge(width = 0.78)
-p <- ggplot(long, aes(x = est, y = schema, color = category,
-                      shape = type, group = interaction(category, type))) +
-  geom_vline(xintercept = 1, linetype = 2, color = "grey45", linewidth = 0.4) +
-  geom_linerange(aes(xmin = lo, xmax = hi), linewidth = 0.5, position = pd,
-                 data = subset(long, !open_lo)) +
-  geom_segment(aes(x = hi, xend = est / 12, y = schema, yend = schema),
-               data = subset(long, open_lo), linewidth = 0.5, position = pd,
-               arrow = arrow(length = unit(0.055, "in"), type = "open")) +
-  geom_point(size = 2.0, position = pd, fill = "white", stroke = 0.7) +
-  scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL) +
-  # A single break vector collides in the respiratory panel, whose range spans
-  # two orders of magnitude more than the others. Let each free panel choose.
-  scale_x_log10(breaks = scales::breaks_log(n = 5), labels = scales::label_number(drop0trailing = TRUE)) +
-  scale_color_manual(values = PAL, name = NULL,
-                     breaks = c("COPD", "AFL-only", "COPD-minor", "COPD-major")) +
-  guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
-  facet_wrap(~ outcome, ncol = 3, scales = "free_x") +
-  labs(x = "Ratio versus that schema's own noCOPD reference (log scale)", y = NULL) +
-  theme_esi() +
-  theme(legend.position = "bottom", legend.box = "vertical",
-        legend.margin = margin(0, 0, 0, 0), legend.spacing.y = unit(1, "pt"),
-        panel.grid.minor = element_blank(),
-        panel.grid.major.y = element_blank(),
-        plot.margin = margin(4, 10, 4, 4))
+gather_one <- function(cat_wanted, schemas) {
+  do.call(rbind, lapply(OUTC, function(o) {
+    est <- if (o[1] == "exac") "exac_IRR" else paste0(o[1], "_HR")
+    want <- if (cat_wanted == "COPD-major") c("COPD-major", "COPD") else cat_wanted
+    a <- risk[risk$schema %in% schemas & risk$category %in% want & !is.na(risk[[est]]), ]
+    k <- crd[crd$schema %in% schemas & crd$outcome == o[1] &
+             crd$category %in% want & !is.na(crd$rr), ]
+    rbind(
+      data.frame(schema = SCH[k$schema], est = k$rr, lo = k$lo, hi = k$hi,
+                 outcome = o[2], type = "Crude", stringsAsFactors = FALSE),
+      data.frame(schema = SCH[a$schema], est = a[[est]],
+                 lo = a[[paste0(o[1], "_LCI")]], hi = a[[paste0(o[1], "_UCI")]],
+                 outcome = o[2], type = "Adjusted", stringsAsFactors = FALSE)) }))
+}
 
-out <- file.path(HERE, "figure2_risk.png")
-ggsave(out, p, width = NATIVE_W, height = 4.8, dpi = 300, bg = "white")
-cat("wrote", out, "\n")
+make_fig <- function(cat_wanted, schemas, file) {
+  d <- gather_one(cat_wanted, schemas)
+  # n belongs on the axis label, not in a subtitle that runs off the canvas.
+  lab_of <- vapply(schemas, function(s) {
+    g <- if (cat_wanted == "COPD-major" && s == "S1") "COPD" else cat_wanted
+    sprintf("%s\n(n = %s)", SCH[[s]],
+            format(risk$n[risk$schema == s & risk$category == g], big.mark = ",")) }, "")
+  names(lab_of) <- unname(SCH[schemas])
+  d$schema <- unname(lab_of[d$schema])
+  d$outcome <- factor(d$outcome, levels = vapply(OUTC, `[`, "", 2))
+  d$schema  <- factor(d$schema, levels = rev(unname(lab_of)))
+  d$type    <- factor(d$type, levels = c("Crude", "Adjusted"))
+  # A lower bound of exactly zero is a real result, a category in which a
+  # resample can contain no events. It cannot sit on a log axis, so it is
+  # drawn as an open-ended interval rather than dropped.
+  d$open_lo <- !is.na(d$lo) & d$lo <= 0
+  d$lo[d$open_lo] <- NA_real_
+  pd <- position_dodge(width = 0.55)
+  p <- ggplot(d, aes(x = est, y = schema, shape = type, group = type)) +
+    geom_vline(xintercept = 1, linetype = 2, color = "grey45", linewidth = 0.4) +
+    geom_linerange(aes(xmin = lo, xmax = hi), data = subset(d, !open_lo),
+                   linewidth = 0.6, position = pd, color = PAL[[cat_wanted]]) +
+    geom_segment(aes(x = hi, xend = est / 10, y = schema, yend = schema),
+                 data = subset(d, open_lo), linewidth = 0.6, position = pd,
+                 color = PAL[[cat_wanted]],
+                 arrow = arrow(length = unit(0.05, "in"), type = "open")) +
+    geom_point(size = 2.6, position = pd, color = PAL[[cat_wanted]],
+               fill = "white", stroke = 0.9) +
+    scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL) +
+    scale_x_log10(breaks = scales::breaks_log(n = 5),
+                  labels = scales::label_number(drop0trailing = TRUE)) +
+    facet_wrap(~ outcome, ncol = 3, scales = "free_x") +
+    labs(title = cat_wanted,
+         x = "Ratio versus that schema's own noCOPD group (log scale)", y = NULL) +
+    theme_esi() +
+    theme(legend.position = "bottom", panel.grid.minor = element_blank(),
+          panel.grid.major.y = element_blank(),
+          plot.margin = margin(4, 12, 4, 4))
+  out <- file.path(HERE, file)
+  ggsave(out, p, width = NATIVE_W, height = 3.5, dpi = 300, bg = "white")
+  cat("wrote", out, "\n")
+}
+
+make_fig("AFL-only",   c("S2","S3","S4"),      "figure2_aflonly.png")
+make_fig("COPD-minor", c("S2","S3","S4"),      "figure3_copdminor.png")
+make_fig("COPD-major", c("S1","S2","S3","S4"), "figure4_copdmajor.png")
