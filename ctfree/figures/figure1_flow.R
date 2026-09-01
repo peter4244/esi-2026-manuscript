@@ -2,11 +2,12 @@
 # Figure 1 (draft) — what happens to the MD-COPD classification when CT is
 # removed, by two different routes.
 #
-# MD-COPD with CT sits in the middle as the reference, with the two CT-free
-# schemas flowing outward on either side. Ribbons are colored by the middle
-# axis, so each MD-COPD category can be traced in both directions at once and
-# the two alternatives are compared against the same anchor rather than against
-# each other.
+# MD-COPD with CT is the reference and both CT-free schemas derive FROM it, so
+# a single three-axis alluvial reads wrongly: its grammar is sequential, and it
+# implies without-CT then with-CT then with-ESI. Drawn as two panels sharing a
+# central MD-COPD column, with the left panel's flow running right-to-left, the
+# reference sits in the middle and both alternatives fan outward from it, which
+# is what the analysis actually does.
 #
 # The comparison the figure exists to make: the COPD-major ribbon splits
 # heavily into AFL-only-noCOPD on the left, where the structural criterion is
@@ -14,7 +15,7 @@
 #
 # MOCKUP STAGE: relaxed rigor, no validator gate yet.
 suppressPackageStartupMessages({
-  library(dplyr); library(ggplot2); library(ggalluvial)
+  library(dplyr); library(ggplot2); library(ggalluvial); library(patchwork)
 })
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 HERE <- if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1]))) else "ctfree/figures"
@@ -26,50 +27,66 @@ O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
 PAL <- c("noCOPD" = "#7F7F7F", "AFL-only" = "#9467BD",
          "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
 
-df <- S %>%
-  count(without_CT = factor(S3, levels = O),
-        md_copd    = factor(S2, levels = O),
-        with_ESI   = factor(S4, levels = O)) %>%
-  # Almost everyone stays put, so drawing every ribbon at equal weight buries
-  # the movement the figure exists to show under two enormous concordant
-  # blocks. Paths that change category anywhere are drawn solid; paths that
-  # agree across all three schemas recede to a pale ground.
-  mutate(moved = without_CT != md_copd | with_ESI != md_copd)
+O_REV <- rev(O)   # reversed so the shared middle column stacks identically
+
+panel <- function(target, side) {
+  d <- S %>% count(md = factor(S2, levels = O), alt = factor(.data[[target]], levels = O)) %>%
+    mutate(moved = md != alt)
+  # Left panel puts MD-COPD on its right edge; right panel on its left. Butted
+  # together the two middle strata read as one shared column.
+  ax <- if (side == "left") aes(y = n, axis1 = alt, axis2 = md)
+        else                aes(y = n, axis1 = md,  axis2 = alt)
+  hide_at <- if (side == "left") -99 else 1   # right panel's axis1 is the shared column
+  labs_x <- if (side == "left") c("MD-COPD without CT", "MD-COPD with CT")
+            else               c("", "MD-COPD with ESI")
+  ggplot(d, ax) +
+    geom_alluvium(aes(fill = md, alpha = moved), width = 0.30, knot.pos = 0.36) +
+    geom_stratum(width = 0.30, fill = "white", color = "grey40", linewidth = 0.35) +
+    # The centre column appears in both panels. Label it once, on the left, so
+    # the pair reads as one shared reference rather than two separate columns.
+    geom_text(stat = "stratum",
+              aes(label = ifelse(after_stat(x) == hide_at, "",
+                                 as.character(after_stat(stratum)))),
+              size = BODY_FS_NATIVE / .pt * 0.58, family = "Arial") +
+    scale_alpha_manual(values = c(`TRUE` = 0.80, `FALSE` = 0.12), guide = "none") +
+    # No expansion on the facing edge, so the two centre strata butt together
+    # and read as the single shared reference column they are.
+    scale_x_discrete(limits = labs_x,
+                     expand = if (side == "left") expansion(mult = c(0.12, 0.00))
+                              else                expansion(mult = c(0.00, 0.26))) +
+    scale_y_continuous(labels = function(v) format(v, big.mark = ",")) +
+    scale_fill_manual(values = PAL, guide = "none") +
+    labs(y = if (side == "left") "Participants" else NULL) +
+    theme_esi() +
+    theme(axis.title.x = element_blank(),
+          panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(),
+          panel.border = element_blank(),
+          # Only the left panel carries the axis line; the right panel would draw
+          # its own at the join, cutting through the shared centre column.
+          axis.line.y   = if (side == "left") element_line(colour = "grey40") else element_blank(),
+          axis.text.y  = if (side == "left") element_text() else element_blank(),
+          axis.ticks.y = if (side == "left") element_line() else element_blank(),
+          axis.ticks.x = element_blank(),
+          plot.margin  = if (side == "left") margin(4, 0, 4, 4) else margin(4, 4, 4, 0))
+}
 
 lost_left  <- sum(S$S2 == "COPD-major" & S$S3 == "AFL-only")
 lost_right <- sum(S$S2 == "COPD-major" & S$S4 == "AFL-only")
 conc_left  <- sum(S$S2 == S$S3); conc_right <- sum(S$S2 == S$S4)
 n <- nrow(S)
 
-p <- ggplot(df, aes(y = n, axis1 = without_CT, axis2 = md_copd, axis3 = with_ESI)) +
-  geom_alluvium(aes(fill = md_copd, alpha = moved), width = 0.26, knot.pos = 0.34) +
-  geom_stratum(width = 0.26, fill = "white", color = "grey30", linewidth = 0.35) +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum)),
-            size = BODY_FS_NATIVE / .pt * 0.60, family = "Arial") +
-  scale_alpha_manual(values = c(`TRUE` = 0.80, `FALSE` = 0.13), guide = "none") +
-  scale_x_discrete(limits = c("MD-COPD without CT", "MD-COPD with CT",
-                              "MD-COPD with ESI"),
-                   expand = expansion(mult = c(0.09, 0.09))) +
-  scale_y_continuous(labels = function(v) format(v, big.mark = ",")) +
-  scale_fill_manual(values = PAL, guide = "none") +
-  labs(y = "Participants",
-       subtitle = sprintf(
-         "Concordant with MD-COPD: %s of %s without CT (%.1f%%), %s with ESI (%.1f%%)",
-         format(conc_left, big.mark = ","), format(n, big.mark = ","),
-         100 * conc_left / n, format(conc_right, big.mark = ","), 100 * conc_right / n),
-       caption = sprintf(paste(
-         "Solid ribbons change category; pale ribbons agree throughout.",
-         "\nCOPD-major reclassified as AFL-only-noCOPD:",
-         "%d without CT, %d with ESI."),
-         lost_left, lost_right)) +
-  theme_esi() +
-  theme(axis.title.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0.5, size = BODY_FS_NATIVE),
-        # The outer axis labels are wider than their strata and were clipping
-        # at the panel edge; give the plot room rather than shrinking the text.
-        plot.margin = margin(4, 20, 4, 4))
+p <- (panel("S3", "left") | panel("S4", "right")) +
+  plot_annotation(
+    subtitle = sprintf(
+      "Concordant with MD-COPD: %s of %s without CT (%.1f%%), %s with ESI (%.1f%%)",
+      format(conc_left, big.mark = ","), format(n, big.mark = ","), 100 * conc_left / n,
+      format(conc_right, big.mark = ","), 100 * conc_right / n),
+    caption = sprintf(paste(
+      "Both CT-free schemas derive from the shared MD-COPD column at the centre.",
+      "Solid ribbons change category;\npale ribbons agree.",
+      "COPD-major reclassified as AFL-only-noCOPD: %d without CT, %d with ESI."),
+      lost_left, lost_right),
+    theme = theme_esi() + theme(plot.caption = element_text(hjust = 0.5)))
 
 out <- file.path(HERE, "figure1_flow.png")
 ggsave(out, p, width = NATIVE_W, height = 4.8, dpi = 300, bg = "white")

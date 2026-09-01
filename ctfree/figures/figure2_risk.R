@@ -58,15 +58,27 @@ make_fig <- function(cat_wanted, schemas, file) {
   # drawn as an open-ended interval rather than dropped.
   d$open_lo <- !is.na(d$lo) & d$lo <= 0
   d$lo[d$open_lo] <- NA_real_
+  # Point the arrow just inside the panel rather than at est/10, which for a
+  # small estimate lands off the axis, and target the same place for every
+  # facet so the mark reads as a convention rather than a data value.
+  d <- d %>% group_by(outcome) %>%
+    mutate(arrow_to = min(c(lo, est), na.rm = TRUE) * 0.75) %>% ungroup()
+  # Both layers must carry every row: position_dodge assigns offsets from the
+  # group levels present in a layer, so a subsetted layer dodges to a different
+  # place than the full ones and the arrow lands on the wrong row. Blank the
+  # inapplicable rows with NA instead of filtering them out.
+  # geom_segment dodges y and yend independently, which slants the mark across
+  # rows. Draw the interval down to the panel floor with an ordinary linerange
+  # and cap it with a "<" glyph, both of which dodge as a single y.
+  d$draw_lo <- ifelse(d$open_lo, d$arrow_to, d$lo)
+  d$cap_x   <- ifelse(d$open_lo, d$arrow_to, NA_real_)
   pd <- position_dodge(width = 0.55)
   p <- ggplot(d, aes(x = est, y = schema, shape = type, group = type)) +
     geom_vline(xintercept = 1, linetype = 2, color = "grey45", linewidth = 0.4) +
-    geom_linerange(aes(xmin = lo, xmax = hi), data = subset(d, !open_lo),
-                   linewidth = 0.6, position = pd, color = PAL[[cat_wanted]]) +
-    geom_segment(aes(x = hi, xend = est / 10, y = schema, yend = schema),
-                 data = subset(d, open_lo), linewidth = 0.6, position = pd,
-                 color = PAL[[cat_wanted]],
-                 arrow = arrow(length = unit(0.05, "in"), type = "open")) +
+    geom_linerange(aes(xmin = draw_lo, xmax = hi), linewidth = 0.6, position = pd,
+                   color = PAL[[cat_wanted]], na.rm = TRUE) +
+    geom_point(aes(x = cap_x), shape = 60, size = 2.4, stroke = 0.9,
+               position = pd, color = PAL[[cat_wanted]], na.rm = TRUE) +
     geom_point(size = 2.6, position = pd, color = PAL[[cat_wanted]],
                fill = "white", stroke = 0.9) +
     scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL) +
