@@ -75,7 +75,6 @@ Concordant with MD-COPD in 8,580 of 9,402 participants (91.3%).
 |---|---|---|---|---|
 | 3 without CT | ≥ 2 | — | 0.7202 | 0.7203 |
 | 4 with ESI | ≥ 2 | 1.25 | 0.7542 | 0.7532 |
-| *v15 draft rule* | ≥ 3 | 1.00 | 0.6754 | 0.6752 |
 
 Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
 

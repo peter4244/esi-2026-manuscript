@@ -73,6 +73,10 @@ identifiable minority.
 
 ### C-FIT — fitting the CT-free schemas
 
+FIT-06 is provenance for why the thresholds moved, not a manuscript claim. The
+v15 draft rule is an unpublished internal comparator and does not appear in
+any table.
+
 | id | claim | artifact | field |
 |---|---|---|---|
 | FIT-01 | S3 fitted rule is >= 2 of 3 symptom criteria | schema_fit.csv | k, schema S3 |
@@ -80,7 +84,7 @@ identifiable minority.
 | FIT-03 | S4's second ESI threshold lands at 7.0, i.e. inert | schema_fit.csv | t_high |
 | FIT-04 | held-out macro-F1: S4 0.753 vs S3 0.720 | schema_fit.csv | macroF1_heldout |
 | FIT-05 | S4 beats S3 by +0.033 (+0.016 to +0.050) | schema_fit_cv_diff.csv | diff_mean, diff_lo, diff_hi |
-| FIT-06 | the v15 draft rule scores 0.675 on the same folds | schema_fit.csv | macroF1_heldout |
+| FIT-06 | *(internal, not printed)* the v15 draft rule scores 0.675 on the same folds | schema_fit.csv | macroF1_heldout |
 
 ### C-LABEL — how each schema labels the cohort
 

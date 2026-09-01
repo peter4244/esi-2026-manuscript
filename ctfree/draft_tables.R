@@ -90,8 +90,11 @@ for (s in c("S1","S2","S3","S4")) {
 w("\n## Table 4. Fitting the CT-free schemas to approximate MD-COPD\n")
 w("| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |")
 w("|---|---|---|---|---|")
-for (i in seq_len(nrow(fit))) { r <- fit[i, ]
-  nm <- c(S3="3 without CT", S4="4 with ESI", S4_v15draft="*v15 draft rule*")[[r$schema]]
+# The v15 draft rule is an unpublished internal comparator; it stays in the
+# artifact as provenance for why the thresholds moved, but it is not something
+# a reader has any reason to see in a manuscript table.
+for (i in which(fit$schema %in% c("S3", "S4"))) { r <- fit[i, ]
+  nm <- c(S3 = "3 without CT", S4 = "4 with ESI")[[r$schema]]
   w(sprintf("| %s | ≥ %d | %s | %.4f | %.4f |", nm, r$k,
             if (is.na(r$t_low)) "—" else sprintf("%.2f", r$t_low),
             r$macroF1_insample, r$macroF1_heldout)) }
