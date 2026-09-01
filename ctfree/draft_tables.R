@@ -96,7 +96,7 @@ for (s in c("S1","S2","S3","S4")) {
   for (i in seq_along(cats)) { g <- cats[i]
     r <- risk[risk$schema == s & risk$category == g, ]
     w(sprintf("| %s | %s | %s | %s | %s | %s | %s | %s | %s |",
-      if (i == 1) NM[[s]] else "", g, format(r$n, big.mark = ","),
+      if (i == 1) NM[[s]] else "", g, format(r$n_mort, big.mark = ","),
       cr(s,g,"all"),  ci(s,g,"all"),
       cr(s,g,"resp"), ci(s,g,"resp"),
       cr(s,g,"exac"), ci(s,g,"exac"))) }

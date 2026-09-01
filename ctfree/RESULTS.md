@@ -58,8 +58,8 @@ preserves both corrections.
 Removing the CT criteria without replacing them costs the COPD-major category
 949 of its 3,943 participants, who are reclassified as AFL-only-noCOPD
 {RECL-01, LAB-02}. Those 949 are precisely the participants whose only minor
-criteria were CT findings: 24.1% of the COPD-major category meets the framework
-through structural imaging alone, with no symptom criterion at all {RECL-03,
+criteria were CT findings: for 24.1% of the COPD-major category, a CT finding is the
+only minor criterion met, no symptom criterion being present {RECL-03,
 RECL-04, RECL-05}. Without either CT or a structural surrogate there is nothing
 left to detect them.
 
@@ -67,7 +67,7 @@ Replacing the CT criteria with ESI reduces that loss from 949 to 233 {RECL-02}
 and holds the COPD-major category at 3,803 against the reference's 3,943
 {LAB-03}. Overall, 8,580 of 9,402 participants (91.3%) retain their MD-COPD
 category under the ESI-based schema against 7,997 (85.1%) without any
-structural criterion (Figure 1, Table 2).
+structural criterion (Figure 1, Supplemental Table S3).
 
 Both CT-free schemas were fitted to approximate the CT-based classification by
 the same objective and over the same parameter space. The ESI-based schema
@@ -100,9 +100,12 @@ labeled as not having COPD.
 
 The AFL-only-noCOPD category exists to identify participants whom the fixed
 ratio would call COPD but who do not have it, so a schema is usable only if
-that category is genuinely low risk. Under the CT-based framework it is:
-adjusted all-cause HR 0.90 (0.62 to 1.30), with intervals crossing 1 for
-respiratory mortality and exacerbations as well {RISK-01, RISK-01b}.
+that category is genuinely low risk. Under the CT-based framework it largely
+is: adjusted all-cause HR 0.90 (0.62 to 1.30) and respiratory HR 1.42 (0.19 to
+10.84), both crossing the null {RISK-01, RISK-01b}. The exacerbation estimate
+reaches nominal significance after adjustment (IRR 1.35, 1.00 to 1.81)
+{RISK-01c}, though the crude rate ratio does not (1.15, 0.81 to 1.55)
+{CRUDE-07} and the underlying rate difference is small.
 
 Under the symptoms-only schema it is not. That category carries 6.6 times the
 respiratory mortality of its own noCOPD reference (adjusted HR 6.61, 3.41 to

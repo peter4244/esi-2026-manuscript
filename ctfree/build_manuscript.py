@@ -39,6 +39,10 @@ OUT    = os.path.join(HERE, "manuscript",
                       "CT-free MD-COPD manuscript draft v1.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
+# Mortality and exacerbation models are fitted on different participant sets,
+# so the denominator shown must follow the outcome rather than being one number
+# reused for all three.
+N_COL = {"all": "n_mort", "resp": "n_mort", "exac": "n_exac"}
 SCHEMA_NAME = {"S1": "1  Fixed ratio", "S2": "2  MD-COPD with CT",
                "S3": "3  MD-COPD without CT", "S4": "4  MD-COPD with ESI"}
 
@@ -244,7 +248,7 @@ def table3(doc):
             for i, c in enumerate(cats):
                 rows.append([olabel if first_of_outcome else "",
                              SCHEMA_NAME[s] if i == 0 else "", c,
-                             f"{int(risk[(s, c)]['n']):,}",
+                             f"{int(risk[(s, c)][N_COL[okey]]):,}",
                              cr(s, c, okey), ci(s, c, okey)])
                 first_of_outcome = False
     add_table(doc, ["Outcome", "Schema", "Category", "n",
@@ -257,7 +261,11 @@ def table3(doc):
            "rates with 95% percentile intervals from a subject resample bootstrap; "
            "adjusted estimates carry age, sex, race, current smoking status, "
            "pack-years and body mass index, with prior exacerbation frequency added "
-           "for exacerbations.")
+           "for exacerbations. Denominators follow the outcome: mortality models are "
+           "fitted on 9,400 participants and exacerbation models on 8,338, so the "
+           "n column differs between the exacerbation block and the two mortality "
+           "blocks, and both are smaller than the 9,402 of Table 1 because a small "
+           "number of participants lack complete covariate data.")
 
 
 def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):

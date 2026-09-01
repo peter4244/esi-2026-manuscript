@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 47L
+REGISTRY_N <- 49L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -139,6 +139,18 @@ reg("RISK-01", "Label meaning", "S2 AFL-only all-cause HR 0.90", 0.90,
     "schema_risk.csv", R("S2", "AFL-only", "all_HR"), TOL_2DP)
 reg("RISK-01b", "Label meaning", "S2 AFL-only interval crosses 1", TRUE,
     "schema_risk.csv", sprintf('%s > 1', R("S2", "AFL-only", "all_UCI")), TOL_EXACT)
+# The Results previously said the CT schema's AFL-only intervals cross 1 for
+# every outcome. The exacerbation interval does not. These two pin the
+# corrected sentence so the claim cannot silently revert.
+reg("RISK-01c", "Label meaning",
+    "the CT schema's AFL-only exacerbation interval does NOT cross 1",
+    TRUE, "schema_risk.csv",
+    'x$exac_LCI[x$schema == "S2" & x$category == "AFL-only"] > 1', TOL_EXACT)
+reg("CRUDE-07", "Crude estimates",
+    "but its crude exacerbation ratio does cross 1", TRUE, "schema_crude.csv",
+    'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"] < 1',
+    TOL_EXACT)
+
 reg("RISK-02", "Label meaning", "S3 AFL-only respiratory HR 6.61", 6.61,
     "schema_risk.csv", R("S3", "AFL-only", "resp_HR"), TOL_2DP)
 reg("RISK-02b", "Label meaning",

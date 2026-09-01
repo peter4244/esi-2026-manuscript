@@ -48,7 +48,7 @@ make_fig <- function(cat_wanted, schemas, file) {
   lab_of <- vapply(schemas, function(s) {
     g <- if (cat_wanted == "COPD-major" && s == "S1") "COPD" else cat_wanted
     sprintf("%s\n(n = %s)", SCH[[s]],
-            format(risk$n[risk$schema == s & risk$category == g], big.mark = ",")) }, "")
+            format(risk$n_mort[risk$schema == s & risk$category == g], big.mark = ",")) }, "")
   names(lab_of) <- unname(SCH[schemas])
   d$schema <- unname(lab_of[d$schema])
   d$outcome <- factor(d$outcome, levels = vapply(OUTC, `[`, "", 2))

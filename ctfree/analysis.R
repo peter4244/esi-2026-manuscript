@@ -201,7 +201,9 @@ for (s in c("S1", "S2", "S3", "S4")) {
     r <- paste0(s, g); ix <- mort[[s]] == g
     gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
     risk_rows[[length(risk_rows) + 1]] <- data.frame(
-      schema = s, category = g, n = sum(ix), deaths = sum(mort$vital_status[ix]),
+      schema = s, category = g,
+      n_mort = sum(ix), n_exac = sum(exa[[s]] == g),
+      n_cohort = sum(d[[s]] == g), deaths = sum(mort$vital_status[ix]),
       all_HR = gv(cm, 1), all_LCI = gv(cm, 3), all_UCI = gv(cm, 4),
       resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
       exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
@@ -274,6 +276,13 @@ crude <- do.call(rbind, crude_rows)
 stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
 write.csv(crude, file.path(OUT, "schema_crude.csv"), row.names = FALSE)
 
-write.csv(do.call(rbind, risk_rows), file.path(OUT, "schema_risk.csv"), row.names = FALSE)
+.rk <- do.call(rbind, risk_rows)
+# Mortality and exacerbation models are fitted on different participant sets,
+# so a table reporting one n per category for all three outcomes overstates the
+# exacerbation denominators. Guard the distinction rather than trusting it.
+stopifnot(sum(.rk$n_exac[.rk$schema == "S2"]) == nrow(exa),
+          sum(.rk$n_mort[.rk$schema == "S2"]) == nrow(mort),
+          sum(.rk$n_cohort[.rk$schema == "S2"]) == nrow(d))
+write.csv(.rk, file.path(OUT, "schema_risk.csv"), row.names = FALSE)
 write.csv(do.call(rbind, disc_rows), file.path(OUT, "schema_discrimination.csv"), row.names = FALSE)
 cat(sprintf("\nwrote %s\n", normalizePath(OUT)))
