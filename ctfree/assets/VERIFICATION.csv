@@ -50,3 +50,5 @@
 "DISC-01b","Discrimination","S3 out-discriminates every other schema, which the paper must state","TRUE","TRUE","schema_discrimination.csv","PASS",""
 "DISC-02","Discrimination","S4 discriminates better than S2 on all-cause","TRUE","TRUE","schema_discrimination.csv","PASS",""
 "DISC-03","Discrimination","S4 discriminates better than S2 on respiratory","TRUE","TRUE","schema_discrimination.csv","PASS",""
+"BD-01","Discussion","mean ESI change on bronchodilation is -0.09","-0.09","-0.0888","Supp_Bronchodilator_deltaESI.txt","PASS",""
+"BD-02","Discussion","on 10,160 paired measurements","10160","10160","Supp_Bronchodilator_deltaESI.txt","PASS",""

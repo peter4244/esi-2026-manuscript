@@ -57,7 +57,7 @@ clipping and says so in its own header.
 | `figures/figure2_risk.R` | `figure2_aflonly.png`, `figure3_copdminor.png`, `figure4_copdmajor.png` | One figure per category. |
 | `verify.R` | `VERIFICATION.csv` | 35 claims. Fails the run on drift. Falsification-tested. |
 | `figures/check_edges.R` | console | Fails if ink touches the canvas edge. |
-| `INTRODUCTION.md`, `METHODS.md`, `RESULTS.md` | prose sources | Annotated with claim ids and v15 provenance; both stripped at build. |
+| `INTRODUCTION.md`, `METHODS.md`, `RESULTS.md`, `DISCUSSION.md` | prose sources | Annotated with claim ids and v15 provenance; both stripped at build. |
 | `build_supplement.py` | `manuscript/CT-free MD-COPD supplement draft v1.docx` | Five supplemental tables plus the COPDGene file list. Checks that every `Supplemental Table Sn` cited in the main text is produced here and vice versa; falsification-tested. |
 | `build_manuscript.py` | `manuscript/CT-free MD-COPD manuscript draft v1.docx` | Builds the document from METHODS.md, RESULTS.md, the artifacts and the figure PNGs. Nothing is hand-edited into the .docx, so a rebuild never destroys work; that is what retired the parent directory's builder. Strips claim ids and provenance markers from the prose. |
 | `_locate.R` | | Resolves the paper directory so nothing depends on the caller's cwd. |

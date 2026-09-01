@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 51L
+REGISTRY_N <- 53L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -192,6 +192,12 @@ reg("DISC-02", "Discrimination", "S4 discriminates better than S2 on all-cause",
 reg("DISC-03", "Discrimination", "S4 discriminates better than S2 on respiratory",
     TRUE, "schema_discrimination.csv",
     'x$c_resp[x$schema == "S4"] > x$c_resp[x$schema == "S2"]', TOL_EXACT)
+
+# --- bronchodilator stability, quoted in the Discussion -------------------
+reg("BD-01", "Discussion", "mean ESI change on bronchodilation is -0.09", -0.09,
+    "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["mean_delta"]])', TOL_2DP)
+reg("BD-02", "Discussion", "on 10,160 paired measurements", 10160,
+    "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["n_paired"]])', TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

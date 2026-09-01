@@ -122,7 +122,7 @@ def add_prose(doc, md_path, skip_after=None):
                 flush()
                 return emitted
             flush()
-            if t.startswith("## ") and title.lower() != "introduction":
+            if t.startswith("## ") and title.lower() not in ("introduction", "discussion"):
                 doc.add_paragraph(title, style="Heading 2")
         elif t.startswith("---") or t.startswith("|") or t.startswith("```"):
             flush()
@@ -293,6 +293,9 @@ def main():
     doc.add_paragraph("RESULTS", style="Heading 1")
     n_r = add_prose(doc, os.path.join(HERE, "RESULTS.md"), skip_after="Open")
 
+    doc.add_paragraph("DISCUSSION", style="Heading 1")
+    n_d = add_prose(doc, os.path.join(HERE, "DISCUSSION.md"))
+
     doc.add_page_break()
     doc.add_paragraph("TABLES", style="Heading 1")
     table1(doc)
@@ -316,8 +319,10 @@ def main():
                    f"alongside COPD-major.")
 
     doc.save(OUT)
-    print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results paragraphs")
-    assert n_i > 4 and n_m > 10 and n_r > 10, "prose came out suspiciously short"
+    print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
+          f"{n_d} Discussion paragraphs")
+    assert n_i > 4 and n_m > 10 and n_r > 10 and n_d > 5, \
+        "prose came out suspiciously short"
 
 
 if __name__ == "__main__":
