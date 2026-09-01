@@ -86,10 +86,14 @@ make_fig <- function(cat_wanted, schemas, file) {
     scale_x_log10(breaks = scales::breaks_log(n = 5),
                   labels = scales::label_number(drop0trailing = TRUE)) +
     facet_wrap(~ outcome, ncol = 3, scales = "free_x") +
-    labs(title = cat_wanted,
+    # No title above the panels. The category is named in the caption, which
+    # is where a manuscript figure legend carries it anyway.
+    labs(caption = sprintf("%s, against each schema's own noCOPD group.", cat_wanted),
          x = "Ratio versus that schema's own noCOPD group (log scale)", y = NULL) +
     theme_esi() +
-    theme(legend.position = "bottom", panel.grid.minor = element_blank(),
+    theme(legend.position = "bottom",
+          plot.caption = element_text(hjust = 0.5, size = BODY_FS_NATIVE),
+          panel.grid.minor = element_blank(),
           panel.grid.major.y = element_blank(),
           plot.margin = margin(4, 12, 4, 4))
   out <- file.path(HERE, file)

@@ -1,0 +1,3 @@
+**Figure 1. Reclassification of the MD-COPD categories when chest CT is unavailable.**
+
+Participants are shown under the CT-based MD-COPD classification (centre) and under each CT-free alternative: symptom criteria alone (left) and the ESI-based schema (right). Both alternatives derive from the central reference. Ribbons are coloured by MD-COPD category; solid ribbons change category under that alternative and pale ribbons agree. 7,997 of 9,402 participants (85.1%) keep their category without CT and 8,580 (91.3%) with ESI. The difference is concentrated in COPD-major, of whom 949 are reclassified as AFL-only-noCOPD without CT against 233 with ESI. Strata smaller than 3.5% of the cohort are left unlabelled.

@@ -119,18 +119,28 @@ validate_layout(ribbons("S3", "left"), file.path(HERE, "figure1_flow.png"))
 p <- (ribbons("S3", "left") | reference_panel() | ribbons("S4", "right")) +
   plot_layout(widths = c(1, W_MID, 1)) +
   plot_annotation(
-    subtitle = sprintf(
-      "Concordant with MD-COPD: %s of %s without CT (%.1f%%), %s with ESI (%.1f%%)",
-      format(conc_left, big.mark = ","), format(n, big.mark = ","), 100 * conc_left / n,
-      format(conc_right, big.mark = ","), 100 * conc_right / n),
-    caption = sprintf(paste(
-      "Both CT-free schemas derive from the MD-COPD reference at the centre.",
-      "Solid ribbons change category;\npale ribbons agree.",
-      "COPD-major reclassified as AFL-only-noCOPD: %d without CT, %d with ESI."),
-      lost_left, lost_right),
     theme = theme_esi() + theme(plot.caption = element_text(hjust = 0.5)))
 
 out <- file.path(HERE, "figure1_flow.png")
 ggsave(out, p, width = NATIVE_W, height = 4.8, dpi = 300, bg = "white")
+# The legend is written to a sibling .md rather than drawn into the figure:
+# a manuscript legend lives in the document, and baking it into the raster is
+# also what kept pushing text into the canvas edge.
+writeLines(c(
+  "**Figure 1. Reclassification of the MD-COPD categories when chest CT is unavailable.**",
+  "",
+  sprintf(paste("Participants are shown under the CT-based MD-COPD classification (centre)",
+                "and under each CT-free alternative: symptom criteria alone (left) and the",
+                "ESI-based schema (right). Both alternatives derive from the central",
+                "reference. Ribbons are coloured by MD-COPD category; solid ribbons change",
+                "category under that alternative and pale ribbons agree. %s of %s",
+                "participants (%.1f%%) keep their category without CT and %s (%.1f%%) with",
+                "ESI. The difference is concentrated in COPD-major, of whom %d are",
+                "reclassified as AFL-only-noCOPD without CT against %d with ESI. Strata",
+                "smaller than 3.5%% of the cohort are left unlabelled."),
+          format(conc_left, big.mark = ","), format(n, big.mark = ","), 100 * conc_left / n,
+          format(conc_right, big.mark = ","), 100 * conc_right / n, lost_left, lost_right)),
+  file.path(HERE, "figure1_flow_legend.md"))
+
 cat(sprintf("wrote %s  (COPD-major lost: %d without CT, %d with ESI)\n",
             out, lost_left, lost_right))

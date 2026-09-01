@@ -101,25 +101,6 @@ for (s in c("S1","S2","S3","S4")) {
       cr(s,g,"resp"), ci(s,g,"resp"),
       cr(s,g,"exac"), ci(s,g,"exac"))) }
 }
-w("\n**Discrimination**\n")
-w("| Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |")
-w("|---|---|---|---|")
-for (s in c("S1","S2","S3","S4")) { d <- disc[disc$schema == s, ]
-  w(sprintf("| %s | %.4f | %.4f | %.0f |", NM[[s]], d$c_allcause, d$c_resp, d$exac_AIC)) }
-
-w("\n## Table 4. Fitting the CT-free schemas to approximate MD-COPD\n")
-w("| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |")
-w("|---|---|---|---|---|")
-# The v15 draft rule is an unpublished internal comparator; it stays in the
-# artifact as provenance for why the thresholds moved, but it is not something
-# a reader has any reason to see in a manuscript table.
-for (i in which(fit$schema %in% c("S3", "S4"))) { r <- fit[i, ]
-  nm <- c(S3 = "3 without CT", S4 = "4 with ESI")[[r$schema]]
-  w(sprintf("| %s | ≥ %d | %s | %.4f | %.4f |", nm, r$k,
-            if (is.na(r$t_low)) "—" else sprintf("%.2f", r$t_low),
-            r$macroF1_insample, r$macroF1_heldout)) }
-w(sprintf("\nSchema 4 exceeds schema 3 by %.4f (%.4f to %.4f) across %d held-out folds.\n",
-          cvd$diff_mean, cvd$diff_lo, cvd$diff_hi, cvd$n_folds))
 
 # Table 5 was a three-row table whose only unique content was three
 # chi-square values; the C-indices it repeated are already in Table 3. It is a
@@ -140,5 +121,34 @@ w(sprintf("> small, with the C-index rising from %.3f to %.3f for all-cause mort
           gate$c_mdcopd[gate$outcome == "ALL-CAUSE MORTALITY"]))
 w("> so the framework's advantage lies in reclassifying an identifiable")
 w("> minority correctly rather than in improved prediction overall.\n")
+
+w("\n---\n")
+w("# Supplement\n")
+w("Discrimination and the threshold fitting are supporting detail rather than")
+w("the argument, so they sit here rather than in the main tables.\n")
+
+w("\n## Table S1. Discrimination under each schema\n")
+w("Every model carries the same covariates. The symptoms-only schema has the")
+w("best discrimination on all three outcomes; Table 3 shows what it costs to")
+w("get it.\n")
+w("| Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |")
+w("|---|---|---|---|")
+for (s in c("S1","S2","S3","S4")) { d <- disc[disc$schema == s, ]
+  w(sprintf("| %s | %.4f | %.4f | %.0f |", NM[[s]], d$c_allcause, d$c_resp, d$exac_AIC)) }
+
+w("\n## Table S2. Fitting the CT-free schemas to approximate MD-COPD\n")
+w("| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |")
+w("|---|---|---|---|---|")
+# The v15 draft rule is an unpublished internal comparator; it stays in the
+# artifact as provenance for why the thresholds moved, but it is not something
+# a reader has any reason to see in a manuscript table.
+for (i in which(fit$schema %in% c("S3", "S4"))) { r <- fit[i, ]
+  nm <- c(S3 = "3 without CT", S4 = "4 with ESI")[[r$schema]]
+  w(sprintf("| %s | ≥ %d | %s | %.4f | %.4f |", nm, r$k,
+            if (is.na(r$t_low)) "—" else sprintf("%.2f", r$t_low),
+            r$macroF1_insample, r$macroF1_heldout)) }
+w(sprintf("\nSchema 4 exceeds schema 3 by %.4f (%.4f to %.4f) across %d held-out folds.\n",
+          cvd$diff_mean, cvd$diff_lo, cvd$diff_hi, cvd$n_folds))
+
 close(out)
 cat("wrote", file.path(CTFREE, "DRAFT_TABLES.md"), "\n")

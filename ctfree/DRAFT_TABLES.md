@@ -74,25 +74,6 @@ covariates account for.
 |  | COPD-minor | 1,386 | 1.76 (1.53–2.01) | 1.94 (1.68–2.24) | 3.88 (1.63–9.18) | 5.31 (2.37–11.90) | 3.28 (2.82–3.79) | 2.29 (2.01–2.61) |
 |  | COPD-major | 3,801 | 3.55 (3.24–3.88) | 2.76 (2.50–3.05) | 64.23 (39.37–137.90) | 42.72 (23.45–77.82) | 5.18 (4.67–5.71) | 4.19 (3.80–4.62) |
 
-**Discrimination**
-
-| Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |
-|---|---|---|---|
-| 1 Fixed ratio | 0.6945 | 0.8454 | 30326 |
-| 2 MD-COPD with CT | 0.7034 | 0.8527 | 30168 |
-| 3 without CT | 0.7219 | 0.8755 | 29970 |
-| 4 with ESI | 0.7079 | 0.8581 | 30066 |
-
-## Table 4. Fitting the CT-free schemas to approximate MD-COPD
-
-| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |
-|---|---|---|---|---|
-| 3 without CT | ≥ 2 | — | 0.7202 | 0.7203 |
-| 4 with ESI | ≥ 2 | 1.25 | 0.7542 | 0.7532 |
-
-Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
-
-
 ## Results sentence, replacing the former Table 5
 
 > MD-COPD improved on the fixed ratio for every outcome. Because fixed-ratio
@@ -104,4 +85,35 @@ Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
 > small, with the C-index rising from 0.694 to 0.703 for all-cause mortality,
 > so the framework's advantage lies in reclassifying an identifiable
 > minority correctly rather than in improved prediction overall.
+
+
+---
+
+# Supplement
+
+Discrimination and the threshold fitting are supporting detail rather than
+the argument, so they sit here rather than in the main tables.
+
+
+## Table S1. Discrimination under each schema
+
+Every model carries the same covariates. The symptoms-only schema has the
+best discrimination on all three outcomes; Table 3 shows what it costs to
+get it.
+
+| Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |
+|---|---|---|---|
+| 1 Fixed ratio | 0.6945 | 0.8454 | 30326 |
+| 2 MD-COPD with CT | 0.7034 | 0.8527 | 30168 |
+| 3 without CT | 0.7219 | 0.8755 | 29970 |
+| 4 with ESI | 0.7079 | 0.8581 | 30066 |
+
+## Table S2. Fitting the CT-free schemas to approximate MD-COPD
+
+| Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |
+|---|---|---|---|---|
+| 3 without CT | ≥ 2 | — | 0.7202 | 0.7203 |
+| 4 with ESI | ≥ 2 | 1.25 | 0.7542 | 0.7532 |
+
+Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
 
