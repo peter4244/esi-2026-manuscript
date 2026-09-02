@@ -50,7 +50,8 @@ SCHEMA_NAME = {"S1": "Fixed ratio", "S2": "MD-COPD",
                "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
 
 CLAIM_ID   = re.compile(r"\s*\{[A-Z][A-Za-z0-9-]*(?:,\s*[A-Z][A-Za-z0-9-]*)*\}")
-PROVENANCE = re.compile(r"^\*\(.*\)\*$|^\*\*\[v15.*\]\*\*$")
+# Any bracketed bold line is an editorial provenance note, not prose.
+PROVENANCE = re.compile(r"^\*\(.*\)\*$|^\*\*\[.*\]\*\*$")
 
 
 def load(name):

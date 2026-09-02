@@ -88,6 +88,34 @@ cat(sprintf("schema 4 fitted: COPD-minor if >= %d; ESI thresholds %.2f / %.2f; m
 cat(sprintf("  (v15 draft rule, k=3 at 1.00 / 2.50, scores %.4f)\n\n",
             macroF1(ref, s4(d, 3, 1.00, 2.50))))
 
+# What the rejected objectives actually select. This is a Results finding, not
+# a methods choice, so it is emitted as an artifact rather than asserted in
+# prose: kappa and mean per-category sensitivity fail in OPPOSITE directions,
+# and describing them as failing the same way would be wrong.
+mean_recall <- function(est) mean(vapply(O, function(g) mean(est[ref == g] == g), numeric(1)))
+kappa_full  <- function(est) { t <- table(ref, est); n <- sum(t)
+  po <- sum(diag(t)) / n; pe <- sum(rowSums(t) * colSums(t)) / n^2; (po - pe) / (1 - pe) }
+obj_rows <- list()
+for (nm in c("kappa", "mean_sensitivity", "macro_F1")) {
+  scorer <- switch(nm, kappa = kappa_full, mean_sensitivity = mean_recall, macro_F1 = function(e) macroF1(ref, e))
+  v <- vapply(seq_len(nrow(G4)), function(j)
+    scorer(s4(d, G4$k[j], G4$t_low[j], G4$t_high[j])), numeric(1))
+  b <- G4[which.max(v), ]
+  est <- s4(d, b$k, b$t_low, b$t_high)
+  obj_rows[[length(obj_rows) + 1]] <- data.frame(
+    objective = nm, k = b$k, t_low = b$t_low, score = max(v),
+    n_aflonly = sum(est == "AFL-only"), n_major = sum(est == "COPD-major"),
+    stringsAsFactors = FALSE)
+}
+objsel <- do.call(rbind, obj_rows)
+objsel$ref_aflonly <- sum(ref == "AFL-only")
+objsel$ref_major   <- sum(ref == "COPD-major")
+# The two rejected objectives must err in opposite directions, or the Results
+# sentence describing them is wrong.
+stopifnot(objsel$n_aflonly[objsel$objective == "kappa"] < objsel$ref_aflonly[1],
+          objsel$n_aflonly[objsel$objective == "mean_sensitivity"] > objsel$ref_aflonly[1])
+write.csv(objsel, file.path(OUT, "objective_selection.csv"), row.names = FALSE)
+
 cat("--- repeated stratified cross-validation, thresholds refitted inside every training fold ---\n")
 set.seed(CV_SEED); rows <- list()
 for (rep in seq_len(CV_REPEATS)) {
