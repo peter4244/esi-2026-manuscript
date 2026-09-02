@@ -79,9 +79,9 @@ def s2_ct(doc):
 def s3_crossclass(doc):
     heading(doc, "Supplemental Table S3. Reclassification against the CT-based framework")
     x = load(ASSETS, "crossclass.csv")
-    nm = {"S3": "MD-COPD without CT", "S4": "MD-COPD with ESI"}
+    nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
     for s in ("S3", "S4"):
-        para(doc, f"**{nm[s]}.** Rows are this schema; columns are MD-COPD with CT.")
+        para(doc, f"**{nm[s]}.** Rows are this classification; columns are MD-COPD.")
         cell = {(r["row_cat"], r["col_cat"]): int(r["n"]) for r in x if r["schema"] == s}
         rows = []
         for rc in CATS:
@@ -104,7 +104,7 @@ def s4_fitting(doc):
     heading(doc, "Supplemental Table S4. Fitting the CT-free schemas")
     fit = load(ASSETS, "schema_fit.csv")
     cvd = load(ASSETS, "schema_fit_cv_diff.csv")[0]
-    nm = {"S3": "MD-COPD without CT", "S4": "MD-COPD with ESI"}
+    nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
     rows = [[nm[r["schema"]], f"≥ {int(float(r['k']))}",
              "—" if r["t_low"] in ("", "NA") else f"{float(r['t_low']):.2f}",
              f"{float(r['macroF1_insample']):.4f}",

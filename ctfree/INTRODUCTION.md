@@ -32,15 +32,6 @@ implementation of this otherwise attractive diagnostic approach in routine
 clinical practice, large epidemiological studies, and healthcare settings where
 advanced imaging is unavailable or impractical.
 
-**[v15 ¶44, verbatim]**
-
-Chest CT has substantially advanced the understanding of COPD heterogeneity by
-providing direct information on structural lung abnormalities, yet its cost,
-radiation exposure, and limited availability constrain its widespread use.
-Consequently, a physiological descriptor capable of representing the structural
-dimension of COPD could substantially broaden the applicability of
-multidimensional disease assessment.
-
 **[v15 ¶45, verbatim]**
 
 The Emphysema Severity Index (ESI) is a continuous spirometric measure derived
@@ -55,23 +46,19 @@ observations suggest that ESI may provide a spirometry-derived representation of
 the structural information contributed by chest CT within a multidimensional
 diagnostic framework.
 
-*(new; replaces v15 ¶46, whose objective was diagnostic agreement)*
+*(new; replaces v15 ¶46. Text below is Pete's, verbatim from the _PJC draft.)*
 
-A multidimensional framework has to be judged against the standard it would
-replace. In practice that standard is the fixed ratio, post-bronchodilator
-FEV₁/FVC below 0.70. MD-COPD changes two things about it. It withholds a COPD
-diagnosis from participants who have airflow limitation and nothing else, and
-it gives one to participants with preserved spirometry and a high symptom or
-structural burden. A CT-free version of the framework is worth having if it
-keeps both changes and if its categories still carry the risk their names
-imply. Reproducing the CT-based categories is a means to that, not the test
-itself.
-
-We addressed this in the COPDGene cohort by comparing four classifications of
-the same participants: the fixed ratio alone, the CT-based MD-COPD framework,
-an MD-COPD classification with the CT criteria removed and not replaced, and an
-MD-COPD classification in which ESI stands in for them. The third of these
-isolates what ESI contributes beyond the symptom criteria it is bundled with,
-without which its performance cannot be attributed. We then asked, for each
-classification, how far it reproduces the CT-based categories and whether its
-categories carry the mortality and exacerbation risk they are named for.
+We hypothesized that ESI could be incorporated in a modified form of the MD-COPD
+classification for use where chest CT measurements are not available, retaining
+the prognostic advantages of MD-COPD over the fixed ratio classification. We
+tested this hypothesis in the COPDGene cohort by comparing four classifications
+of the same participants: fixed ratio, the MD-COPD framework, a modified MD-COPD
+classification with the CT criteria removed without any substitute, and another
+modified MD-COPD classification in which ESI is substituted for CT measures. We
+examined, for each classification, how well it reproduces the four MD-COPD
+classes, and we quantified the raw and adjusted rates of all-cause mortality,
+respiratory mortality, and respiratory exacerbations within each classification.
+We observed that, relative to the MD-COPD classification, the modified MD-COPD
+classification with ESI outperformed the fixed ratio classification and avoided
+significant underdiagnosis that was observed in the absence of CT without ESI
+substitution.

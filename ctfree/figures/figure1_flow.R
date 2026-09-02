@@ -69,8 +69,8 @@ ribbons <- function(target, side) {
     scale_fill_manual(values = PAL, guide = "none") +
     # Zero expansion on the side facing the reference panel, so the ribbons
     # meet the column with no gap.
-    scale_x_discrete(limits = if (side == "left") c("MD-COPD without CT", "")
-                              else               c("", "MD-COPD with ESI"),
+    scale_x_discrete(limits = if (side == "left") c("NoCT-MD-COPD", "")
+                              else               c("", "ESI-MD-COPD"),
                      expand = if (side == "left") expansion(add = c(0.26, 0))
                               else               expansion(add = c(0, 0.26))) +
     scale_y_continuous(expand = Y_EXP,
@@ -99,7 +99,7 @@ reference_panel <- function() {
               colour = "white", fontface = "bold") +
     scale_fill_manual(values = PAL, guide = "none") +
     scale_x_continuous(limits = c(0, 1), expand = c(0, 0),
-                       breaks = 0.5, labels = "MD-COPD with CT") +
+                       breaks = 0.5, labels = "MD-COPD") +
     scale_y_continuous(expand = Y_EXP) +
     labs(y = NULL) +
     theme_esi() +
@@ -129,11 +129,11 @@ ggsave(out, p, width = NATIVE_W, height = 4.8, dpi = 300, bg = "white")
 writeLines(c(
   "**Figure 1. Reclassification of the MD-COPD categories when chest CT is unavailable.**",
   "",
-  sprintf(paste("Participants are shown under the CT-based MD-COPD classification (centre)",
-                "and under each CT-free alternative: symptom criteria alone (left) and the",
-                "ESI-based schema (right). Both alternatives derive from the central",
-                "reference. Ribbons are coloured by MD-COPD category; solid ribbons change",
-                "category under that alternative and pale ribbons agree. %s of %s",
+  sprintf(paste("Participants are shown under MD-COPD (centre)",
+                "and under each CT-free alternative: NoCT-MD-COPD (left) and ESI-MD-COPD",
+                "(right). Both derive from the central reference. Ribbons are coloured by",
+                "MD-COPD category; solid ribbons change category under that alternative",
+                "and pale ribbons agree. %s of %s",
                 "participants (%.1f%%) keep their category without CT and %s (%.1f%%) with",
                 "ESI. The difference is concentrated in COPD-major, of whom %d are",
                 "reclassified as AFL-only-noCOPD without CT against %d with ESI. Strata",

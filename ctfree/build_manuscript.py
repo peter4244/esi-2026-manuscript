@@ -43,8 +43,11 @@ CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # so the denominator shown must follow the outcome rather than being one number
 # reused for all three.
 N_COL = {"all": "n_mort", "resp": "n_mort", "exac": "n_exac"}
-SCHEMA_NAME = {"S1": "1  Fixed ratio", "S2": "2  MD-COPD with CT",
-               "S3": "3  MD-COPD without CT", "S4": "4  MD-COPD with ESI"}
+# Short names agreed for the manuscript, defined in Methods and restated in
+# Results. They replace the numbered "schema N" labels, which required the
+# reader to hold a lookup table to parse a sentence.
+SCHEMA_NAME = {"S1": "Fixed ratio", "S2": "MD-COPD",
+               "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
 
 CLAIM_ID   = re.compile(r"\s*\{[A-Z][A-Za-z0-9-]*(?:,\s*[A-Z][A-Za-z0-9-]*)*\}")
 PROVENANCE = re.compile(r"^\*\(.*\)\*$|^\*\*\[v15.*\]\*\*$")
@@ -197,22 +200,23 @@ def table1(doc):
     lab = {(r["schema"], r["category"]): int(r["n"]) for r in load("schema_labels.csv")}
     n = lambda s, c: f"{lab[(s, c)]:,}" if (s, c) in lab else "—"
     rows = [
-        ["1  Fixed ratio", "none; COPD is airflow limitation",
+        ["Fixed ratio", "none; COPD is airflow limitation",
          n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
-        ["2  MD-COPD with CT", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
+        ["MD-COPD", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
-        ["3  MD-COPD without CT", "dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["NoCT-MD-COPD", "dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
-        ["4  MD-COPD with ESI", "ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["ESI-MD-COPD", "ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
-    add_table(doc, ["Schema", "Minor criteria", "noCOPD", "AFL-only-noCOPD",
+    add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only-noCOPD",
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, "Table 1.",
-           "Four classification schemas applied to the same 9,402 participants. The "
-           "major criterion is post-bronchodilator FEV₁/FVC below 0.70 in every "
-           "schema, so no participant changes pathway between them. Schema 2 is the "
-           "reference the two CT-free schemas approximate.")
+           "The four classifications applied to the same 9,402 participants. The major "
+           "criterion is post-bronchodilator FEV₁/FVC below 0.70 in all four, so no "
+           "participant moves between the airflow-limitation categories and the "
+           "preserved-spirometry ones. MD-COPD is the reference NoCT-MD-COPD and "
+           "ESI-MD-COPD are compared against.")
 
 
 def table3(doc):
@@ -251,12 +255,12 @@ def table3(doc):
                              f"{int(risk[(s, c)][N_COL[okey]]):,}",
                              cr(s, c, okey), ci(s, c, okey)])
                 first_of_outcome = False
-    add_table(doc, ["Outcome", "Schema", "Category", "n",
+    add_table(doc, ["Outcome", "Classification", "Category", "n",
                     "Crude RR (95% CI)", "Adjusted HR or IRR (95% CI)"],
               rows, [1.05, 1.15, 0.88, 0.58, 1.38, 1.46])
     legend(doc, "Table 3.",
-           "Crude and adjusted risk within each schema's own categories, against that "
-           "schema's own noCOPD group. Column pairs are all-cause mortality, "
+           "Crude and adjusted risk within each classification's own categories, against "
+           "that classification's own noCOPD group. Column pairs are all-cause mortality, "
            "respiratory mortality and exacerbations. Crude ratios are observed event "
            "rates with 95% percentile intervals from a subject resample bootstrap; "
            "adjusted estimates carry age, sex, race, current smoking status, "
@@ -313,15 +317,17 @@ def main():
              ("figure3_copdminor.png", "COPD-minor"),
              ("figure4_copdmajor.png", "COPD-major")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
-                   f"Crude (open) and adjusted (filled) risk for the {cat} category "
-                   f"under each schema, against that schema's own noCOPD group. "
+                   f"Crude (open) and adjusted (filled) risk for the {cat} category under "
+                   f"each classification, against that classification's own noCOPD group. "
                    f"The fixed ratio has a single COPD category and so appears only "
                    f"alongside COPD-major.")
 
     doc.save(OUT)
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
           f"{n_d} Discussion paragraphs")
-    assert n_i > 4 and n_m > 10 and n_r > 10 and n_d > 5, \
+    # A floor against a source file failing to render, not a target length.
+    # Pete's Introduction is four paragraphs by choice.
+    assert n_i >= 4 and n_m > 10 and n_r > 10 and n_d > 5, \
         "prose came out suspiciously short"
 
 

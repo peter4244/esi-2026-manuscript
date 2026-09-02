@@ -51,28 +51,25 @@ uncertainty when used to define stable disease characteristics (29).
 The AFL-only-noCOPD category is where a CT-free classification succeeds or
 fails. It exists to withhold a diagnosis from participants the fixed ratio
 would call COPD, so it is defensible only while the participants in it are
-genuinely at low risk. Under the CT-based framework they are. Under the
-symptoms-only schema they are not: that category carries 6.6 times the
+genuinely at low risk. Under MD-COPD they are. Under NoCT-MD-COPD they are not: that category carries 6.6 times the
 respiratory mortality of its own reference {RISK-02}, and unadjusted its
-members died at 1.56 times the reference rate {CRUDE-01}. Under the ESI-based
-schema the category holds, with no significant excess on any outcome
+members died at 1.56 times the reference rate {CRUDE-01}. Under ESI-MD-COPD the category holds, with no significant excess on any outcome
 {RISK-04b}. The difference is not subtle and it is not a matter of degree.
 
 *(new)*
 
-Discrimination did not identify the better classification. The symptoms-only
-schema had the highest C-index of the four, and it earned that by making
+Discrimination did not identify the better classification. NoCT-MD-COPD had the highest C-index of the four, and it earned that by making
 COPD-major smaller and more severe while moving 949 participants into a
 category named as not having COPD {DISC-01b, RISK-07, RISK-08}. A C-index
 measures how well categories rank risk, not whether they mean what they say.
 Where a classification carries a diagnostic label, ranking is not sufficient,
-and a comparison resting on discrimination alone would have selected the schema
+and a comparison resting on discrimination alone would have selected the classification
 we reject.
 
 *(new)*
 
 ESI does not contribute equally across the framework. At the COPD-minor
-boundary the three multidimensional schemas are close to indistinguishable, and
+boundary the three multidimensional classifications are close to indistinguishable, and
 symptom criteria alone reproduce that category about as well as ESI does. The
 contribution is concentrated in participants with airflow limitation whose only
 minor criterion is a CT finding, who are 24.1% of COPD-major {RECL-03}. That is
@@ -97,7 +94,7 @@ across the mild end of the visual emphysema scale at which that criterion is
 set. ESI was developed to reflect the physiological consequences of emphysema,
 so airway-predominant structural abnormality is less completely represented.
 The count threshold of two departs from the three of the original framework; it
-was applied identically to both CT-free schemas so the comparison between them
+was applied identically to both CT-free classifications so the comparison between them
 is fair, but it is a modification of the framework rather than a
 reparameterization of ESI. Thresholds were derived within COPDGene and require
 external validation. Finally, all comparisons treat the CT-based classification

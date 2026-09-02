@@ -21,8 +21,8 @@ ASSETS <- file.path(dirname(HERE), "assets")
 
 risk <- read.csv(file.path(ASSETS, "schema_risk.csv"),  stringsAsFactors = FALSE)
 crd  <- read.csv(file.path(ASSETS, "schema_crude.csv"), stringsAsFactors = FALSE)
-SCH  <- c(S1 = "Fixed ratio", S2 = "MD-COPD with CT",
-          S3 = "MD-COPD without CT", S4 = "MD-COPD with ESI")
+SCH  <- c(S1 = "Fixed ratio", S2 = "MD-COPD",
+          S3 = "NoCT-MD-COPD", S4 = "ESI-MD-COPD")
 OUTC <- list(c("all", "All-cause mortality"), c("resp", "Respiratory mortality"),
              c("exac", "Exacerbations"))
 PAL  <- c("AFL-only" = "#9467BD", "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")

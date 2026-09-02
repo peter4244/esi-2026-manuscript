@@ -19,12 +19,16 @@ using spirometry and symptoms alone?
 
 Four schemas, same 9,402 participants, same covariates:
 
-| | schema | definition |
+S1 to S4 are internal identifiers used in the artifacts and in the field
+expressions below. The manuscript names them as follows, and those names are
+what appear in the prose, tables and figures.
+
+| artifact id | manuscript name | definition |
 |---|---|---|
-| S1 | fixed ratio | FEV1/FVC < 0.70 alone |
-| S2 | MD-COPD with CT | reference; the other schemas approximate it |
-| S3 | MD-COPD without CT | symptoms only, count threshold refitted |
-| S4 | MD-COPD with ESI | ESI threshold and count threshold refitted |
+| S1 | **Fixed ratio** | FEV1/FVC < 0.70 alone |
+| S2 | **MD-COPD** | the published CT-based framework; the reference |
+| S3 | **NoCT-MD-COPD** | CT criteria removed, count threshold refitted |
+| S4 | **ESI-MD-COPD** | CT criteria replaced by ESI, both thresholds refitted |
 
 ## Standing methodological decisions
 

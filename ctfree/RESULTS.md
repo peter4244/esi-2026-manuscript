@@ -33,6 +33,10 @@ with established airflow obstruction (GOLD 3, r = 0.58; Supplemental Table S2).
 
 *(new)*
 
+The four classifications are named as in the Methods: the **fixed ratio**;
+**MD-COPD**, the published CT-based framework; **NoCT-MD-COPD**, with the CT
+criteria removed; and **ESI-MD-COPD**, with ESI in their place.
+
 Because fixed-ratio COPD comprises exactly the AFL-only-noCOPD and COPD-major
 categories, the fixed-ratio model is nested within the four-category model and
 the two can be compared directly. The four-category classification added
@@ -66,34 +70,28 @@ was a CT finding {RECL-05}. They account for 24.1% of the COPD-major category
 {RECL-03, RECL-04}. None of them has a symptom criterion. Remove CT without
 replacing it and nothing is left to identify them.
 
-Replacing the CT criteria with ESI reduces that loss from 949 to 233 {RECL-02}
+ESI-MD-COPD reduces that loss from 949 to 233 {RECL-02}
 and holds the COPD-major category at 3,803 against the reference's 3,943
 {LAB-03}. Overall, 8,580 of 9,402 participants (91.3%) retain their MD-COPD
-category under the ESI-based schema against 7,997 (85.1%) without any
-structural criterion (Figure 1, Supplemental Table S3).
+category under ESI-MD-COPD against 7,997 (85.1%) under NoCT-MD-COPD (Figure 1, Supplemental Table S3).
 
-Both CT-free schemas were fitted to approximate the CT-based classification by
-the same objective and over the same parameter space. The ESI-based schema
-achieved a held-out macro-averaged F1 of 0.753 against 0.720 for the
-symptoms-only schema, a difference of 0.033 (95% across folds 0.016 to 0.050)
+NoCT-MD-COPD and ESI-MD-COPD were both fitted to approximate the CT-based classification by
+the same objective and over the same parameter space. ESI-MD-COPD achieved a held-out macro-averaged F1 of 0.753 against 0.720 for NoCT-MD-COPD, a difference of 0.033 (95% across folds 0.016 to 0.050)
 {FIT-04a, FIT-04b, FIT-05a, FIT-05b}. The fitted rule uses a single ESI
 threshold of 1.25 and a count of two of four minor criteria {FIT-01, FIT-02a,
 FIT-02b, FIT-03} (Supplemental Table S4).
 
-## Discrimination favors the schema that should not be used
+## Discrimination favors the classification that should not be used
 
 *(new)*
 
-Discrimination did not track the quality of the classification. The
-symptoms-only schema had the highest C-index of the four for all-cause
-mortality (0.722 against 0.703 for the CT-based framework) and the highest for
+Discrimination did not track the quality of the classification. NoCT-MD-COPD had the highest C-index of the four for all-cause
+mortality (0.722 against 0.703 for MD-COPD) and the highest for
 respiratory mortality, and the lowest exacerbation AIC {DISC-01, DISC-01b}
-(Supplemental Table S5). The ESI-based schema also discriminated marginally
-better than the CT-based reference {DISC-02, DISC-03}.
+(Supplemental Table S5). ESI-MD-COPD also discriminated marginally better than MD-COPD {DISC-02, DISC-03}.
 
 A C-index does not test what the categories are called. It tests how well they
-rank risk. The symptoms-only schema ranks risk well because its COPD-major
-category is smaller and more severe: 2,994 participants rather than 3,943, with
+rank risk. NoCT-MD-COPD ranks risk well because its COPD-major category is smaller and more severe: 2,994 participants rather than 3,943, with
 an adjusted hazard ratio of 3.34 against 2.59 {RISK-07, RISK-08}. It gets there by moving 949
 participants into a category named as not having COPD.
 
@@ -102,15 +100,15 @@ participants into a category named as not having COPD.
 *(new)*
 
 The AFL-only-noCOPD category exists to identify participants whom the fixed
-ratio would call COPD but who do not have it, so a schema is usable only if
-that category is genuinely low risk. Under the CT-based framework it largely
+ratio would call COPD but who do not have it, so a classification is usable only if
+that category is genuinely low risk. Under MD-COPD it largely
 is: adjusted all-cause HR 0.90 (0.62 to 1.30) and respiratory HR 1.42 (0.19 to
 10.84), both crossing the null {RISK-01, RISK-01b}. The exacerbation estimate
 reaches nominal significance after adjustment (IRR 1.35, 1.00 to 1.81)
 {RISK-01c}, though the crude rate ratio does not (1.15, 0.81 to 1.55)
 {CRUDE-07} and the underlying rate difference is small.
 
-Under the symptoms-only schema it is not. That category carries 6.6 times the
+Under NoCT-MD-COPD it is not. That category carries 6.6 times the
 respiratory mortality of its own noCOPD reference (adjusted HR 6.61, 3.41 to
 12.79) and 1.8 times the exacerbation rate (IRR 1.80, 1.58 to 2.05) {RISK-02,
 RISK-02b, RISK-03}. The crude estimates are worse than the adjusted ones rather
@@ -119,7 +117,7 @@ rate of the reference (95% CI 1.35 to 1.79) {CRUDE-01, CRUDE-02} and had 9.6
 times the respiratory mortality {CRUDE-03}. Adjustment masked an excess that
 participants actually experienced.
 
-Under the ESI-based schema the label holds. Adjusted all-cause HR 0.94 (0.72 to
+Under ESI-MD-COPD the label holds. Adjusted all-cause HR 0.94 (0.72 to
 1.22), with no significant excess on any outcome {RISK-04, RISK-04b}, and a
 crude all-cause rate ratio of 1.30 whose interval includes 1 {CRUDE-04,
 CRUDE-05}. The remaining categories track the reference closely: COPD-minor HR
@@ -130,10 +128,10 @@ Figures 2 to 4).
 
 ## Open
 
-- The COPD-minor figure shows the three multidimensional schemas essentially
+- The COPD-minor figure shows the three multidimensional classifications essentially
   superimposed. ESI adds nothing at that boundary, and the text should say so
   rather than leave the figure to say it.
 - Whether the v15 secondary analyses of continuous ESI (v15 ¶80) are retained.
-- The crude all-cause interval for the ESI schema's AFL-only category has a
+- The crude all-cause interval for ESI-MD-COPD's AFL-only category has a
   lower bound of 0.98, close enough to 1 that "no excess" should not be stated
   more strongly than the data support.
