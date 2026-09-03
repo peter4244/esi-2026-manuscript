@@ -127,6 +127,60 @@ the rate is higher. The remaining categories track the reference: COPD-minor HR
 1.96 against 1.83, COPD-major 2.93 against 2.54 {RISK-05, RISK-06} (Table 3,
 Figures 2 to 4).
 
+## Who the two classifications disagree about
+
+*(new)*
+
+NoCT-MD-COPD is set aside from here on. The preceding sections establish that
+it underdiagnoses a group carrying raised mortality, which is the reason a
+symptom-only substitute is not usable; what remains is whether ESI-MD-COPD
+reproduces MD-COPD at the level of individual participants. Binary COPD status
+under the two was cross-classified within the preserved-spirometry subgroup,
+where they can disagree about a diagnosis rather than about which COPD category
+applies.
+
+ESI-MD-COPD misses 70 of the 799 participants MD-COPD assigns to COPD-minor,
+agreeing on the other 729, or 91.2% {DISC2-01, DISC2-03, DISC2-04}. It calls
+COPD in a further 612 whom MD-COPD does not {DISC2-02}.
+
+Those 612 are not noise. Against participants both classifications call
+noCOPD, they carry an adjusted all-cause hazard ratio of 1.59 (1.30 to 1.95)
+{DISC2-05, DISC2-06}, respiratory 3.63 (1.20 to 11.0), and an exacerbation
+incidence rate ratio of 1.82 (1.48 to 2.25) {DISC2-07} (Table 4). Observed
+exacerbation rates rise across the four groups, from 11.2 per 100 person-years
+in the doubly negative group to 31.0 in the ESI-only group, 21.7 in the CT-only
+group and 42.9 where both agree. Prior exacerbation burden follows the same
+ordering, 0.09 against 0.44 in the ESI-only group {DISC2-09}, so part of the
+difference in future exacerbations is history already present at baseline.
+
+The 70 participants ESI-MD-COPD misses had no respiratory deaths during
+follow-up, so no respiratory hazard ratio is estimable for that group
+{DISC2-08}.
+
+## Whether the two classifications assign the same risk
+
+*(new)*
+
+Reporting two classifications side by side invites a comparison that
+overlapping intervals cannot settle. Participants were resampled and both
+classifications refitted within every resample, so the difference in the log
+estimate for a given category is taken on the same people each time.
+
+For AFL-only-noCOPD and COPD-minor the two are indistinguishable. No outcome
+shows a difference for either category, with two-sided P from 0.18 to 0.86
+{PAIR-01, PAIR-02} (Table 5).
+
+COPD-major differs on all three outcomes. ESI-MD-COPD assigns 1.15 times the
+all-cause effect (1.11 to 1.20), 1.49 times the respiratory effect (1.09 to
+2.28) and 1.20 times the exacerbation effect (1.14 to 1.26), all P < 0.01
+{PAIR-03, PAIR-04}. This is the same mechanism described above for
+NoCT-MD-COPD, at smaller magnitude. ESI-MD-COPD's COPD-major category holds
+3,541 participants against MD-COPD's 3,809, and the 350 it does not retain are
+those whose only minor criterion was a CT finding. Removing them leaves a
+smaller and more severe category, which raises the estimated effect without any
+participant's risk having changed. Respiratory estimates rest on 863 of 1,000
+resamples, the remainder having too few events to fit {PAIR-05}.
+
 ---
 
 ## Open

@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 63L
+REGISTRY_N <- 77L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -36,6 +36,72 @@ reg("COH-02", "Cohort", "4,084 with airflow limitation", 4084, "cohort.txt",
     'as.numeric(x[["n_afl"]])', TOL_EXACT)
 reg("COH-03", "Cohort", "5,156 without airflow limitation", 5156, "cohort.txt",
     'as.numeric(x[["n_noafl"]])', TOL_EXACT)
+
+# --- concordant and discordant classification -----------------------------
+# MD-COPD against ESI-MD-COPD, pairwise, in preserved spirometry.
+DC <- function(g, fld) sprintf('x$%s[x$group == "%s"]', fld, g)
+reg("DISC2-01", "Discordance", "ESI misses only 70 of MD-COPD's COPD-minor", 70,
+    "discord_counts.csv", DC("CT-only-COPD", "n"), TOL_EXACT)
+reg("DISC2-02", "Discordance", "ESI adds 612 the CT framework does not call COPD", 612,
+    "discord_counts.csv", DC("ESI-only-COPD", "n"), TOL_EXACT)
+reg("DISC2-03", "Discordance", "729 are called COPD by both", 729,
+    "discord_counts.csv", DC("Both-COPD", "n"), TOL_EXACT)
+reg("DISC2-04", "Discordance",
+    "the two agree on 729 of MD-COPD's 799 COPD-minor, or 91.2%", TRUE,
+    "discord_counts.csv",
+    sprintf('abs(100 * %s / (%s + %s) - 91.2) < 0.1',
+            DC("Both-COPD","n"), DC("Both-COPD","n"), DC("CT-only-COPD","n")), TOL_EXACT)
+reg("DISC2-05", "Discordance",
+    "the group ESI adds carries adjusted all-cause HR 1.59", 1.59,
+    "discord_adjusted.csv", DC("ESI-only-COPD", "all_HR"), TOL_2DP)
+reg("DISC2-06", "Discordance",
+    "and its interval excludes 1, so the addition is not noise", TRUE,
+    "discord_adjusted.csv", sprintf('%s > 1', DC("ESI-only-COPD", "all_LCI")), TOL_EXACT)
+reg("DISC2-07", "Discordance",
+    "the group ESI adds has exacerbation IRR 1.82", 1.82,
+    "discord_adjusted.csv", DC("ESI-only-COPD", "exac_IRR"), TOL_2DP)
+reg("DISC2-08", "Discordance",
+    "CT-only-COPD has no respiratory deaths, so its HR is not estimable", TRUE,
+    "discord_adjusted.csv",
+    sprintf('%s == 0 && is.na(%s)', DC("CT-only-COPD","deaths_resp"),
+            DC("CT-only-COPD","resp_HR")), TOL_EXACT)
+reg("DISC2-09", "Discordance",
+    "prior exacerbation burden is 0.09 in the reference against 0.44 in ESI-only", TRUE,
+    "discord_rates.csv",
+    sprintf('%s < 0.15 && %s > 0.40', DC("Both-noCOPD","prior_exac_mean"),
+            DC("ESI-only-COPD","prior_exac_mean")), TOL_EXACT)
+
+# --- paired comparison between classifications ----------------------------
+# The Results previously asserted that ESI-MD-COPD "tracks the reference"
+# from two overlapping intervals. These test it.
+BD <- function(o, cat, fld)
+  sprintf('x$%s[x$outcome == "%s" & x$category == "%s"]', fld, o, cat)
+reg("PAIR-01", "Paired comparison",
+    "AFL-only does not differ between the two classifications, all-cause", TRUE,
+    "schema_diff_bootstrap.csv",
+    sprintf('%s > 0.05', BD("all-cause mortality", "AFL-only", "p_two_sided")), TOL_EXACT)
+reg("PAIR-02", "Paired comparison",
+    "nor COPD-minor, on any of the three outcomes", TRUE,
+    "schema_diff_bootstrap.csv",
+    sprintf('%s > 0.05 && %s > 0.05 && %s > 0.05',
+            BD("all-cause mortality", "COPD-minor", "p_two_sided"),
+            BD("respiratory mortality", "COPD-minor", "p_two_sided"),
+            BD("exacerbations", "COPD-minor", "p_two_sided")), TOL_EXACT)
+reg("PAIR-03", "Paired comparison",
+    "COPD-major does differ, on all three", TRUE,
+    "schema_diff_bootstrap.csv",
+    sprintf('%s < 0.05 && %s < 0.05 && %s < 0.05',
+            BD("all-cause mortality", "COPD-major", "p_two_sided"),
+            BD("respiratory mortality", "COPD-major", "p_two_sided"),
+            BD("exacerbations", "COPD-major", "p_two_sided")), TOL_EXACT)
+reg("PAIR-04", "Paired comparison",
+    "ESI-MD-COPD assigns 1.15x the all-cause effect in COPD-major", 1.15,
+    "schema_diff_bootstrap.csv",
+    BD("all-cause mortality", "COPD-major", "ratio_S4_over_S2"), TOL_2DP)
+reg("PAIR-05", "Paired comparison",
+    "respiratory resamples run at B = 863 because events are sparse", 863,
+    "schema_diff_bootstrap.csv",
+    BD("respiratory mortality", "COPD-major", "B_eff"), TOL_EXACT)
 
 # --- ESI against quantitative CT ------------------------------------------
 # Cited in Results, Study population, and shown as Supplemental Table S2. These

@@ -808,6 +808,224 @@ stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
 write.csv(crude, file.path(OUT_DIR, "schema_crude.csv"), row.names = FALSE)
 ```
 
+# Section 9 -- Concordant and discordant classification (MD-COPD vs ESI-MD-COPD)
+
+Pairwise, as in the earlier analysis. NoCT-MD-COPD is not carried into this
+comparison: it underdiagnoses a group with raised mortality, which the
+preceding sections establish, so the question of what happens to individually
+discordant participants is asked of ESI-MD-COPD alone.
+
+Binary COPD status under each classification is cross-classified into four
+groups. Restricted to preserved spirometry, where the two classifications can
+actually disagree about a diagnosis rather than about which COPD category
+applies.
+
+```{r discordance-groups}
+copd_of <- function(v) v %in% c("COPD-minor", "COPD-major")
+mk_discord <- function(dd) factor(
+  ifelse( copd_of(dd$S2) &  copd_of(dd$S4), "Both-COPD",
+  ifelse( copd_of(dd$S2) & !copd_of(dd$S4), "CT-only-COPD",
+  ifelse(!copd_of(dd$S2) &  copd_of(dd$S4), "ESI-only-COPD", "Both-noCOPD"))),
+  levels = c("Both-noCOPD", "ESI-only-COPD", "CT-only-COPD", "Both-COPD"))
+
+d_b$discord  <- mk_discord(d_b)
+mort$discord <- mk_discord(mort)
+exa$discord  <- mk_discord(exa)
+
+# Preserved spirometry only.
+d_ps    <- d_b[!d_b$afl, ]
+mort_ps <- mort[!mort$afl, ]
+exa_ps  <- exa[!exa$afl, ]
+cat(sprintf("preserved-spirometry cohort: %d (mortality %d, exacerbation %d)\n\n",
+            nrow(d_ps), nrow(mort_ps), nrow(exa_ps)))
+print(table(d_ps$discord))
+
+# CT-only-COPD is what ESI misses; ESI-only-COPD is what it adds.
+disc_n <- as.data.frame(table(d_ps$discord), stringsAsFactors = FALSE)
+names(disc_n) <- c("group", "n")
+write.csv(disc_n, file.path(OUT_DIR, "discord_counts.csv"), row.names = FALSE)
+```
+
+```{r discordance-rates}
+# Observed rates per 100 person-years, and prior exacerbation burden, which
+# the earlier analysis found explains much of the gradient in future
+# exacerbations.
+rate100 <- function(ev, py) 100 * sum(ev) / sum(py)
+rows <- lapply(levels(d_ps$discord), function(g) {
+  m <- mort_ps[mort_ps$discord == g, ]
+  e <- exa_ps [exa_ps$discord  == g, ]
+  data.frame(
+    group          = g,
+    n              = sum(d_ps$discord == g),
+    n_mort         = nrow(m),
+    deaths         = sum(m$vital_status),
+    rate_all_100py = rate100(m$vital_status, m$py),
+    rate_resp_100py= rate100(m$ev_resp,      m$py),
+    n_exac         = nrow(e),
+    rate_exac_100py= rate100(e$Total_Exacerbations, e$Years_Followed),
+    prior_exac_mean= mean(e$prior_exac, na.rm = TRUE),
+    stringsAsFactors = FALSE)
+})
+disc_rates <- do.call(rbind, rows)
+# Rates must be ordered by increasing severity of the group definition for the
+# narrative to hold; assert nothing, but surface it.
+write.csv(disc_rates, file.path(OUT_DIR, "discord_rates.csv"), row.names = FALSE)
+kable(disc_rates, digits = 2,
+      caption = "Observed rates per 100 person-years by cross-classification group.")
+```
+
+```{r discordance-adjusted}
+# Adjusted estimates against Both-noCOPD.
+cm <- coxph(as.formula(paste("Surv(py, vital_status) ~ discord +", COV)), data = mort_ps)
+cr <- coxph(as.formula(paste("Surv(py, ev_resp) ~ discord +",      COV)), data = mort_ps)
+ne <- glm.nb(as.formula(paste("Total_Exacerbations ~ discord +", COV,
+       "+ prior_exac + offset(log(Years_Followed))")), data = exa_ps)
+sm <- summary(cm)$conf.int; sr <- summary(cr)$conf.int; se <- summary(ne)$coef
+
+# A group with no events of a given type has no estimable hazard ratio. The
+# Cox fit still returns a number: for CT-only-COPD, which has zero respiratory
+# deaths, it returns 3e-07 with an interval of 0 to Inf. That is a monotone
+# likelihood, not an effect size, and printing it as one would be worse than
+# printing nothing. Such cells are set NA and the event count is carried
+# alongside so the reason is visible in the artifact rather than inferred.
+n_ev <- function(g, col) sum(mort_ps[[col]][mort_ps$discord == g])
+adj <- do.call(rbind, lapply(levels(d_ps$discord)[-1], function(g) {
+  r <- paste0("discord", g)
+  gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
+  d_all  <- n_ev(g, "vital_status")
+  d_resp <- n_ev(g, "ev_resp")
+  est <- function(v, ok) if (ok) v else NA_real_
+  data.frame(group = g,
+    deaths_all = d_all, deaths_resp = d_resp,
+    all_HR  = est(gv(sm,1), d_all  > 0), all_LCI = est(gv(sm,3), d_all  > 0),
+    all_UCI = est(gv(sm,4), d_all  > 0),
+    resp_HR = est(gv(sr,1), d_resp > 0), resp_LCI = est(gv(sr,3), d_resp > 0),
+    resp_UCI= est(gv(sr,4), d_resp > 0),
+    exac_IRR = if (r %in% rownames(se)) exp(se[r,1]) else NA_real_,
+    exac_LCI = if (r %in% rownames(se)) exp(se[r,1]-1.96*se[r,2]) else NA_real_,
+    exac_UCI = if (r %in% rownames(se)) exp(se[r,1]+1.96*se[r,2]) else NA_real_,
+    stringsAsFactors = FALSE)
+}))
+# Any surviving estimate must be finite and positive; a degenerate fit that
+# slipped through the event-count guard would still be caught here.
+.fin <- function(v) all(is.na(v) | (is.finite(v) & v > 0))
+stopifnot(.fin(adj$all_HR), .fin(adj$resp_HR), .fin(adj$exac_IRR),
+          .fin(adj$resp_UCI))
+write.csv(adj, file.path(OUT_DIR, "discord_adjusted.csv"), row.names = FALSE)
+kable(adj, digits = 2, caption = "Adjusted estimates against Both-noCOPD.")
+```
+
+# Section 10 -- Do the classifications differ? Paired bootstrap
+
+The preceding sections report each classification's estimates side by side.
+Reading a difference off two intervals is not a test of one, so this resamples
+participants and refits BOTH classifications within every resample, taking the
+difference of the log estimates for the same category. Pairing is what makes
+the comparison valid: both estimates come from the same people in each draw,
+so the between-classification correlation is preserved rather than assumed
+away.
+
+Each outcome is fitted in its own `tryCatch`. A warning from a sparse
+respiratory fit must not discard the valid all-cause fits for that resample,
+because dropped resamples are not missing at random: they are precisely the
+ones with few respiratory events. Effective B is therefore tracked per outcome.
+
+```{r paired-bootstrap}
+B_DIFF <- 1000L
+CACHE  <- file.path(OUT_DIR, "_cache"); dir.create(CACHE, showWarnings = FALSE)
+CPATH  <- file.path(CACHE, "paired_bootstrap.rds")
+CATS   <- c("AFL-only", "COPD-minor", "COPD-major")
+
+# The fingerprint carries the model formulas, not just row counts, so any
+# change to an outcome, covariate or offset invalidates the cache whether or
+# not anyone remembers to bump a version.
+.fml <- c(paste("Surv(py, vital_status) ~ S +", COV),
+          paste("Surv(py, ev_resp) ~ S +",      COV),
+          paste("Total_Exacerbations ~ S +", COV,
+                "+ prior_exac + offset(log(Years_Followed))"))
+.want <- list(n_mort = nrow(mort), n_exac = nrow(exa), B = B_DIFF,
+              deaths = sum(mort$vital_status), resp = sum(mort$ev_resp),
+              cats = paste(CATS, collapse = ","), fml = paste(.fml, collapse = "|"),
+              version = 1L)
+.cached <- if (file.exists(CPATH)) readRDS(CPATH) else NULL
+if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
+  message("paired-bootstrap cache stale; recomputing")
+  .cached <- NULL
+}
+
+if (!is.null(.cached)) {
+  bootdiff <- .cached
+  cat(sprintf("loaded cached paired bootstrap (B effective: all %d, resp %d, exac %d)\n",
+              bootdiff$B_eff[["all"]], bootdiff$B_eff[["resp"]], bootdiff$B_eff[["exac"]]))
+} else {
+  set.seed(CV_SEED)
+  mk <- function() matrix(NA_real_, nrow = B_DIFF, ncol = length(CATS),
+                          dimnames = list(NULL, CATS))
+  store <- list(all_S2 = mk(), all_S4 = mk(), resp_S2 = mk(), resp_S4 = mk(),
+                exac_S2 = mk(), exac_S4 = mk())
+  lg <- function(fit, term, nb = FALSE) {
+    co <- if (nb) summary(fit)$coef else summary(fit)$coef
+    if (!term %in% rownames(co)) return(NA_real_)
+    unname(co[term, 1])
+  }
+  fit_cox <- function(dat, ev) tryCatch({
+    lhs <- sprintf("Surv(py, %s)", ev)
+    list(S2 = coxph(as.formula(paste(lhs, "~ S2 +", COV)), data = dat),
+         S4 = coxph(as.formula(paste(lhs, "~ S4 +", COV)), data = dat))
+  }, error = function(e) NULL, warning = function(w) NULL)
+  fit_nb <- function(dat) tryCatch({
+    rhs <- paste(COV, "+ prior_exac + offset(log(Years_Followed))")
+    list(S2 = glm.nb(as.formula(paste("Total_Exacerbations ~ S2 +", rhs)), data = dat),
+         S4 = glm.nb(as.formula(paste("Total_Exacerbations ~ S4 +", rhs)), data = dat))
+  }, error = function(e) NULL, warning = function(w) NULL)
+
+  B_eff <- c(all = 0L, resp = 0L, exac = 0L)
+  for (b in seq_len(B_DIFF)) {
+    im <- sample.int(nrow(mort), nrow(mort), replace = TRUE); dm <- mort[im, ]
+    ie <- sample.int(nrow(exa),  nrow(exa),  replace = TRUE); de <- exa [ie, ]
+    fa <- fit_cox(dm, "vital_status"); fr <- fit_cox(dm, "ev_resp"); fe <- fit_nb(de)
+    if (!is.null(fa)) { for (g in CATS) {
+        store$all_S2[b, g] <- lg(fa$S2, paste0("S2", g))
+        store$all_S4[b, g] <- lg(fa$S4, paste0("S4", g)) }
+      B_eff["all"] <- B_eff["all"] + 1L }
+    if (!is.null(fr)) { for (g in CATS) {
+        store$resp_S2[b, g] <- lg(fr$S2, paste0("S2", g))
+        store$resp_S4[b, g] <- lg(fr$S4, paste0("S4", g)) }
+      B_eff["resp"] <- B_eff["resp"] + 1L }
+    if (!is.null(fe)) { for (g in CATS) {
+        store$exac_S2[b, g] <- lg(fe$S2, paste0("S2", g), nb = TRUE)
+        store$exac_S4[b, g] <- lg(fe$S4, paste0("S4", g), nb = TRUE) }
+      B_eff["exac"] <- B_eff["exac"] + 1L }
+  }
+  bootdiff <- list(store = store, B_eff = B_eff, fingerprint = .want)
+  saveRDS(bootdiff, CPATH)
+  cat(sprintf("paired bootstrap done (B effective: all %d, resp %d, exac %d)\n",
+              B_eff[["all"]], B_eff[["resp"]], B_eff[["exac"]]))
+}
+
+# Percentile interval on the difference in log estimates, and a two-sided
+# bootstrap p from the proportion of draws on the other side of zero.
+diff_row <- function(key, label, g) {
+  d <- bootdiff$store[[paste0(key, "_S4")]][, g] -
+       bootdiff$store[[paste0(key, "_S2")]][, g]
+  d <- d[is.finite(d)]
+  if (!length(d)) return(NULL)
+  p <- 2 * min(mean(d <= 0), mean(d >= 0)); p <- min(1, p)
+  data.frame(outcome = label, category = g,
+             ratio_S4_over_S2 = exp(mean(d)),
+             lo = exp(unname(quantile(d, .025))),
+             hi = exp(unname(quantile(d, .975))),
+             p_two_sided = p, B_eff = length(d), stringsAsFactors = FALSE)
+}
+diffs <- do.call(rbind, unlist(recursive = FALSE, lapply(
+  list(c("all","all-cause mortality"), c("resp","respiratory mortality"),
+       c("exac","exacerbations")),
+  function(o) lapply(CATS, function(g) diff_row(o[1], o[2], g)))))
+write.csv(diffs, file.path(OUT_DIR, "schema_diff_bootstrap.csv"), row.names = FALSE)
+kable(diffs, digits = 3,
+      caption = "ESI-MD-COPD versus MD-COPD, same category, paired resamples. A ratio of 1 means the two classifications assign the same effect size.")
+```
+
 # Section 9 -- Self-check (canonical values echoed for drift detection)
 
 Each row prints the freshly-computed value alongside the value cited in
@@ -914,6 +1132,8 @@ required_csvs <- c(
   "schema_fit.csv", "schema_fit_cv_diff.csv", "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
   "supp_baseline.csv", "supp_esi_ct.csv",
+  "discord_counts.csv", "discord_rates.csv", "discord_adjusted.csv",
+  "schema_diff_bootstrap.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]

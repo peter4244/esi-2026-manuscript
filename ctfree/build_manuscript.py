@@ -286,6 +286,85 @@ def table3(doc):
            f"because a small number of participants lack complete covariate data.")
 
 
+def table4(doc):
+    """Cross-classification of MD-COPD against ESI-MD-COPD, preserved
+    spirometry. Rates and adjusted estimates in one table so the effect of
+    adjustment is readable."""
+    rates = {r["group"]: r for r in load("discord_rates.csv")}
+    adj = {r["group"]: r for r in load("discord_adjusted.csv")}
+    order = ["Both-noCOPD", "ESI-only-COPD", "CT-only-COPD", "Both-COPD"]
+
+    def ci(g, est, lo, hi):
+        if g not in adj:
+            return "reference"
+        r = adj[g]
+        # A cell the analysis marked not estimable must print as such, never
+        # as a number. See the zero-event guard in the analysis report.
+        if r[est] in ("", "NA") or r[lo] in ("", "NA"):
+            return "not estimable"
+        return f"{float(r[est]):.2f} ({float(r[lo]):.2f}–{float(r[hi]):.2f})"
+
+    rows = []
+    for g in order:
+        rr = rates[g]
+        rows.append([
+            g,
+            f"{int(rr['n']):,}",
+            f"{float(rr['rate_all_100py']):.2f}",
+            ci(g, "all_HR", "all_LCI", "all_UCI"),
+            f"{float(rr['rate_exac_100py']):.1f}",
+            ci(g, "exac_IRR", "exac_LCI", "exac_UCI"),
+            f"{float(rr['prior_exac_mean']):.2f}"])
+    add_table(doc, ["Group", "n", "Deaths /100py", "Adjusted HR (95% CI)",
+                    "Exac /100py", "Adjusted IRR (95% CI)", "Prior exac"],
+              rows, [1.16, 0.52, 0.86, 1.30, 0.72, 1.30, 0.64])
+    legend(doc, "Table 4.",
+           "Participants cross-classified by MD-COPD and ESI-MD-COPD within the "
+           "preserved-spirometry subgroup, where the two can disagree about a "
+           "diagnosis. CT-only-COPD is what ESI-MD-COPD misses; ESI-only-COPD is "
+           "what it adds. Rates are observed events per 100 person-years. Adjusted "
+           "estimates are against the Both-noCOPD group and carry age, sex, race, "
+           "current smoking status, pack-years and body mass index, with prior "
+           "exacerbation frequency added for exacerbations. Prior exac is the mean "
+           "number of exacerbations in the year before enrollment. The respiratory "
+           "mortality estimate for CT-only-COPD is not estimable because that group "
+           "had no respiratory deaths.")
+
+
+def table5(doc):
+    """Paired bootstrap: does the classification change the effect size for a
+    given category?"""
+    rows_in = load("schema_diff_bootstrap.csv")
+    label = {"all-cause mortality": "All-cause mortality",
+             "respiratory mortality": "Respiratory mortality",
+             "exacerbations": "Exacerbations"}
+    rows, seen = [], set()
+    for r in rows_in:
+        o = r["outcome"]
+        p = float(r["p_two_sided"])
+        rows.append([
+            label.get(o, o) if o not in seen else "",
+            r["category"],
+            f"{float(r['ratio_S4_over_S2']):.2f} "
+            f"({float(r['lo']):.2f}–{float(r['hi']):.2f})",
+            "<0.001" if p < 0.001 else f"{p:.3f}",
+            f"{int(r['B_eff']):,}"])
+        seen.add(o)
+    add_table(doc, ["Outcome", "Category",
+                    "ESI-MD-COPD / MD-COPD (95% CI)", "P", "Resamples"],
+              rows, [1.52, 1.14, 2.08, 0.86, 0.90])
+    legend(doc, "Table 5.",
+           "Ratio of the effect size ESI-MD-COPD assigns to a category to the one "
+           "MD-COPD assigns to the same category. Participants were resampled and "
+           "both classifications refitted within every resample, so each pair of "
+           "estimates comes from the same people; the interval and P are percentile "
+           "values from the distribution of the difference in log estimates. A ratio "
+           "of 1 means the two classifications assign the same effect size. "
+           "Respiratory resamples number fewer than 1,000 because a resample with "
+           "too few respiratory events cannot be fitted, and those are dropped for "
+           "that outcome only.")
+
+
 def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):
     doc.add_picture(png, width=Inches(width))
     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -319,6 +398,8 @@ def main():
     table1(doc)
     doc.add_paragraph()
     table3(doc)
+    table4(doc)
+    table5(doc)
 
     doc.add_page_break()
     doc.add_paragraph("FIGURES", style="Heading 1")
