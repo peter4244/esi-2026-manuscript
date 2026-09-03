@@ -808,6 +808,181 @@ stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
 write.csv(crude, file.path(OUT_DIR, "schema_crude.csv"), row.names = FALSE)
 ```
 
+# Section 8b -- Longitudinal FEV~1~ decline by category
+
+The fourth outcome the MD-COPD framework was validated on, and the one this
+analysis had been omitting. Linear mixed models over visits 1 to 3 with a
+random intercept per participant; the decline attributable to a category is
+the interaction between follow-up time and that category, in mL per year
+against the classification's own noCOPD group.
+
+```{r fev1-decline}
+suppressPackageStartupMessages({library(lme4); library(lmerTest)})
+
+fev1_long <- phe_raw %>%
+  filter(visitnum %in% c(1, 2, 3), !is.na(FEV1_post), !is.na(years_from_baseline)) %>%
+  transmute(pid, visitnum, years_from_baseline,
+            FEV1_post_mL  = FEV1_post * 1000,
+            age_visit     = as.numeric(age_visit),
+            ATS_PackYears = as.numeric(ATS_PackYears),
+            SmokCigNow    = factor(SmokCigNow))
+
+base_cols <- d_b %>% transmute(
+  pid, S1, S2, S3, S4,
+  Height_CM       = as.numeric(Height_CM),
+  gender_baseline = factor(gender),
+  race_baseline   = factor(race))
+
+decline <- fev1_long %>%
+  inner_join(base_cols, by = "pid") %>%
+  filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
+
+cat(sprintf("FEV1 decline: %d observations on %d participants\n",
+            nrow(decline), length(unique(decline$pid))))
+
+lmm_row <- function(fit, term) {
+  co <- summary(fit)$coefficients
+  if (!term %in% rownames(co)) return(c(est = NA_real_, se = NA_real_, p = NA_real_))
+  c(est = unname(co[term, "Estimate"]), se = unname(co[term, "Std. Error"]),
+    p = unname(co[term, ncol(co)]))
+}
+
+dec_rows <- list()
+for (sname in c("S1", "S2", "S3", "S4")) {
+  f <- as.formula(paste0(
+    "FEV1_post_mL ~ years_from_baseline * ", sname,
+    " + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow",
+    " + ATS_PackYears + (1 | pid)"))
+  fit <- lmer(f, data = decline)
+  for (g in levels(decline[[sname]])[-1]) {
+    r <- lmm_row(fit, paste0("years_from_baseline:", sname, g))
+    dec_rows[[length(dec_rows) + 1]] <- data.frame(
+      schema = sname, category = g,
+      est_mL_yr = unname(r["est"]), se = unname(r["se"]), p = unname(r["p"]),
+      lo = unname(r["est"] - 1.96 * r["se"]),
+      hi = unname(r["est"] + 1.96 * r["se"]),
+      n_subj = length(unique(decline$pid[decline[[sname]] == g])),
+      stringsAsFactors = FALSE)
+  }
+}
+fev1_decline <- do.call(rbind, dec_rows)
+write.csv(fev1_decline, file.path(OUT_DIR, "fev1_decline.csv"), row.names = FALSE)
+kable(fev1_decline, digits = 2,
+      caption = "FEV1 decline (mL/yr) against each classification's own noCOPD group.")
+```
+
+# Section 8c -- Continuous ESI
+
+ESI as a continuous measure rather than a thresholded criterion. Four
+questions, each of which the manuscript's Discussion refers to.
+
+## Section 8c.1 -- Does ESI add to FEV~1~/FVC?
+
+```{r continuous-esi-prognosis}
+d_cont <- mort %>%
+  filter(!is.na(stratum), !is.na(FEV1_FVC_post))
+d_cont$stratum <- relevel(factor(d_cont$stratum), ref = "GOLD0")
+# FEV1/FVC on a per-0.1 scale so its coefficient is not a 100-fold number
+# beside ESI's per-unit one.
+d_cont$FF_per_0_1 <- d_cont$FEV1_FVC_post / 0.1
+
+cont_rows <- list()
+for (o in c("all-cause", "respiratory")) {
+  ev <- if (o == "all-cause") "vital_status" else "ev_resp"
+  RHS <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + stratum"
+  m_e <- coxph(as.formula(sprintf("Surv(py, %s) ~ ESI_v1post + %s", ev, RHS)), data = d_cont)
+  m_f <- coxph(as.formula(sprintf("Surv(py, %s) ~ FF_per_0_1 + %s", ev, RHS)), data = d_cont)
+  m_b <- coxph(as.formula(sprintf("Surv(py, %s) ~ ESI_v1post + FF_per_0_1 + %s", ev, RHS)), data = d_cont)
+  lr  <- anova(m_f, m_b)
+  ce  <- summary(m_b)$conf.int; co <- summary(m_b)$coef
+  cont_rows[[length(cont_rows) + 1]] <- data.frame(
+    outcome = o,
+    ESI_HR   = ce["ESI_v1post", 1], ESI_LCI = ce["ESI_v1post", 3],
+    ESI_UCI  = ce["ESI_v1post", 4], ESI_p   = co["ESI_v1post", 5],
+    FF_HR    = ce["FF_per_0_1", 1], FF_LCI  = ce["FF_per_0_1", 3],
+    FF_UCI   = ce["FF_per_0_1", 4], FF_p    = co["FF_per_0_1", 5],
+    lr_chisq = lr$Chisq[2], lr_p = lr$`Pr(>|Chi|)`[2],
+    n_subj = nrow(d_cont), stringsAsFactors = FALSE)
+}
+cont_esi <- do.call(rbind, cont_rows)
+write.csv(cont_esi, file.path(OUT_DIR, "continuous_esi_mortality.csv"), row.names = FALSE)
+kable(cont_esi, digits = 3,
+      caption = "Continuous ESI beside FEV1/FVC in the same model. HR per 1 ESI unit and per 0.1 FEV1/FVC; the likelihood ratio tests adding ESI to a FEV1/FVC model.")
+```
+
+## Section 8c.2 -- Baseline ESI and subsequent decline in GOLD 0
+
+```{r continuous-esi-gold0}
+g0 <- fev1_long %>%
+  inner_join(d_b %>% transmute(pid,
+               ESI_baseline      = ESI_v1post,
+               FEV1_FVC_baseline = FEV1_FVC_post,
+               stratum_baseline  = stratum,
+               Height_CM         = as.numeric(Height_CM),
+               gender_baseline   = factor(gender),
+               race_baseline     = factor(race)), by = "pid") %>%
+  filter(stratum_baseline == "GOLD0", !is.na(Height_CM), !is.na(age_visit),
+         !is.na(SmokCigNow), !is.na(ESI_baseline), !is.na(FEV1_FVC_baseline))
+
+lmm_g0 <- lmer(FEV1_post_mL ~ years_from_baseline * (ESI_baseline + FEV1_FVC_baseline) +
+                 Height_CM + age_visit + ATS_PackYears + SmokCigNow +
+                 gender_baseline + race_baseline + (1 | pid), data = g0)
+esi_int <- lmm_row(lmm_g0, "years_from_baseline:ESI_baseline")
+g0_out <- data.frame(
+  subgroup = "GOLD 0", est_mL_yr = unname(esi_int["est"]), se = unname(esi_int["se"]),
+  p = unname(esi_int["p"]), n_subj = length(unique(g0$pid)),
+  stringsAsFactors = FALSE)
+write.csv(g0_out, file.path(OUT_DIR, "continuous_esi_gold0_decline.csv"), row.names = FALSE)
+cat(sprintf("GOLD 0: each 1-unit higher baseline ESI predicts %.2f mL/yr of additional FEV1 decline (SE %.2f, p = %.3g), n = %d\n",
+            esi_int["est"], esi_int["se"], esi_int["p"], nrow(g0_out) && length(unique(g0$pid))))
+```
+
+## Section 8c.3 -- ESI trajectory, PRISm against GOLD 0
+
+```{r esi-trajectory}
+esi_long <- esi_raw %>%
+  filter(visitnum %in% c(1, 2, 3), PrePost == 1) %>%
+  group_by(pid, visitnum) %>%
+  summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop")
+esi_v1 <- esi_long %>% filter(visitnum == 1) %>% dplyr::select(pid, ESI_v1 = ESI)
+traj <- esi_long %>%
+  filter(visitnum > 1) %>%
+  inner_join(esi_v1, by = "pid") %>%
+  mutate(dESI = ESI - ESI_v1) %>%
+  inner_join(d_b %>% dplyr::select(pid, stratum), by = "pid") %>%
+  filter(stratum %in% c("GOLD0", "PRISm")) %>%
+  group_by(stratum, visitnum) %>%
+  summarise(n = dplyr::n(), mean_dESI = mean(dESI, na.rm = TRUE),
+            sd_dESI = sd(dESI, na.rm = TRUE), .groups = "drop") %>%
+  as.data.frame()
+write.csv(traj, file.path(OUT_DIR, "esi_trajectory.csv"), row.names = FALSE)
+kable(traj, digits = 3, caption = "Change in ESI from baseline, by baseline stratum.")
+```
+
+## Section 8c.4 -- Bronchodilator response
+
+Computed on this cohort. The earlier analysis reported this on all paired
+measurements in COPDGene, which is a larger and differently constituted group
+than the one this paper analyzes.
+
+```{r bronchodilator-delta}
+esi_pair <- esi_raw %>%
+  filter(visitnum == 1, PrePost %in% c(0, 1)) %>%
+  group_by(pid, PrePost) %>%
+  summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = PrePost, values_from = ESI, names_prefix = "ESI_") %>%
+  filter(!is.na(ESI_0), !is.na(ESI_1)) %>%
+  filter(pid %in% d_b$pid)          # this cohort only
+
+bd <- data.frame(n_paired = nrow(esi_pair),
+                 mean_delta = mean(esi_pair$ESI_1 - esi_pair$ESI_0),
+                 sd_delta   = sd(esi_pair$ESI_1 - esi_pair$ESI_0),
+                 stringsAsFactors = FALSE)
+write.csv(bd, file.path(OUT_DIR, "bronchodilator_delta_esi.csv"), row.names = FALSE)
+cat(sprintf("Bronchodilator change in ESI: mean %.3f (SD %.2f) over %d paired measurements in this cohort\n",
+            bd$mean_delta, bd$sd_delta, bd$n_paired))
+```
+
 # Section 9 -- Concordant and discordant classification (MD-COPD vs ESI-MD-COPD)
 
 Pairwise, as in the earlier analysis. NoCT-MD-COPD is not carried into this
@@ -1133,7 +1308,9 @@ required_csvs <- c(
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
   "supp_baseline.csv", "supp_esi_ct.csv",
   "discord_counts.csv", "discord_rates.csv", "discord_adjusted.csv",
-  "schema_diff_bootstrap.csv",
+  "schema_diff_bootstrap.csv", "fev1_decline.csv",
+  "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
+  "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]

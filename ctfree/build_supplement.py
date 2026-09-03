@@ -26,7 +26,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
-SUPP_ORDER = ["S1", "S2", "S3", "S4", "S5"]
+SUPP_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
 
 
 def load(path, name):
@@ -165,6 +165,77 @@ def data_files(doc):
               "spirometric flow-volume curves as described in the main text.")
 
 
+def s6_fev1_decline(doc):
+    heading(doc, "Supplemental Table S6. Longitudinal FEV₁ decline by category")
+    rows_in = load(ASSETS, "fev1_decline.csv")
+    name = {"S1": "Fixed ratio", "S2": "MD-COPD",
+            "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    rows, seen = [], set()
+    for r in rows_in:
+        sc = r["schema"]
+        p_ = float(r["p"])
+        rows.append([
+            name.get(sc, sc) if sc not in seen else "",
+            r["category"],
+            f"{int(r['n_subj']):,}",
+            f"{float(r['est_mL_yr']):.1f} "
+            f"({float(r['lo']):.1f} to {float(r['hi']):.1f})",
+            "<0.001" if p_ < 0.001 else f"{p_:.3f}"])
+        seen.add(sc)
+    add_table(doc, ["Classification", "Category", "n",
+                    "Difference in decline, mL/yr (95% CI)", "P"],
+              rows, [1.20, 1.10, 0.66, 2.44, 1.10])
+    legend(doc, "Table S6.",
+           "Difference in annual FEV₁ change against each classification's own "
+           "noCOPD category, from linear mixed models over visits 1 to 3 with a "
+           "random intercept per participant, adjusted for height, sex, race, age, "
+           "current smoking status and pack-years. A positive value means the "
+           "category declined more slowly than its noCOPD reference.")
+
+
+def s7_continuous_esi(doc):
+    heading(doc, "Supplemental Table S7. Continuous ESI and FEV₁/FVC")
+    rows_in = load(ASSETS, "continuous_esi_mortality.csv")
+    rows = []
+    for r in rows_in:
+        def hr(a, b, c, d):
+            return (f"{float(r[a]):.3f} ({float(r[b]):.3f}–{float(r[c]):.3f}), "
+                    f"P {'<0.001' if float(r[d]) < 0.001 else f'= {float(r[d]):.3f}'}")
+        lp = float(r["lr_p"])
+        rows.append([
+            r["outcome"].capitalize(),
+            hr("ESI_HR", "ESI_LCI", "ESI_UCI", "ESI_p"),
+            hr("FF_HR", "FF_LCI", "FF_UCI", "FF_p"),
+            f"χ² = {float(r['lr_chisq']):.1f}, "
+            f"P {'<0.001' if lp < 0.001 else f'= {lp:.3f}'}"])
+    add_table(doc, ["Outcome", "ESI, per 1 unit", "FEV₁/FVC, per 0.1",
+                    "Adding ESI to FEV₁/FVC"],
+              rows, [1.16, 1.86, 1.78, 1.70])
+    legend(doc, "Table S7.",
+           "Hazard ratios from a single Cox model containing both ESI and "
+           "FEV₁/FVC, adjusted for age, sex, race, current smoking status, "
+           "pack-years and GOLD stratum. The final column is a likelihood ratio "
+           "test on 1 degree of freedom comparing that model with one containing "
+           "FEV₁/FVC but not ESI. FEV₁/FVC is scaled per 0.1 unit so the two "
+           "coefficients are on comparable scales.")
+
+
+def s8_esi_trajectory(doc):
+    heading(doc, "Supplemental Table S8. Change in ESI over follow-up")
+    rows_in = load(ASSETS, "esi_trajectory.csv")
+    rows = [[r["stratum"], r["visitnum"], f"{int(r['n']):,}",
+             f"{float(r['mean_dESI']):.3f}", f"{float(r['sd_dESI']):.3f}"]
+            for r in rows_in]
+    add_table(doc, ["Baseline stratum", "Visit", "n",
+                    "Mean change from baseline", "SD"],
+              rows, [1.50, 0.80, 0.80, 1.90, 1.50])
+    legend(doc, "Table S8.",
+           "Within-participant change in post-bronchodilator ESI from the "
+           "enrollment visit, among participants whose baseline stratum was GOLD 0 "
+           "or PRISm. Positive values indicate a rise in ESI, meaning a "
+           "flow-volume curve shape further from normal.")
+
+
 def check_citations(produced):
     """The main text and this file must agree on which supplemental tables
     exist. A dangling citation is exactly the defect that reaches reviewers."""
@@ -194,7 +265,8 @@ def main():
     r.bold = True
     r.font.size = Pt(14)
     doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
-    for fn in (s1_baseline, s2_ct, s3_crossclass, s4_fitting, s5_discrimination):
+    for fn in (s1_baseline, s2_ct, s3_crossclass, s4_fitting, s5_discrimination,
+               s6_fev1_decline, s7_continuous_esi, s8_esi_trajectory):
         fn(doc)
         doc.add_paragraph()
     data_files(doc)

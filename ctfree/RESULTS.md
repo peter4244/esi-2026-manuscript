@@ -127,6 +127,45 @@ the rate is higher. The remaining categories track the reference: COPD-minor HR
 1.96 against 1.83, COPD-major 2.93 against 2.54 {RISK-05, RISK-06} (Table 3,
 Figures 2 to 4).
 
+## Longitudinal FEV~1~ decline
+
+*(new)*
+
+FEV₁ decline separates the categories less clearly than mortality or
+exacerbations do. Under MD-COPD no category differs from its own noCOPD group
+(AFL-only-noCOPD −0.8 mL/yr, P = 0.71; COPD-minor −3.0, P = 0.08; COPD-major
+1.4, P = 0.16) {DEC-01} (Supplemental Table S6).
+
+Under both CT-free classifications the COPD-major category declines more
+slowly than its own noCOPD group, not faster (NoCT-MD-COPD 2.8 mL/yr,
+P = 0.014; ESI-MD-COPD 2.6 mL/yr, P = 0.013) {DEC-02}. The direction is the
+opposite of what the label implies. Participants in these categories already
+have low FEV₁ at baseline, and the categories that gain participants when CT
+is removed are the ones with most room to decline, so this comparison is not
+informative about the classifications and we do not read a claim from it.
+
+## ESI as a continuous measure
+
+*(new)*
+
+Used continuously rather than as a threshold, ESI carries prognostic
+information beyond FEV₁/FVC for one outcome of the two. In a model containing
+both, each ESI unit carried an all-cause hazard ratio of 1.07 (1.03 to 1.12)
+while FEV₁/FVC did not reach significance, and adding ESI to a FEV₁/FVC model
+improved fit (likelihood ratio χ² = 9.3, P = 0.002) {CONT-01, CONT-02}
+(Supplemental Table S7). For respiratory mortality the reverse holds: FEV₁/FVC
+carries the association and ESI adds nothing (χ² = 0.6, P = 0.44) {CONT-03}.
+
+Among GOLD 0 participants, each 1-unit higher baseline ESI predicted an
+additional 4.6 mL/yr of subsequent FEV₁ decline (P = 0.002), independent of
+baseline FEV₁/FVC {CONT-04, CONT-05}. Baseline ESI was similar in GOLD 0 and
+PRISm, but PRISm participants gained more ESI over follow-up {CONT-08}
+(Supplemental Table S8).
+
+ESI was essentially unchanged by bronchodilation, with a mean within-participant
+difference between pre- and post-bronchodilator measurements of −0.09 across
+9,234 paired measurements in this cohort {CONT-06, CONT-07}.
+
 ## Who the two classifications disagree about
 
 *(new)*

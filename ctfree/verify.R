@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 77L
+REGISTRY_N <- 87L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -36,6 +36,51 @@ reg("COH-02", "Cohort", "4,084 with airflow limitation", 4084, "cohort.txt",
     'as.numeric(x[["n_afl"]])', TOL_EXACT)
 reg("COH-03", "Cohort", "5,156 without airflow limitation", 5156, "cohort.txt",
     'as.numeric(x[["n_noafl"]])', TOL_EXACT)
+
+# --- FEV1 decline and continuous ESI ---------------------------------------
+FD <- function(sch, cat, fld)
+  sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, sch, cat)
+reg("DEC-01", "FEV1 decline",
+    "no MD-COPD category differs from its noCOPD group in FEV1 decline", TRUE,
+    "fev1_decline.csv",
+    sprintf('all(c(%s, %s, %s) > 0.05)',
+            FD("S2","AFL-only","p"), FD("S2","COPD-minor","p"),
+            FD("S2","COPD-major","p")), TOL_EXACT)
+reg("DEC-02", "FEV1 decline",
+    "under ESI-MD-COPD, COPD-major declines LESS than its noCOPD group", TRUE,
+    "fev1_decline.csv",
+    sprintf('%s > 0 && %s < 0.05',
+            FD("S4","COPD-major","est_mL_yr"), FD("S4","COPD-major","p")), TOL_EXACT)
+
+CE <- function(o, fld) sprintf('x$%s[x$outcome == "%s"]', fld, o)
+reg("CONT-01", "Continuous ESI",
+    "continuous ESI predicts all-cause mortality beside FEV1/FVC, HR 1.07", 1.073,
+    "continuous_esi_mortality.csv", CE("all-cause", "ESI_HR"), TOL_2DP)
+reg("CONT-02", "Continuous ESI",
+    "and adding it to a FEV1/FVC model improves fit, P < 0.01", TRUE,
+    "continuous_esi_mortality.csv",
+    sprintf('%s < 0.01', CE("all-cause", "lr_p")), TOL_EXACT)
+reg("CONT-03", "Continuous ESI",
+    "for respiratory mortality it adds nothing beyond FEV1/FVC", TRUE,
+    "continuous_esi_mortality.csv",
+    sprintf('%s > 0.05', CE("respiratory", "lr_p")), TOL_EXACT)
+reg("CONT-04", "Continuous ESI",
+    "in GOLD 0, each ESI unit predicts 4.6 mL/yr more FEV1 decline", -4.59,
+    "continuous_esi_gold0_decline.csv", 'x$est_mL_yr', 0.05)
+reg("CONT-05", "Continuous ESI", "and that association is significant", TRUE,
+    "continuous_esi_gold0_decline.csv", 'x$p < 0.01', TOL_EXACT)
+reg("CONT-06", "Continuous ESI",
+    "ESI is essentially unchanged by bronchodilator, mean -0.09", -0.09,
+    "bronchodilator_delta_esi.csv", 'x$mean_delta', TOL_2DP)
+reg("CONT-07", "Continuous ESI",
+    "computed on this cohort, 9,234 paired measurements", 9234,
+    "bronchodilator_delta_esi.csv", 'x$n_paired', TOL_EXACT)
+ET <- function(st, v) sprintf('x$mean_dESI[x$stratum == "%s" & x$visitnum == %d]', st, v)
+reg("CONT-08", "Continuous ESI",
+    "PRISm gains more ESI over follow-up than GOLD 0", TRUE,
+    "esi_trajectory.csv",
+    sprintf('%s > %s && %s > %s', ET("PRISm",2), ET("GOLD0",2),
+            ET("PRISm",3), ET("GOLD0",3)), TOL_EXACT)
 
 # --- concordant and discordant classification -----------------------------
 # MD-COPD against ESI-MD-COPD, pairwise, in preserved spirometry.
