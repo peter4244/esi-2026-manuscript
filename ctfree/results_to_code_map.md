@@ -8,8 +8,7 @@ finished until it appears here, in the same commit that creates it.
 Run order, from any working directory:
 
 ```
-Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/gate_fixedratio.R
-Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/analysis.R
+Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/render_ctfree_2026.9.3.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/draft_tables.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/figure1_flow.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/figures/figure2_risk.R
@@ -51,8 +50,8 @@ clipping and says so in its own header.
 
 | Script | Produces | Notes |
 |---|---|---|
-| `gate_fixedratio.R` | `gate_fixedratio.csv`, `gate_exac_aic.csv` | The nested likelihood ratio test the reframe presupposes. Run first: if MD-COPD does not beat the fixed ratio, nothing downstream stands. |
-| `analysis.R` | `schema_*.csv`, `schema_labels.rds`, `cv_schema_fits.csv`, `cohort.txt` | Fits schemas 3 and 4, cross-validates, scores all four. Asserts the reference category's crude ratio is exactly 1. |
+| `ESI_ctfree_analysis_2026.9.3.Rmd` | `cohort.txt`, `cohort_flow.csv`, `mdcopd_validation.csv`, `schema_*.csv`, `schema_labels.rds`, `cv_schema_fits.csv`, `objective_selection.csv`, `reclassification.csv`, `crossclass.csv`, `gate_*.csv`, `SELFCHECK.csv`, `PROVENANCE.txt` | The full analysis report. Cohort construction (validated exactly against Bhatt et al. Table 1 via `MDCOPD_PATH`), schema fitting, 5x5 stratified cross-validation, fixed-ratio nested LR gate, adjusted and crude risk, self-check. |
+| `render_ctfree_2026.9.3.R` | (render wrapper) | Sets a headless-safe raster device before knitting the report. Runs from any working directory including the Channing cluster. |
 | `draft_tables.R` | `DRAFT_TABLES.md` | Reads artifacts only; no number is typed. |
 | `figures/figure1_flow.R` | `figure1_flow.png`, `figure1_flow_legend.md` | |
 | `figures/figure2_risk.R` | `figure2_aflonly.png`, `figure3_copdminor.png`, `figure4_copdmajor.png` | One figure per category. |
@@ -62,7 +61,6 @@ clipping and says so in its own header.
 | `build_supplement.py` | `manuscript/CT-free MD-COPD supplement draft v1.docx` | Five supplemental tables plus the COPDGene file list. Checks that every `Supplemental Table Sn` cited in the main text is produced here and vice versa; falsification-tested. |
 | `build_manuscript.py` | `manuscript/CT-free MD-COPD manuscript draft v1.docx` | Builds the document from METHODS.md, RESULTS.md, the artifacts and the figure PNGs. Nothing is hand-edited into the .docx, so a rebuild never destroys work; that is what retired the parent directory's builder. Strips claim ids and provenance markers from the prose. |
 | `massimo_report.Rmd` | `massimo_report.html` | Condensed co-author report: per-category agreement of the original rule, why the overall figure was high, and the refit. Self-contained HTML for emailing. Rendered by `render_massimo_report.R`. |
-| `_locate.R` | | Resolves the paper directory so nothing depends on the caller's cwd. |
 
 ## Not yet mapped
 

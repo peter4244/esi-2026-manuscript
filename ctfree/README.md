@@ -31,29 +31,28 @@ objective, over their full parameter spaces, outcome-blind, and cross-validated
 
 ## Running it
 
-All three resolve their own location, so they run from any working directory
-and the paths below can be pasted anywhere. In order:
+One R Markdown report produces every result, table, and figure. Render it
+with the wrapper (both accept absolute paths, so they run from any working
+directory including the Channing cluster):
 
 ```
-Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/gate_fixedratio.R
-Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/analysis.R
+Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/render_ctfree_2026.9.3.R
 Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verify.R
 ```
 
-The first asks whether MD-COPD beats the fixed ratio at all, the second fits
-and scores the four schemas, the third checks every claim against the
-artifacts. `config_paths.R` supplies the five COPDGene inputs and is
-git-ignored; the classification analysis needs only two of them.
+The first renders the analysis report and writes every artifact to
+`OUT_DIR` (defined in `config_paths.R`); the second checks every claim
+against the artifacts. `config_paths.R` supplies the six COPDGene input
+paths and is git-ignored; see `config_paths.R.example` for the template.
 
 ## Files
 
 | | |
 |---|---|
 | `CLAIMS.md` | every claim, with the artifact and field that produces it |
-| `gate_fixedratio.R` | the nested likelihood ratio test the reframe presupposes |
-| `analysis.R` | schema fitting, cross-validation, labels and risk |
-| `verify.R` | the registry; fails loudly on drift |
-| `_locate.R` | resolves the paper's own directory so nothing depends on the caller's cwd |
+| `ESI_ctfree_analysis_2026.9.3.Rmd` | the analysis report: cohort construction, schema fitting, cross-validation, fixed-ratio gate, adjusted and crude risk, self-check |
+| `render_ctfree_2026.9.3.R` | render wrapper that sets a headless-safe raster device before knitting |
+| `verify.R` | claims registry against the manuscript prose; fails loudly on drift |
 | `assets/` | artifacts, and `VERIFICATION.csv` |
 
 ## Three traps, recorded so they are not walked into again

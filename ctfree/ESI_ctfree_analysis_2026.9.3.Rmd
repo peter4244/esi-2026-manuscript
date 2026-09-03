@@ -1,0 +1,874 @@
+---
+title: "ESI in a CT-free multidimensional COPD framework: analysis report accompanying the manuscript"
+author: "Peter J. Castaldi"
+date: "2026-09-03"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    df_print: paged
+    code_folding: show
+---
+
+<!--
+Single reproducible analysis report that produces every result, table, and
+figure cited in the CT-free MD-COPD manuscript. Bhatt et al.'s JAMA 2025
+multidimensional COPD (MD-COPD) framework requires chest CT; this manuscript
+asks whether ESI, a spirometry-only measure, can substitute for the CT
+criteria while preserving MD-COPD's advantage over the fixed ratio.
+
+Four classifications are compared on the same COPDGene participants:
+  1. Fixed ratio    - post-bronchodilator FEV1/FVC < 0.70 alone
+  2. MD-COPD        - the published CT-based framework (the reference)
+  3. NoCT-MD-COPD   - MD-COPD with the two CT criteria removed
+  4. ESI-MD-COPD    - MD-COPD with the two CT criteria replaced by ESI
+
+MD-COPD categories are taken from Bhatt et al.'s own per-subject
+classification file (MDCOPD_PATH) rather than reconstructed heuristically.
+An earlier reconstruction attempt agreed with them on classification LOGIC
+for every one of 9,406 participants classified in both, but differed on
+cohort membership by 23 people in identifiable ways (13 with missing symptom
+data we kept and they excluded; 10 without a quantitative CT variable that
+was never part of their published criteria). Using their file directly
+reproduces all four published category counts exactly (n = 9,416: noCOPD
+4,439, AFL-only-noCOPD 282, COPD-minor 811, COPD-major 3,884). NoCT-MD-COPD
+and ESI-MD-COPD are ours, built from the individual criteria directly.
+-->
+
+# Overview
+
+This report reproduces the numerical claims of the manuscript from six
+COPDGene source files: ESI values, phenotype/CT, vital status, cause of
+death, long-term follow-up exacerbations, and Bhatt et al.'s per-subject
+MD-COPD classification. Each section writes its output (tables as CSV,
+figures as PNG) into `OUT_DIR`. A closing self-check block echoes every
+canonical value cited in the manuscript prose against the expected number
+so drift can be detected on any re-run.
+
+# PATHS -- supplied at run time
+
+Copy `config_paths.R.example` to `config_paths.R`, fill in the six input
+locations for the machine you are running on, and knit.
+
+```{r paths, fig.keep = "none"}
+# ---- Headless raster device --------------------------------------------
+# Sets the device for the chunks that follow. It cannot suppress the one X11
+# warning seen on a headless node: knitr probes the png device during knit()
+# startup, in set_html_dev() -> dev_available("png"), before any chunk runs,
+# so no code in this document is early enough. render_ctfree.R sets the
+# option before calling knit() and does prevent it; this block keeps the
+# chunk devices correct for anyone who knits the file directly.
+local({
+  .bt <- getOption("bitmapType")
+  if (capabilities("cairo") &&
+      (is.null(.bt) || !nzchar(.bt) || identical(.bt, "Xlib"))) {
+    options(bitmapType = "cairo")
+    knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo"))
+  }
+})
+
+# Locate this .Rmd's own directory so the report runs from any working
+# directory. knitr sets the working directory to the .Rmd's location during
+# rendering, so getwd() is the primary signal; the --file= fallback covers a
+# plain `Rscript -e knitr::knit(...)` invocation, and the last branch covers
+# an interactive knit from the repository root.
+.b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+HERE <- {
+  if (file.exists("ESI_ctfree_analysis_2026.9.3.Rmd")) {
+    normalizePath(".")
+  } else if (length(.b) &&
+             file.exists(file.path(dirname(normalizePath(sub("^--file=", "", .b[1]))),
+                                   "ESI_ctfree_analysis_2026.9.3.Rmd"))) {
+    dirname(normalizePath(sub("^--file=", "", .b[1])))
+  } else if (file.exists("ctfree/ESI_ctfree_analysis_2026.9.3.Rmd")) {
+    normalizePath("ctfree")
+  } else {
+    stop("cannot locate this report's directory; knit from the ctfree/ ",
+         "directory or from the repository root")
+  }
+}
+ROOT    <- dirname(HERE)
+CONFIG  <- file.path(ROOT, "config_paths.R")
+if (!file.exists(CONFIG))
+  stop("cannot find ", CONFIG, "; copy config_paths.R.example to ",
+       "config_paths.R and fill in the local file paths")
+source(CONFIG)
+
+# This paper writes to its own assets directory, ctfree/assets/, NOT to the
+# repository-wide manuscript_assets/ that belongs to the v15 (parent-directory)
+# ESI manuscript. Any OUT_DIR set by config_paths.R applies to that older
+# analysis and is deliberately ignored here.
+OUT_DIR <- file.path(HERE, "assets")
+dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
+
+# ---- Analytic constants --------------------------------------------------
+CV_REPEATS      <- 5L
+CV_FOLDS        <- 5L
+CV_SEED         <- 20260901L
+CRUDE_B         <- 1000L
+BHATT_MDCOPD_N  <- c(noCOPD = 4439L, `AFL-only-NoCOPD` = 282L,
+                     `COPD-minor` = 811L, `COPD-major` = 3884L)
+```
+
+# Setup
+
+```{r setup, include = FALSE, fig.keep = "none"}
+# Print warnings as they happen rather than buffering them to the end of the
+# knit. R's default (warn = 0) defers every warning until the top-level call
+# returns, so a device warning raised in chunk 12 appears after chunk 68 with
+# nothing to attribute it to. With warn = 1 the warning lands immediately
+# after the chunk marker that produced it.
+options(warn = 1)
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      dpi = 150, fig.width = 7, fig.height = 5)
+
+suppressPackageStartupMessages({
+  library(dplyr); library(survival); library(MASS); library(knitr)
+})
+
+read_any <- function(p, ...) {
+  h <- readLines(p, n = 1, warn = FALSE)
+  read.delim(p, sep = if (grepl("\t", h)) "\t" else ",",
+             stringsAsFactors = FALSE, ...)
+}
+bind_pid <- function(df, label) {
+  cand <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
+  hit <- cand[cand %in% names(df)]
+  if (!length(hit)) stop("no identifier column in ", label)
+  df$pid <- as.character(df[[hit[1]]]); df
+}
+```
+
+# Section 1 -- Cohort construction
+
+Bhatt et al.'s published exclusion chain, with the counts they report:
+
+* 10,305 enrolled after removing ILD and bronchiectasis
+* less 107 never-smokers                      -> 10,198
+* less 66 unacceptable spirometry             -> 10,132
+* less 716 excluded from the diagnostic algorithm -> 9,416
+
+The first three steps reproduce exactly by construction (ILD/bronchiectasis
+flag, cohort != "Never smoked", `FEV1_FVC_post` non-missing). Their fourth
+step (CT quality control + minor-criteria data completeness) and their
+MD-COPD classification are NOT reconstructed here: two independent attempts
+at a heuristic reconstruction each landed within a handful of participants
+of their counts, and a subject-level merge against their own classification
+file showed exactly where the residual came from. See the header comment on
+`MDCOPD_PATH` in `config_paths.R.example` for the full story. Using their
+file directly gives an exact match on all four category counts.
+
+Only after MD-COPD is validated against the published counts do we impose
+this analysis's own additional requirement: baseline ESI available.
+
+```{r ingest-and-cohort}
+esi_raw <- bind_pid(read_any(ESI_PATH), "ESI_PATH")
+phe_raw <- bind_pid(read_any(PHE_PATH, na.strings = c("", "NA")), "PHE_PATH")
+vs      <- bind_pid(read_any(VS_PATH),  "VS_PATH")
+cod     <- bind_pid(read_any(COD_PATH), "COD_PATH")
+ex_raw  <- bind_pid(read_any(EX_PATH),  "EX_PATH")
+mdcopd  <- bind_pid(read_any(MDCOPD_PATH), "MDCOPD_PATH")
+
+# ---- Cause of death: TORCH Basic underlying cause ------------------------
+ucd <- suppressWarnings(as.integer(cod$Torch_Group_Basic))
+cod$UCD_Resp <- as.integer(!is.na(ucd) & ucd == 1L)
+
+# ---- Cohort exclusion chain ----------------------------------------------
+v1 <- phe_raw[phe_raw$visitnum == 1, ]
+flow <- list(data.frame(step = "visit 1 in phenotype file",
+                        n = nrow(v1), bhatt_n = NA_integer_,
+                        stringsAsFactors = FALSE))
+keep <- function(label, sel, target = NA_integer_) {
+  v1 <<- v1[sel, , drop = FALSE]
+  flow[[length(flow) + 1]] <<- data.frame(
+    step = label, n = nrow(v1), bhatt_n = target, stringsAsFactors = FALSE)
+  invisible(NULL)
+}
+keep("less interstitial lung disease or bronchiectasis",
+     is.na(v1$ExclusionaryDisease), 10305L)
+keep("less never-smokers",
+     trimws(v1$cohort) != "Never smoked", 10198L)
+keep("less unacceptable spirometry",
+     !is.na(v1$FEV1_FVC_post), 10132L)
+
+# Cohort membership past this point comes from Bhatt et al.'s per-subject
+# classification file, not from a reconstruction of their CT-quality and
+# minor-criteria completeness rules.
+mdcopd_valid <- mdcopd[!is.na(mdcopd$MultiDim_COPD_score),
+                       c("pid", "MultiDim_COPD_score")]
+v1 <- merge(v1, mdcopd_valid, by = "pid")
+flow[[length(flow) + 1]] <- data.frame(
+  step = "less no valid MD-COPD classification (Bhatt ground truth)",
+  n = nrow(v1), bhatt_n = 9416L, stringsAsFactors = FALSE)
+
+# ---- Individual criteria (used by NoCT-MD-COPD and ESI-MD-COPD only) -----
+# MD-COPD major/minor status comes from the file above; these criteria are
+# needed to build the two CT-free classifications this paper is comparing
+# against MD-COPD.
+d_b <- within(v1, {
+  gender <- factor(gender)
+  race   <- factor(race)
+  SmokCigNow <- factor(SmokCigNow)
+  major_criterion <- FEV1_FVC_post < 0.70
+  # The Fleischner scale runs none, trace, mild, moderate, confluent,
+  # advanced destructive, so "mild or greater" is a score of 2, not 1.
+  emph_yn <- CT_Visual_Emph_Severity >= 2
+  wall_yn <- CT_Visual_Wall_Thickening == 2
+  dysp_yn <- MMRCDyspneaScor >= 2
+  qol_yn  <- SGRQ_scoreTotal >= 25
+  cb_yn   <- Chronic_Bronchitis == 1
+})
+for (v in c("emph_yn", "wall_yn", "dysp_yn", "qol_yn", "cb_yn"))
+  d_b[[v]][is.na(d_b[[v]])] <- FALSE
+
+# ---- MD-COPD classification, from Bhatt's file directly ------------------
+# score 1 = COPD-major, score 2 = COPD-minor, score 0 = neither; the last
+# is split into AFL-only-noCOPD vs. noCOPD by the major criterion.
+ORD <- c("noCOPD", "AFL-only-NoCOPD", "COPD-minor", "COPD-major")
+d_b$bhatt_cls <- factor(
+  ifelse(d_b$MultiDim_COPD_score == 1, "COPD-major",
+  ifelse(d_b$MultiDim_COPD_score == 2, "COPD-minor",
+  ifelse(d_b$major_criterion, "AFL-only-NoCOPD", "noCOPD"))),
+  levels = ORD)
+
+# Validate against Bhatt et al. Table 1. Only the score == 0 split is
+# computed here (from FEV1_FVC_post); a mismatch would be a real finding,
+# not a reconstruction gap, and should fail loudly.
+got <- as.integer(table(d_b$bhatt_cls)[names(BHATT_MDCOPD_N)])
+val <- data.frame(category = names(BHATT_MDCOPD_N), ours = got,
+                  bhatt = as.integer(BHATT_MDCOPD_N),
+                  diff = got - as.integer(BHATT_MDCOPD_N),
+                  stringsAsFactors = FALSE)
+stopifnot(all(val$diff == 0L))
+write.csv(val, file.path(OUT_DIR, "mdcopd_validation.csv"), row.names = FALSE)
+
+# ---- Baseline ESI (ours, not theirs) -------------------------------------
+# Post-bronchodilator ESI at visit 1, one value per participant.
+esi_v1 <- esi_raw[esi_raw$visitnum == 1 & esi_raw$PrePost == 1, ]
+esi_v1 <- aggregate(list(ESI_v1post = esi_v1$ESI), list(pid = esi_v1$pid),
+                    function(x) mean(x, na.rm = TRUE))
+d_b <- merge(d_b, esi_v1, by = "pid")
+d_b <- d_b[!is.na(d_b$ESI_v1post), , drop = FALSE]
+flow[[length(flow) + 1]] <- data.frame(
+  step = "less no baseline ESI", n = nrow(d_b), bhatt_n = NA_integer_,
+  stringsAsFactors = FALSE)
+
+cohort_flow <- do.call(rbind, flow)
+# Every step for which Bhatt et al. published a count must match exactly,
+# or the chain has diverged from theirs and everything downstream is on a
+# different sample than intended.
+chk <- cohort_flow[!is.na(cohort_flow$bhatt_n), ]
+stopifnot(all(chk$n == chk$bhatt_n))
+write.csv(cohort_flow, file.path(OUT_DIR, "cohort_flow.csv"), row.names = FALSE)
+
+N_COHORT <- nrow(d_b)
+cat(sprintf("Analytic cohort (with baseline ESI): n = %d\n", N_COHORT))
+kable(cohort_flow, caption = "Cohort construction. `bhatt_n` is the published count for that step.")
+kable(val, caption = "MD-COPD validated exactly against Bhatt et al. Table 1.")
+```
+
+# Section 2 -- The four classifications
+
+Fixed ratio, MD-COPD, NoCT-MD-COPD, and ESI-MD-COPD, applied to the same
+`r nrow(d_b)` participants. All four use the same major criterion
+(post-bronchodilator FEV1/FVC < 0.70), so no participant moves between the
+airflow-limitation pair (AFL-only-noCOPD and COPD-major) and the
+preserved-spirometry pair (noCOPD and COPD-minor).
+
+```{r classifications}
+# Handy shorthand columns used throughout the rest of the report.
+d_b$afl <- d_b$major_criterion
+d_b$ESI <- d_b$ESI_v1post
+d_b$om  <- d_b$dysp_yn + d_b$qol_yn + d_b$cb_yn
+O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
+
+# Generic classifier: given membership rules for the four categories,
+# produce the factor.
+label <- function(df, minor, aflo) factor(
+  ifelse(df$afl & !aflo,   "COPD-major",
+  ifelse(df$afl &  aflo,   "AFL-only",
+  ifelse(!df$afl & minor,  "COPD-minor", "noCOPD"))), levels = O)
+
+# S1  Fixed ratio.
+d_b$S1 <- factor(ifelse(d_b$afl, "COPD", "noCOPD"),
+                 levels = c("noCOPD", "COPD"))
+
+# S2  MD-COPD (from Bhatt's file, level names normalised).
+d_b$S2 <- factor(sub("AFL-only-NoCOPD", "AFL-only",
+                     as.character(d_b$bhatt_cls)), levels = O)
+
+# S3  NoCT-MD-COPD. Symptom criteria only; count threshold is fitted below.
+s3 <- function(df, k) label(df, df$om >= k, df$om == 0)
+
+# S4  ESI-MD-COPD. ESI is scored 0/1/2 by two thresholds; both thresholds
+# and the count threshold are fitted below. This is the same 5-criterion,
+# 2-threshold shape as the v15 draft rule; the values change.
+s4 <- function(df, k, tl, th) {
+  s <- ifelse(df$ESI >= th, 2, ifelse(df$ESI >= tl, 1, 0))
+  label(df, (s + df$om) >= k, (s + df$om) == 0)
+}
+```
+
+# Section 3 -- Fitting NoCT-MD-COPD and ESI-MD-COPD
+
+Both need a count threshold (three-of-five doesn't apply once the criterion
+count changes), and ESI-MD-COPD also needs the two ESI thresholds. Fitting
+is outcome-blind: only the MD-COPD labels enter, never mortality or
+exacerbations, so the risk profiles below are an independent check rather
+than a restatement of the fit.
+
+The objective is macro-averaged F1 across the four MD-COPD categories.
+Cohen's kappa and mean per-category sensitivity were considered and rejected
+because they fail in OPPOSITE directions on this problem: kappa lets a
+schema over-diagnose COPD by assigning almost no one to AFL-only-noCOPD,
+mean sensitivity encourages the reverse by ignoring false positives.
+Macro-F1 penalises both.
+
+```{r fitting}
+macroF1 <- function(ref, est) mean(vapply(O, function(g) {
+  tp <- sum(ref == g & est == g); if (tp == 0) return(0)
+  2 * tp / (sum(est == g) + sum(ref == g))
+}, numeric(1)))
+mean_recall <- function(ref, est)
+  mean(vapply(O, function(g) mean(est[ref == g] == g), numeric(1)))
+kappa_full <- function(ref, est) {
+  t <- table(ref, est); n <- sum(t)
+  po <- sum(diag(t)) / n
+  pe <- sum(rowSums(t) * colSums(t)) / n^2
+  (po - pe) / (1 - pe)
+}
+
+# Search grids.
+KS  <- 1:3
+TL  <- seq(0.50, 4.00, by = 0.25)
+TH  <- seq(1.00, 8.00, by = 0.50)
+G4  <- do.call(rbind, lapply(2:4, function(k) {
+  g <- expand.grid(t_low = TL, t_high = TH)
+  g <- g[g$t_high >= g$t_low, ]
+  cbind(k = k, g)
+}))
+
+fit3 <- function(df) {
+  r <- df$S2
+  KS[which.max(vapply(KS, function(k) macroF1(r, s3(df, k)), numeric(1)))]
+}
+fit4 <- function(df) {
+  r <- df$S2
+  scores <- vapply(seq_len(nrow(G4)), function(j)
+    macroF1(r, s4(df, G4$k[j], G4$t_low[j], G4$t_high[j])), numeric(1))
+  G4[which.max(scores), ]
+}
+
+k3   <- fit3(d_b)
+p4   <- fit4(d_b)
+d_b$S3 <- s3(d_b, k3)
+d_b$S4 <- s4(d_b, p4$k, p4$t_low, p4$t_high)
+
+cat(sprintf("NoCT-MD-COPD fitted: COPD-minor if >= %d of 3 symptom criteria\n", k3))
+cat(sprintf("ESI-MD-COPD  fitted: COPD-minor if >= %d; ESI thresholds %.2f / %.2f\n",
+            p4$k, p4$t_low, p4$t_high))
+```
+
+## Section 3.1 -- What each candidate objective selects
+
+Reported as a Results finding rather than a Methods choice, since kappa
+and mean sensitivity fail in different directions and describing them as
+failing the same way would be wrong.
+
+```{r objective-selection}
+obj_rows <- list()
+for (nm in c("kappa", "mean_sensitivity", "macro_F1")) {
+  scorer <- switch(nm,
+    kappa            = function(e) kappa_full(d_b$S2, e),
+    mean_sensitivity = function(e) mean_recall(d_b$S2, e),
+    macro_F1         = function(e) macroF1(d_b$S2, e))
+  v <- vapply(seq_len(nrow(G4)), function(j)
+    scorer(s4(d_b, G4$k[j], G4$t_low[j], G4$t_high[j])), numeric(1))
+  b <- G4[which.max(v), ]
+  est <- s4(d_b, b$k, b$t_low, b$t_high)
+  obj_rows[[length(obj_rows) + 1]] <- data.frame(
+    objective = nm, k = b$k, t_low = b$t_low, score = max(v),
+    n_aflonly = sum(est == "AFL-only"),
+    n_major   = sum(est == "COPD-major"),
+    stringsAsFactors = FALSE)
+}
+objsel <- do.call(rbind, obj_rows)
+objsel$ref_aflonly <- sum(d_b$S2 == "AFL-only")
+objsel$ref_major   <- sum(d_b$S2 == "COPD-major")
+# The two rejected objectives must err in opposite directions on
+# AFL-only-noCOPD or the Results sentence describing them is wrong.
+stopifnot(objsel$n_aflonly[objsel$objective == "kappa"]
+            < objsel$ref_aflonly[1],
+          objsel$n_aflonly[objsel$objective == "mean_sensitivity"]
+            > objsel$ref_aflonly[1])
+write.csv(objsel, file.path(OUT_DIR, "objective_selection.csv"), row.names = FALSE)
+kable(objsel, caption = "What each candidate objective selects. Kappa and mean sensitivity fail in opposite directions.")
+```
+
+## Section 3.2 -- Repeated stratified cross-validation
+
+Five repeats of five folds, stratified on the MD-COPD categories, with the
+thresholds refitted inside every training fold.
+
+```{r cv-fit}
+set.seed(CV_SEED)
+cv_rows <- list()
+for (rep_i in seq_len(CV_REPEATS)) {
+  fold <- integer(nrow(d_b))
+  for (lv in O) {
+    ix <- which(d_b$S2 == lv)
+    fold[ix] <- sample(rep_len(seq_len(CV_FOLDS), length(ix)))
+  }
+  for (kf in seq_len(CV_FOLDS)) {
+    tr <- d_b[fold != kf, ]
+    te <- d_b[fold == kf, ]
+    rt <- te$S2
+    a <- fit3(tr); b <- fit4(tr)
+    cv_rows[[length(cv_rows) + 1]] <- data.frame(
+      rep = rep_i, fold = kf,
+      k3 = a,  f3 = macroF1(rt, s3(te, a)),
+      k4 = b$k, tl = b$t_low, th = b$t_high,
+      f4 = macroF1(rt, s4(te, b$k, b$t_low, b$t_high)),
+      f_draft = macroF1(rt, s4(te, 3, 1.00, 2.50)),
+      stringsAsFactors = FALSE)
+  }
+}
+cv <- do.call(rbind, cv_rows)
+write.csv(cv, file.path(OUT_DIR, "cv_schema_fits.csv"), row.names = FALSE)
+
+dd <- cv$f4 - cv$f3
+cat(sprintf("Held-out macro-F1: NoCT-MD-COPD %.4f | ESI-MD-COPD %.4f | v15 draft %.4f\n",
+            mean(cv$f3), mean(cv$f4), mean(cv$f_draft)))
+cat(sprintf("ESI-MD-COPD minus NoCT-MD-COPD: %+.4f (%+.4f to %+.4f across folds)\n",
+            mean(dd), quantile(dd, .025), quantile(dd, .975)))
+
+write.csv(data.frame(
+  schema = c("S3", "S4", "S4_v15draft"),
+  k      = c(k3, p4$k, 3),
+  t_low  = c(NA, p4$t_low, 1.00),
+  t_high = c(NA, p4$t_high, 2.50),
+  macroF1_insample = c(macroF1(d_b$S2, s3(d_b, k3)),
+                       macroF1(d_b$S2, s4(d_b, p4$k, p4$t_low, p4$t_high)),
+                       macroF1(d_b$S2, s4(d_b, 3, 1.00, 2.50))),
+  macroF1_heldout  = c(mean(cv$f3), mean(cv$f4), mean(cv$f_draft)),
+  stringsAsFactors = FALSE),
+  file.path(OUT_DIR, "schema_fit.csv"), row.names = FALSE)
+write.csv(data.frame(diff_mean = mean(dd),
+                     diff_lo = unname(quantile(dd, .025)),
+                     diff_hi = unname(quantile(dd, .975)),
+                     n_folds = nrow(cv)),
+          file.path(OUT_DIR, "schema_fit_cv_diff.csv"), row.names = FALSE)
+writeLines(c(sprintf("n_cohort=%d", nrow(d_b)),
+             sprintf("n_afl=%d",    sum(d_b$afl)),
+             sprintf("n_noafl=%d",  sum(!d_b$afl))),
+           file.path(OUT_DIR, "cohort.txt"))
+```
+
+# Section 4 -- Category counts and reclassification
+
+Save per-subject schema labels so figures and tables downstream don't
+re-derive them, and write the flow of reclassification against MD-COPD as
+its own artifact.
+
+```{r labels-and-flow}
+saveRDS(d_b[, c("pid", "S1", "S2", "S3", "S4")],
+        file.path(OUT_DIR, "schema_labels.rds"))
+
+lab_rows <- list()
+for (s in c("S1", "S2", "S3", "S4")) {
+  tb <- table(d_b[[s]])
+  for (g in names(tb)) lab_rows[[length(lab_rows) + 1]] <- data.frame(
+    schema = s, category = g, n = as.integer(tb[[g]]),
+    stringsAsFactors = FALSE)
+}
+schema_labels <- do.call(rbind, lab_rows)
+write.csv(schema_labels, file.path(OUT_DIR, "schema_labels.csv"), row.names = FALSE)
+kable(schema_labels, caption = "Category counts under each classification.")
+
+# Reclassification counts quoted directly in the Results, plus the share of
+# COPD-major that qualifies only through CT findings (the reason a CT-free
+# schema can lose that category at all).
+reclass <- do.call(rbind, lapply(c("S3", "S4"), function(s) data.frame(
+  schema           = s,
+  major_to_aflonly = sum(d_b$S2 == "COPD-major" & d_b[[s]] == "AFL-only"),
+  minor_to_nocopd  = sum(d_b$S2 == "COPD-minor" & d_b[[s]] == "noCOPD"),
+  nocopd_to_minor  = sum(d_b$S2 == "noCOPD"     & d_b[[s]] == "COPD-minor"),
+  aflonly_kept     = sum(d_b$S2 == "AFL-only"   & d_b[[s]] == "AFL-only"),
+  concordant       = sum(d_b$S2 == d_b[[s]]),
+  stringsAsFactors = FALSE)))
+n_major   <- sum(d_b$S2 == "COPD-major")
+ct_only   <- sum(d_b$S2 == "COPD-major" & d_b$om == 0)
+reclass$n_major       <- n_major
+reclass$ct_only_major <- ct_only
+reclass$ct_only_pct   <- 100 * ct_only / n_major
+write.csv(reclass, file.path(OUT_DIR, "reclassification.csv"), row.names = FALSE)
+
+# Full cross-classification of each CT-free schema against MD-COPD, long
+# form so the supplement table can be built without recomputing anything.
+xtab <- do.call(rbind, lapply(c("S3", "S4"), function(s) {
+  tb <- table(factor(d_b[[s]], levels = O), factor(d_b$S2, levels = O))
+  do.call(rbind, lapply(O, function(rw) data.frame(
+    schema = s, row_cat = rw, col_cat = O,
+    n = as.integer(tb[rw, O]), stringsAsFactors = FALSE)))
+}))
+stopifnot(sum(xtab$n) == 2 * nrow(d_b))
+write.csv(xtab, file.path(OUT_DIR, "crossclass.csv"), row.names = FALSE)
+```
+
+# Section 5 -- Outcome data
+
+Attach mortality, cause of death, and long-term follow-up exacerbations,
+requiring complete covariate data for the adjusted models.
+
+```{r outcome-data}
+COV <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
+
+mort <- d_b %>%
+  inner_join(vs  %>% dplyr::select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join (cod %>% dplyr::select(pid, UCD_Resp), by = "pid") %>%
+  mutate(ev_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
+         py      = days_followed / 365.25) %>%
+  filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
+
+# Prior-year exacerbation frequency, per the source MD-COPD paper.
+prior <- phe_raw %>%
+  filter(visitnum == 1) %>%
+  transmute(pid, prior_exac = suppressWarnings(as.numeric(Exacerbation_Frequency))) %>%
+  distinct(pid, .keep_all = TRUE)
+
+exa <- d_b %>%
+  inner_join(ex_raw %>% dplyr::select(pid, Total_Exacerbations, Years_Followed), by = "pid") %>%
+  left_join (prior, by = "pid") %>%
+  filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
+         complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
+
+cat(sprintf("Mortality n = %d (%d deaths, %d respiratory)\n",
+            nrow(mort), sum(mort$vital_status), sum(mort$ev_resp)))
+cat(sprintf("Exacerbation n = %d\n", nrow(exa)))
+```
+
+# Section 6 -- MD-COPD vs. the fixed ratio (nested LR test)
+
+Fixed-ratio COPD is exactly the AFL-only-noCOPD and COPD-major categories
+of MD-COPD, so the fixed-ratio model is nested in the four-category model
+and the two are compared by likelihood ratio test on 2 degrees of freedom
+rather than by comparing summary measures.
+
+```{r gate-fixedratio}
+d_b$bhatt_grp <- d_b$bhatt_cls
+mort$fixed_ratio <- factor(ifelse(mort$afl, "COPD", "noCOPD"),
+                           levels = c("noCOPD", "COPD"))
+mort$bhatt_grp   <- d_b$bhatt_cls[match(mort$pid, d_b$pid)]
+exa$fixed_ratio  <- factor(ifelse(exa$afl,  "COPD", "noCOPD"),
+                           levels = c("noCOPD", "COPD"))
+exa$bhatt_grp    <- d_b$bhatt_cls[match(exa$pid,  d_b$pid)]
+stopifnot(all((mort$fixed_ratio == "COPD") ==
+              (mort$bhatt_grp %in% c("AFL-only-NoCOPD", "COPD-major"))))
+
+cox_pair <- function(ev, label) {
+  f0 <- as.formula(sprintf("Surv(days_followed/365.25, %s) ~ fixed_ratio + %s", ev, COV))
+  f1 <- as.formula(sprintf("Surv(days_followed/365.25, %s) ~ bhatt_grp   + %s", ev, COV))
+  m0 <- coxph(f0, data = mort); m1 <- coxph(f1, data = mort)
+  lr <- 2 * (m1$loglik[2] - m0$loglik[2])
+  df <- length(coef(m1)) - length(coef(m0))
+  c0 <- summary(m0)$concordance; c1 <- summary(m1)$concordance
+  cat(sprintf("--- %s ---\n", label))
+  cat(sprintf("  fixed ratio : C = %.4f (SE %.4f)\n", c0[1], c0[2]))
+  cat(sprintf("  MD-COPD     : C = %.4f (SE %.4f)   gain %+.4f\n",
+              c1[1], c1[2], c1[1] - c0[1]))
+  cat(sprintf("  LR chi-square = %.1f on %d df, p = %s\n\n",
+              lr, df, format.pval(pchisq(lr, df, lower.tail = FALSE),
+                                  digits = 3, eps = 1e-16)))
+  data.frame(outcome = label, c_fixedratio = c0[1], c_mdcopd = c1[1],
+             lrt_chisq = lr, lrt_df = df,
+             lrt_p = pchisq(lr, df, lower.tail = FALSE),
+             stringsAsFactors = FALSE)
+}
+gate_rows <- list()
+gate_rows[[1]] <- cox_pair("vital_status", "ALL-CAUSE MORTALITY")
+gate_rows[[2]] <- cox_pair("ev_resp",      "RESPIRATORY MORTALITY")
+
+# Exacerbations: negative binomial with the same nesting.
+n0 <- glm.nb(as.formula(paste("Total_Exacerbations ~ fixed_ratio +", COV,
+       "+ prior_exac + offset(log(Years_Followed))")), data = exa)
+n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ bhatt_grp +",  COV,
+       "+ prior_exac + offset(log(Years_Followed))")), data = exa)
+lr <- 2 * (as.numeric(logLik(n1)) - as.numeric(logLik(n0)))
+df <- length(coef(n1)) - length(coef(n0))
+cat("--- EXACERBATIONS ---\n")
+cat(sprintf("  fixed ratio : AIC %.1f\n  MD-COPD     : AIC %.1f   improvement %.1f\n",
+            AIC(n0), AIC(n1), AIC(n0) - AIC(n1)))
+cat(sprintf("  LR chi-square = %.1f on %d df, p = %s\n",
+            lr, df, format.pval(pchisq(lr, df, lower.tail = FALSE),
+                                digits = 3, eps = 1e-16)))
+gate_rows[[3]] <- data.frame(outcome = "EXACERBATIONS",
+  c_fixedratio = NA_real_, c_mdcopd = NA_real_,
+  lrt_chisq = lr, lrt_df = df,
+  lrt_p = pchisq(lr, df, lower.tail = FALSE),
+  stringsAsFactors = FALSE)
+
+write.csv(do.call(rbind, gate_rows),
+          file.path(OUT_DIR, "gate_fixedratio.csv"), row.names = FALSE)
+write.csv(data.frame(aic_fixedratio = AIC(n0), aic_mdcopd = AIC(n1)),
+          file.path(OUT_DIR, "gate_exac_aic.csv"), row.names = FALSE)
+```
+
+# Section 7 -- Adjusted risk within each classification's own categories
+
+Cox proportional hazards models for mortality and negative binomial models
+with a follow-up-year offset for exacerbations. Each estimate is expressed
+against its OWN classification's noCOPD category, so a CT-free
+classification's AFL-only-noCOPD group is compared to its own noCOPD group
+rather than to MD-COPD's.
+
+```{r adjusted-risk}
+NAMES <- c(S1 = "Fixed ratio",
+           S2 = "MD-COPD (reference)",
+           S3 = "NoCT-MD-COPD",
+           S4 = "ESI-MD-COPD")
+
+risk_rows <- list(); disc_rows <- list()
+for (s in c("S1", "S2", "S3", "S4")) {
+  m1 <- coxph(as.formula(sprintf("Surv(py, vital_status) ~ %s + %s", s, COV)), data = mort)
+  m2 <- coxph(as.formula(sprintf("Surv(py, ev_resp) ~ %s + %s",      s, COV)), data = mort)
+  n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~", s, "+", COV,
+         "+ prior_exac + offset(log(Years_Followed))")), data = exa)
+  cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
+  for (g in levels(d_b[[s]])) {
+    r <- paste0(s, g); ix <- mort[[s]] == g
+    gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
+    risk_rows[[length(risk_rows) + 1]] <- data.frame(
+      schema = s, category = g,
+      n_mort = sum(ix), n_exac = sum(exa[[s]] == g),
+      n_cohort = sum(d_b[[s]] == g), deaths = sum(mort$vital_status[ix]),
+      all_HR  = gv(cm, 1), all_LCI  = gv(cm, 3), all_UCI  = gv(cm, 4),
+      resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
+      exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
+      exac_LCI = if (r %in% rownames(ce)) exp(ce[r, 1] - 1.96 * ce[r, 2]) else NA_real_,
+      exac_UCI = if (r %in% rownames(ce)) exp(ce[r, 1] + 1.96 * ce[r, 2]) else NA_real_,
+      stringsAsFactors = FALSE)
+  }
+  disc_rows[[length(disc_rows) + 1]] <- data.frame(
+    schema = s,
+    c_allcause = summary(m1)$concordance[1],
+    c_resp     = summary(m2)$concordance[1],
+    exac_AIC   = AIC(n1), stringsAsFactors = FALSE)
+}
+risk <- do.call(rbind, risk_rows)
+# Mortality and exacerbation models are fitted on different participant
+# sets. Reporting one n per category for all three outcomes would overstate
+# exacerbation denominators.
+stopifnot(sum(risk$n_exac[risk$schema == "S2"]) == nrow(exa),
+          sum(risk$n_mort[risk$schema == "S2"]) == nrow(mort),
+          sum(risk$n_cohort[risk$schema == "S2"]) == nrow(d_b))
+write.csv(risk, file.path(OUT_DIR, "schema_risk.csv"), row.names = FALSE)
+write.csv(do.call(rbind, disc_rows),
+          file.path(OUT_DIR, "schema_discrimination.csv"), row.names = FALSE)
+kable(risk[risk$schema == "S2", c("category","n_mort","all_HR","all_LCI","all_UCI",
+                                   "resp_HR","resp_LCI","resp_UCI",
+                                   "exac_IRR","exac_LCI","exac_UCI")],
+      caption = "Adjusted risk under MD-COPD.", digits = 3)
+```
+
+# Section 8 -- Crude rate ratios beside the adjusted estimates
+
+An adjusted estimate is what the classification contributes beyond the
+covariates; the crude ratio is what participants in the category actually
+experienced. Both belong in the results.
+
+Interval convention: a resample in which a category contributes no events
+is retained as a legitimate draw with a rate ratio of zero (dropping such
+draws truncates the interval from below and can push a lower bound above
+1 on the strength of a single event). Only resamples in which the
+REFERENCE contributes no events leave the ratio undefined and are cut.
+
+```{r crude-rr}
+set.seed(CV_SEED)
+
+crude_ratio <- function(sch, ev, py, dat) {
+  g   <- dat[[sch]]
+  num <- rowsum(dat[[ev]], g, reorder = FALSE)
+  den <- rowsum(dat[[py]], g, reorder = FALSE)
+  r   <- setNames(as.vector(num) / as.vector(den), rownames(num))
+  ref <- r[["noCOPD"]]
+  if (!is.finite(ref) || ref <= 0)
+    return(setNames(rep(NA_real_, length(r)), names(r)))
+  r / ref
+}
+
+crude_rows <- list()
+for (spec in list(list("all",  "vital_status",        "py",             mort),
+                  list("resp", "ev_resp",             "py",             mort),
+                  list("exac", "Total_Exacerbations", "Years_Followed", exa))) {
+  key <- spec[[1]]; ev <- spec[[2]]; py <- spec[[3]]; dat <- spec[[4]]
+  boot <- vector("list", CRUDE_B)
+  for (b in seq_len(CRUDE_B)) {
+    idx <- sample.int(nrow(dat), nrow(dat), replace = TRUE)
+    dd  <- dat[idx, , drop = FALSE]
+    boot[[b]] <- lapply(c("S1","S2","S3","S4"),
+                        function(s) crude_ratio(s, ev, py, dd))
+  }
+  for (si in seq_along(c("S1","S2","S3","S4"))) {
+    s   <- c("S1","S2","S3","S4")[si]
+    est <- crude_ratio(s, ev, py, dat)
+    for (g in names(est)) {
+      v <- vapply(boot, function(bb) {
+        z <- bb[[si]]; if (g %in% names(z)) z[[g]] else NA_real_
+      }, numeric(1))
+      v <- v[is.finite(v)]
+      crude_rows[[length(crude_rows) + 1]] <- data.frame(
+        schema = s, category = g, outcome = key,
+        rr = unname(est[[g]]),
+        lo = if (length(v) > 1) unname(quantile(v, .025)) else NA_real_,
+        hi = if (length(v) > 1) unname(quantile(v, .975)) else NA_real_,
+        B_eff = sum(v > 0), stringsAsFactors = FALSE)
+    }
+  }
+}
+crude <- do.call(rbind, crude_rows)
+# The reference category's crude ratio is 1 by construction. Drift means
+# the numerator and denominator were computed off different rows.
+stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
+write.csv(crude, file.path(OUT_DIR, "schema_crude.csv"), row.names = FALSE)
+```
+
+# Section 9 -- Self-check (canonical values echoed for drift detection)
+
+Each row prints the freshly-computed value alongside the value cited in
+the manuscript (`expected`). Rerunning this report on the cluster should
+reproduce the `expected` column exactly (within rounding).
+
+```{r self-check}
+selfcheck <- function(name, computed, expected, tol = 0.02) {
+  ok <- if (is.numeric(computed) && is.numeric(expected)) {
+          isTRUE(abs(computed - expected) < tol)
+        } else identical(computed, expected)
+  data.frame(check = name,
+             computed = if (is.numeric(computed)) sprintf("%.3f", computed)
+                        else as.character(computed),
+             expected = if (is.numeric(expected)) sprintf("%.3f", expected)
+                        else as.character(expected),
+             status = ifelse(ok, "PASS", "FAIL"),
+             stringsAsFactors = FALSE)
+}
+
+R2 <- function(s, cat, fld) risk[[fld]][risk$schema == s & risk$category == cat]
+CR <- function(s, cat, out, fld) crude[[fld]][crude$schema == s & crude$category == cat & crude$outcome == out]
+GT <- function(o, fld) {
+  g <- do.call(rbind, gate_rows); g[[fld]][g$outcome == o]
+}
+DS <- function(s, fld) {
+  d <- do.call(rbind, disc_rows); d[[fld]][d$schema == s]
+}
+
+# Canonical values are those cited in the manuscript prose. The point of
+# this table is to detect drift on re-run: if any row goes FAIL, an
+# expected number must be updated deliberately (with a corresponding
+# manuscript edit) rather than silently changed. Every value is loaded
+# from the already-written artifact so this block reflects what downstream
+# reads, not what the in-memory objects happened to hold.
+
+# MD-COPD counts BEFORE the baseline-ESI restriction are what should
+# reproduce Bhatt Table 1 exactly. mdcopd_validation.csv captures that
+# state; d_b at self-check time has already been ESI-restricted.
+mdval <- read.csv(file.path(OUT_DIR, "mdcopd_validation.csv"),
+                  stringsAsFactors = FALSE)
+MDV <- function(cat) mdval$ours[mdval$category == cat]
+
+checks <- list(
+  # ---- Bhatt Table 1 reproduction (before ESI restriction) --------------
+  selfcheck("MD-COPD noCOPD n vs Bhatt 4,439",
+            MDV("noCOPD"),          4439L),
+  selfcheck("MD-COPD AFL-only-noCOPD n vs Bhatt 282",
+            MDV("AFL-only-NoCOPD"), 282L),
+  selfcheck("MD-COPD COPD-minor n vs Bhatt 811",
+            MDV("COPD-minor"),      811L),
+  selfcheck("MD-COPD COPD-major n vs Bhatt 3,884",
+            MDV("COPD-major"),      3884L),
+
+  # ---- Analytic cohort after ESI restriction ---------------------------
+  selfcheck("analytic cohort n (with baseline ESI)",
+            as.integer(nrow(d_b)),  9240L, tol = 0.5),
+
+  # ---- Nested LR gate: MD-COPD vs. fixed ratio (2 df) ------------------
+  selfcheck("all-cause LR chi-square, MD-COPD over fixed ratio",
+            GT("ALL-CAUSE MORTALITY", "lrt_chisq"),   122.1, tol = 0.1),
+  selfcheck("respiratory LR chi-square, MD-COPD over fixed ratio",
+            GT("RESPIRATORY MORTALITY", "lrt_chisq"),  76.1, tol = 0.1),
+  selfcheck("exacerbation LR chi-square, MD-COPD over fixed ratio",
+            GT("EXACERBATIONS", "lrt_chisq"),         158.9, tol = 0.1),
+
+  # ---- Fitted CT-free rules --------------------------------------------
+  selfcheck("NoCT-MD-COPD count threshold", k3,       2L),
+  selfcheck("ESI-MD-COPD count threshold",  p4$k,     2L),
+  selfcheck("ESI-MD-COPD T_low",            p4$t_low, 1.50, tol = 0.001),
+
+  # ---- AFL-only-noCOPD risk, the load-bearing category ------------------
+  selfcheck("MD-COPD AFL-only all-cause HR",
+            R2("S2", "AFL-only", "all_HR"),  0.87, tol = 0.02),
+  selfcheck("NoCT-MD-COPD AFL-only respiratory HR (should be highly elevated)",
+            R2("S3", "AFL-only", "resp_HR"), 6.37, tol = 0.05),
+  selfcheck("ESI-MD-COPD AFL-only all-cause HR (should straddle 1)",
+            R2("S4", "AFL-only", "all_HR"),  0.96, tol = 0.02),
+
+  # ---- Discrimination --------------------------------------------------
+  selfcheck("MD-COPD all-cause C-index",
+            DS("S2", "c_allcause"), 0.703, tol = 0.005)
+)
+selfcheck_tbl <- do.call(rbind, checks)
+write.csv(selfcheck_tbl, file.path(OUT_DIR, "SELFCHECK.csv"), row.names = FALSE)
+kable(selfcheck_tbl, caption = "Self-check -- computed vs canonical values.")
+cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
+            sum(selfcheck_tbl$status == "PASS"),
+            sum(selfcheck_tbl$status == "FAIL"),
+            nrow(selfcheck_tbl)))
+```
+
+# Section 10 -- Completeness check
+
+Enumerates every CSV downstream tables and figures depend on and aborts if
+any is missing, so a partial run is caught here rather than surfacing as a
+missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
+
+```{r completeness}
+required_csvs <- c(
+  "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
+  "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
+  "schema_crude.csv", "schema_discrimination.csv",
+  "schema_fit.csv", "schema_fit_cv_diff.csv", "cv_schema_fits.csv",
+  "objective_selection.csv", "reclassification.csv", "crossclass.csv",
+  "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv"
+)
+missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
+if (length(missing))
+  stop("missing artifacts in OUT_DIR: ", paste(missing, collapse = ", "))
+cat(sprintf("All %d required artifacts present in %s\n",
+            length(required_csvs), normalizePath(OUT_DIR)))
+```
+
+# Section 11 -- Provenance
+
+```{r provenance}
+provenance <- c(
+  sprintf("rendered=%s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
+  sprintf("R=%s", R.version.string),
+  sprintf("cohort_n=%d", nrow(d_b)),
+  sprintf("cv_seed=%d", CV_SEED),
+  sprintf("cv_repeats=%d", CV_REPEATS),
+  sprintf("cv_folds=%d", CV_FOLDS),
+  sprintf("crude_B=%d", CRUDE_B),
+  sprintf("fitted_S3_k=%d", k3),
+  sprintf("fitted_S4_k=%d", p4$k),
+  sprintf("fitted_S4_t_low=%.3f", p4$t_low),
+  sprintf("fitted_S4_t_high=%.3f", p4$t_high))
+writeLines(provenance, file.path(OUT_DIR, "PROVENANCE.txt"))
+cat(paste(provenance, collapse = "\n"), "\n")
+```
+
+# Appendix -- Session info
+
+```{r session}
+sessionInfo()
+```

@@ -24,6 +24,12 @@ COD_PATH <- "<adjudicated cause of death file>"
 # Long-term follow-up exacerbation counts and follow-up years.
 EX_PATH  <- "<longitudinal follow-up exacerbations file>"
 
+# Bhatt et al.'s own per-subject MD-COPD classification (rand_id,
+# MultiDim_COPD_Subtype, MultiDim_COPD_score), used as ground truth for
+# cohort membership and major/minor category assignment rather than
+# reconstructing their CT-quality-control and minor-criteria logic.
+MDCOPD_PATH <- "<COPDGene multidimensional COPD classification file>"
+
 # Where result CSVs are written. Must match ASSETS in manifest.py, which the
 # supplement build reads. Relative paths resolve from the repository root.
 OUT_DIR  <- "manuscript_assets"

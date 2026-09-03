@@ -1,0 +1,11 @@
+rendered=2026-09-03 12:19:44 EDT
+R=R version 4.5.2 (2025-10-31)
+cohort_n=9240
+cv_seed=20260901
+cv_repeats=5
+cv_folds=5
+crude_B=1000
+fitted_S3_k=2
+fitted_S4_k=2
+fitted_S4_t_low=1.500
+fitted_S4_t_high=7.000
