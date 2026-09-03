@@ -17,7 +17,7 @@ CT is often unavailable. MD-COPD is defined partly by CT findings. Can the
 classification, and the benefit it carries over the fixed ratio, be preserved
 using spirometry and symptoms alone?
 
-Four schemas, same 9,402 participants, same covariates:
+Four schemas, same 9,240 participants, same covariates:
 
 S1 to S4 are internal identifiers used in the artifacts and in the field
 expressions below. The manuscript names them as follows, and those names are
@@ -55,7 +55,7 @@ what appear in the prose, tables and figures.
 
 | id | claim | artifact | field |
 |---|---|---|---|
-| COH-01 | analytic cohort n = 9,402 | cohort.txt | n_cohort |
+| COH-01 | analytic cohort n = 9,240 | cohort.txt | n_cohort |
 | COH-02 | 4,113 have airflow limitation | cohort.txt | n_afl |
 | COH-03 | 5,289 do not | cohort.txt | n_noafl |
 
@@ -94,8 +94,8 @@ any table.
 
 | id | claim | artifact | field |
 |---|---|---|---|
-| LAB-01 | S2 reference counts 4,203 / 170 / 1,086 / 3,943 | schema_labels.csv | n |
-| LAB-02 | S3 loses 949 COPD-major, calling 2,994 | schema_labels.csv | n |
+| LAB-01 | S2 reference counts 4,357 / 275 / 799 / 3,809 | schema_labels.csv | n |
+| LAB-02 | S3 loses 833 COPD-major, calling 2,976 | schema_labels.csv | n |
 | LAB-03 | S4 holds COPD-major at 3,803 | schema_labels.csv | n |
 | LAB-04 | S3 calls 1,119 AFL-only against the reference's 170 | schema_labels.csv | n |
 

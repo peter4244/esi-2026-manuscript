@@ -15,9 +15,9 @@ withholds a COPD diagnosis from participants with airflow limitation and
 nothing else, and gives one to participants with preserved spirometry and a
 high symptom burden. We asked whether those corrections survive when chest CT
 is unavailable. Removing the CT criteria without replacing them does not
-preserve them. It moves 949 participants out of COPD-major {RECL-01}, and the
+preserve them. It moves 833 participants out of COPD-major {RECL-01}, and the
 category that receives them is no longer low risk. Replacing the CT criteria
-with ESI keeps the loss to 233 {RECL-02} and keeps the categories carrying the
+with ESI keeps the loss to 350 {RECL-02} and keeps the categories carrying the
 risk their names imply.
 
 **[v15 ¶83, compressed]**
@@ -51,15 +51,18 @@ uncertainty when used to define stable disease characteristics (29).
 The AFL-only-noCOPD category is where a CT-free classification succeeds or
 fails. It exists to withhold a diagnosis from participants the fixed ratio
 would call COPD, so it is defensible only while the participants in it are
-genuinely at low risk. Under MD-COPD they are. Under NoCT-MD-COPD they are not: that category carries 6.6 times the
+genuinely at low risk. Under MD-COPD they are. Under NoCT-MD-COPD they are not: that category carries 6.4 times the
 respiratory mortality of its own reference {RISK-02}, and unadjusted its
-members died at 1.56 times the reference rate {CRUDE-01}. Under ESI-MD-COPD the category holds, with no significant excess on any outcome
-{RISK-04b}. The difference is not subtle and it is not a matter of degree.
+members died at 1.54 times the reference rate {CRUDE-01}. Under ESI-MD-COPD the
+category largely holds. Mortality shows no excess, and the exacerbation
+estimate matches MD-COPD's own for this category {RISK-04b}. The difference
+between the two CT-free classifications is not subtle and it is not a matter of
+degree.
 
 *(new)*
 
 Discrimination did not identify the better classification. NoCT-MD-COPD had the highest C-index of the four, and it earned that by making
-COPD-major smaller and more severe while moving 949 participants into a
+COPD-major smaller and more severe while moving 833 participants into a
 category named as not having COPD {DISC-01b, RISK-07, RISK-08}. A C-index
 measures how well categories rank risk, not whether they mean what they say.
 Where a classification carries a diagnostic label, ranking is not sufficient,
@@ -72,7 +75,7 @@ ESI does not contribute equally across the framework. At the COPD-minor
 boundary the three multidimensional classifications are close to indistinguishable, and
 symptom criteria alone reproduce that category about as well as ESI does. The
 contribution is concentrated in participants with airflow limitation whose only
-minor criterion is a CT finding, who are 24.1% of COPD-major {RECL-03}. That is
+minor criterion is a CT finding, who are 21.9% of COPD-major {RECL-03}. That is
 where a structural surrogate is doing work no symptom criterion can do.
 
 **[v15 ¶90, with the reclassification counts added]**

@@ -24,7 +24,7 @@ questions here.
 
 ## What the analysis does
 
-Four schemas on the same 9,402 participants, defined in CLAIMS.md. The two
+Four schemas on the same 9,240 participants, defined in CLAIMS.md. The two
 CT-free schemas are fitted to approximate the CT-based one, by the same
 objective, over their full parameter spaces, outcome-blind, and cross-validated
 5 by 5 stratified on the reference categories.

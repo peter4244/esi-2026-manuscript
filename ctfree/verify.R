@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 53L
+REGISTRY_N <- 63L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -30,23 +30,47 @@ reg <- function(id, section, claim, expected, artifact, field, tol) {
 }
 
 # --- cohort ---------------------------------------------------------------
-reg("COH-01", "Cohort", "analytic cohort n = 9,402", 9402, "cohort.txt",
+reg("COH-01", "Cohort", "analytic cohort n = 9,240", 9240, "cohort.txt",
     'as.numeric(x[["n_cohort"]])', TOL_EXACT)
-reg("COH-02", "Cohort", "4,113 with airflow limitation", 4113, "cohort.txt",
+reg("COH-02", "Cohort", "4,084 with airflow limitation", 4084, "cohort.txt",
     'as.numeric(x[["n_afl"]])', TOL_EXACT)
-reg("COH-03", "Cohort", "5,289 without airflow limitation", 5289, "cohort.txt",
+reg("COH-03", "Cohort", "5,156 without airflow limitation", 5156, "cohort.txt",
     'as.numeric(x[["n_noafl"]])', TOL_EXACT)
+
+# --- ESI against quantitative CT ------------------------------------------
+# Cited in Results, Study population, and shown as Supplemental Table S2. These
+# were previously unregistered and the table cited for them was a correlation
+# matrix among the CT measures, which did not contain them.
+XC <- function(stratum, fld) sprintf('x$%s[x$stratum == "%s"]', fld, stratum)
+reg("CORR-01", "ESI and CT", "r(ESI, LAA-950) across all strata = 0.78", 0.78,
+    "supp_esi_ct.csv", XC("All strata", "r_LAA"), TOL_2DP)
+reg("CORR-02", "ESI and CT", "r(ESI, PRM emphysema) across all strata = 0.81", 0.81,
+    "supp_esi_ct.csv", XC("All strata", "r_PRM"), TOL_2DP)
+reg("CORR-03", "ESI and CT", "r(ESI, LAA-950) in GOLD 0 = 0.08", 0.08,
+    "supp_esi_ct.csv", XC("GOLD0", "r_LAA"), TOL_2DP)
+reg("CORR-04", "ESI and CT", "r(ESI, LAA-950) in GOLD 3 = 0.58", 0.58,
+    "supp_esi_ct.csv", XC("GOLD3", "r_LAA"), TOL_2DP)
+reg("CORR-05", "ESI and CT",
+    "the correlation strengthens with obstruction, GOLD 0 below GOLD 3", TRUE,
+    "supp_esi_ct.csv",
+    sprintf('%s < %s', XC("GOLD0", "r_LAA"), XC("GOLD3", "r_LAA")), TOL_EXACT)
+
+# --- baseline description --------------------------------------------------
+reg("BASE-01", "Cohort", "baseline table totals the analytic cohort, 9,240", 9240,
+    "supp_baseline.csv", 'as.numeric(x$n[x$stratum == "Overall"])', TOL_EXACT)
+reg("BASE-02", "Cohort", "the cohort has no never-smoker stratum", TRUE,
+    "supp_baseline.csv", '!("Never" %in% x$stratum)', TOL_EXACT)
 
 # --- the gate -------------------------------------------------------------
 g <- function(o, f) sprintf('x$%s[x$outcome == "%s"]', f, o)
-reg("GATE-01", "MD-COPD over fixed ratio", "all-cause LR chi-square 110.2 on 2 df",
-    110.2, "gate_fixedratio.csv", g("ALL-CAUSE MORTALITY", "lrt_chisq"), TOL_1DP)
-reg("GATE-02", "MD-COPD over fixed ratio", "respiratory LR chi-square 53.9",
-    53.9, "gate_fixedratio.csv", g("RESPIRATORY MORTALITY", "lrt_chisq"), TOL_1DP)
-reg("GATE-03", "MD-COPD over fixed ratio", "exacerbation LR chi-square 162.4",
-    162.4, "gate_fixedratio.csv", g("EXACERBATIONS", "lrt_chisq"), TOL_1DP)
-reg("GATE-04", "MD-COPD over fixed ratio", "all-cause C-index gain is only +0.009",
-    0.009, "gate_fixedratio.csv",
+reg("GATE-01", "MD-COPD over fixed ratio", "all-cause LR chi-square 122.1 on 2 df",
+    122.1, "gate_fixedratio.csv", g("ALL-CAUSE MORTALITY", "lrt_chisq"), TOL_1DP)
+reg("GATE-02", "MD-COPD over fixed ratio", "respiratory LR chi-square 76.1",
+    76.1, "gate_fixedratio.csv", g("RESPIRATORY MORTALITY", "lrt_chisq"), TOL_1DP)
+reg("GATE-03", "MD-COPD over fixed ratio", "exacerbation LR chi-square 158.9",
+    158.9, "gate_fixedratio.csv", g("EXACERBATIONS", "lrt_chisq"), TOL_1DP)
+reg("GATE-04", "MD-COPD over fixed ratio", "all-cause C-index gain is only +0.010",
+    0.010, "gate_fixedratio.csv",
     'x$c_mdcopd[1] - x$c_fixedratio[1]', TOL_3DP)
 # Guard the interpretation, not just the number: the gain must stay small, or
 # the paper's "reclassification, not prediction" framing needs revisiting.
@@ -59,44 +83,44 @@ f <- function(s, fld) sprintf('x$%s[x$schema == "%s"]', fld, s)
 reg("FIT-01", "Fitting", "S3 rule is >= 2 of 3 symptom criteria", 2, "schema_fit.csv",
     f("S3", "k"), TOL_EXACT)
 reg("FIT-02a", "Fitting", "S4 rule is >= 2 of 4", 2, "schema_fit.csv", f("S4", "k"), TOL_EXACT)
-reg("FIT-02b", "Fitting", "S4 ESI threshold 1.25", 1.25, "schema_fit.csv",
+reg("FIT-02b", "Fitting", "S4 ESI threshold 1.50", 1.50, "schema_fit.csv",
     f("S4", "t_low"), TOL_3DP)
 reg("FIT-03", "Fitting", "S4 second ESI threshold is inert, at or above 6.0",
     TRUE, "schema_fit.csv", sprintf('%s >= 6.0', f("S4", "t_high")), TOL_EXACT)
-reg("FIT-04a", "Fitting", "held-out macro-F1, S4 = 0.753", 0.753, "schema_fit.csv",
+reg("FIT-04a", "Fitting", "held-out macro-F1, S4 = 0.752", 0.752, "schema_fit.csv",
     f("S4", "macroF1_heldout"), TOL_3DP)
-reg("FIT-04b", "Fitting", "held-out macro-F1, S3 = 0.720", 0.720, "schema_fit.csv",
+reg("FIT-04b", "Fitting", "held-out macro-F1, S3 = 0.721", 0.721, "schema_fit.csv",
     f("S3", "macroF1_heldout"), TOL_3DP)
-reg("FIT-05a", "Fitting", "S4 beats S3 by +0.033 held out", 0.033,
+reg("FIT-05a", "Fitting", "S4 beats S3 by +0.031 held out", 0.031,
     "schema_fit_cv_diff.csv", 'x$diff_mean', TOL_3DP)
 reg("FIT-05b", "Fitting", "the S4 advantage excludes zero across folds",
     TRUE, "schema_fit_cv_diff.csv", 'x$diff_lo > 0', TOL_EXACT)
-reg("FIT-06", "Fitting", "the v15 draft rule scores 0.675 on the same folds",
-    0.675, "schema_fit.csv", f("S4_v15draft", "macroF1_heldout"), TOL_3DP)
+reg("FIT-06", "Fitting", "the v15 draft rule scores 0.682 on the same folds",
+    0.682, "schema_fit.csv", f("S4_v15draft", "macroF1_heldout"), TOL_3DP)
 
 # --- labels ---------------------------------------------------------------
 L <- function(s, cat) sprintf('x$n[x$schema == "%s" & x$category == "%s"]', s, cat)
-reg("LAB-01a", "Labels", "S2 reference COPD-major n = 3,943", 3943, "schema_labels.csv",
+reg("LAB-01a", "Labels", "S2 reference COPD-major n = 3,809", 3809, "schema_labels.csv",
     L("S2", "COPD-major"), TOL_EXACT)
-reg("LAB-01b", "Labels", "S2 reference AFL-only n = 170", 170, "schema_labels.csv",
+reg("LAB-01b", "Labels", "S2 reference AFL-only n = 275", 275, "schema_labels.csv",
     L("S2", "AFL-only"), TOL_EXACT)
-reg("LAB-02", "Labels", "S3 calls only 2,994 COPD-major, losing 949", 2994,
+reg("LAB-02", "Labels", "S3 calls only 2,976 COPD-major, losing 833", 2976,
     "schema_labels.csv", L("S3", "COPD-major"), TOL_EXACT)
-reg("LAB-03", "Labels", "S4 holds COPD-major at 3,803", 3803, "schema_labels.csv",
+reg("LAB-03", "Labels", "S4 holds COPD-major at 3,541", 3541, "schema_labels.csv",
     L("S4", "COPD-major"), TOL_EXACT)
-reg("LAB-04", "Labels", "S3 calls 1,119 AFL-only against the reference's 170",
-    1119, "schema_labels.csv", L("S3", "AFL-only"), TOL_EXACT)
+reg("LAB-04", "Labels", "S3 calls 1,108 AFL-only against the reference's 275",
+    1108, "schema_labels.csv", L("S3", "AFL-only"), TOL_EXACT)
 
 # --- reclassification counts the Results quotes ---------------------------
 RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
-reg("RECL-01", "Reclassification", "949 COPD-major become AFL-only-noCOPD without CT",
-    949, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)
-reg("RECL-02", "Reclassification", "233 do so with ESI", 233,
+reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only-noCOPD without CT",
+    833, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)
+reg("RECL-02", "Reclassification", "350 do so with ESI", 350,
     "reclassification.csv", RC("S4", "major_to_aflonly"), TOL_EXACT)
 reg("RECL-03", "Reclassification",
-    "24.1% of COPD-major qualify only through a CT finding", 24.1,
+    "21.9% of COPD-major qualify only through a CT finding", 21.9,
     "reclassification.csv", 'x$ct_only_pct[1]', TOL_1DP)
-reg("RECL-04", "Reclassification", "that is 949 of 3,943 participants", 949,
+reg("RECL-04", "Reclassification", "that is 833 of 3,809 participants", 833,
     "reclassification.csv", 'x$ct_only_major[1]', TOL_EXACT)
 # The two counts are the same number for a reason: without a structural
 # criterion, exactly the participants whose only minor criteria were CT
@@ -106,7 +130,7 @@ reg("RECL-05", "Reclassification",
     "the CT-only COPD-major group is exactly the group schema 3 loses",
     TRUE, "reclassification.csv",
     'x$ct_only_major[1] == x$major_to_aflonly[x$schema == "S3"]', TOL_EXACT)
-reg("RECL-06", "Reclassification", "schema 3 keeps all 170 true AFL-only", 170,
+reg("RECL-06", "Reclassification", "schema 3 keeps all 275 true AFL-only", 275,
     "reclassification.csv", RC("S3", "aflonly_kept"), TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
@@ -114,64 +138,80 @@ CR <- function(sch, cat, out, fld)
   sprintf('x$%s[x$schema == "%s" & x$category == "%s" & x$outcome == "%s"]',
           fld, sch, cat, out)
 reg("CRUDE-01", "Crude estimates",
-    "without CT, AFL-only crude all-cause rate ratio 1.56", 1.56,
+    "without CT, AFL-only crude all-cause rate ratio 1.54", 1.54,
     "schema_crude.csv", CR("S3", "AFL-only", "all", "rr"), TOL_2DP)
 reg("CRUDE-02", "Crude estimates",
     "and its interval excludes 1, so the label is false unadjusted too",
     TRUE, "schema_crude.csv",
     sprintf('%s > 1', CR("S3", "AFL-only", "all", "lo")), TOL_EXACT)
 reg("CRUDE-03", "Crude estimates",
-    "without CT, AFL-only crude respiratory rate ratio 9.64", 9.64,
+    "without CT, AFL-only crude respiratory rate ratio 9.38", 9.38,
     "schema_crude.csv", CR("S3", "AFL-only", "resp", "rr"), TOL_2DP)
 reg("CRUDE-04", "Crude estimates",
-    "with ESI, AFL-only crude all-cause rate ratio 1.30", 1.30,
+    "with ESI, AFL-only crude all-cause rate ratio 1.29", 1.29,
     "schema_crude.csv", CR("S4", "AFL-only", "all", "rr"), TOL_2DP)
+# On the corrected cohort this interval no longer includes 1. The estimate is
+# unchanged in size; ESI-MD-COPD's AFL-only category is twice the size of
+# MD-COPD's, so the interval is narrower. Pinned in the new direction so a
+# revert would fail rather than pass silently.
 reg("CRUDE-05", "Crude estimates",
-    "and its interval includes 1", TRUE, "schema_crude.csv",
-    sprintf('%s < 1', CR("S4", "AFL-only", "all", "lo")), TOL_EXACT)
+    "and its interval excludes 1", TRUE, "schema_crude.csv",
+    sprintf('%s > 1', CR("S4", "AFL-only", "all", "lo")), TOL_EXACT)
 reg("CRUDE-06", "Crude estimates",
-    "with CT, AFL-only crude all-cause rate ratio 1.08", 1.08,
+    "with CT, AFL-only crude all-cause rate ratio 1.05", 1.05,
     "schema_crude.csv", CR("S2", "AFL-only", "all", "rr"), TOL_2DP)
 
 # --- risk: do the labels mean what they say -------------------------------
 R <- function(s, cat, fld) sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, s, cat)
-reg("RISK-01", "Label meaning", "S2 AFL-only all-cause HR 0.90", 0.90,
+reg("RISK-01", "Label meaning", "S2 AFL-only all-cause HR 0.87", 0.87,
     "schema_risk.csv", R("S2", "AFL-only", "all_HR"), TOL_2DP)
 reg("RISK-01b", "Label meaning", "S2 AFL-only interval crosses 1", TRUE,
     "schema_risk.csv", sprintf('%s > 1', R("S2", "AFL-only", "all_UCI")), TOL_EXACT)
-# The Results previously said the CT schema's AFL-only intervals cross 1 for
-# every outcome. The exacerbation interval does not. These two pin the
-# corrected sentence so the claim cannot silently revert.
+# On the corrected cohort every MD-COPD AFL-only interval crosses 1, including
+# exacerbations, which previously sat just above it. The reference category is
+# now cleanly null on all three outcomes.
 reg("RISK-01c", "Label meaning",
-    "the CT schema's AFL-only exacerbation interval does NOT cross 1",
+    "the CT schema's AFL-only exacerbation interval crosses 1",
     TRUE, "schema_risk.csv",
-    'x$exac_LCI[x$schema == "S2" & x$category == "AFL-only"] > 1', TOL_EXACT)
+    'x$exac_LCI[x$schema == "S2" & x$category == "AFL-only"] < 1', TOL_EXACT)
 reg("CRUDE-07", "Crude estimates",
-    "but its crude exacerbation ratio does cross 1", TRUE, "schema_crude.csv",
+    "and its crude exacerbation ratio crosses 1", TRUE, "schema_crude.csv",
     'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"] < 1',
     TOL_EXACT)
 
-reg("RISK-02", "Label meaning", "S3 AFL-only respiratory HR 6.61", 6.61,
+reg("RISK-02", "Label meaning", "S3 AFL-only respiratory HR 6.37", 6.37,
     "schema_risk.csv", R("S3", "AFL-only", "resp_HR"), TOL_2DP)
 reg("RISK-02b", "Label meaning",
     "S3 AFL-only respiratory risk is significantly elevated, so the label is false",
     TRUE, "schema_risk.csv", sprintf('%s > 1', R("S3", "AFL-only", "resp_LCI")), TOL_EXACT)
-reg("RISK-03", "Label meaning", "S3 AFL-only exacerbation IRR 1.80", 1.80,
+reg("RISK-03", "Label meaning", "S3 AFL-only exacerbation IRR 1.78", 1.78,
     "schema_risk.csv", R("S3", "AFL-only", "exac_IRR"), TOL_2DP)
-reg("RISK-04", "Label meaning", "S4 AFL-only all-cause HR 0.94", 0.94,
+reg("RISK-04", "Label meaning", "S4 AFL-only all-cause HR 0.96", 0.96,
     "schema_risk.csv", R("S4", "AFL-only", "all_HR"), TOL_2DP)
+# Mortality shows no excess; the exacerbation interval excludes 1. The point
+# estimate (1.23) is the same size as MD-COPD's own for this category (1.21),
+# so this is a precision difference, not a risk difference. Both halves are
+# pinned so neither can drift unnoticed.
 reg("RISK-04b", "Label meaning",
-    "S4 AFL-only shows no significant excess on any outcome", TRUE, "schema_risk.csv",
-    sprintf('%s > 1 && %s < 1 && %s < 1',
-            R("S4", "AFL-only", "all_UCI"), R("S4", "AFL-only", "resp_LCI"),
-            R("S4", "AFL-only", "exac_LCI")), TOL_EXACT)
-reg("RISK-05", "Label meaning", "S4 COPD-minor HR 1.94 tracks S2's 1.91", 1.94,
+    "S4 AFL-only shows no excess in either mortality outcome", TRUE, "schema_risk.csv",
+    sprintf('%s > 1 && %s < 1',
+            R("S4", "AFL-only", "all_UCI"), R("S4", "AFL-only", "resp_LCI")), TOL_EXACT)
+reg("RISK-04c", "Label meaning",
+    "but its exacerbation interval excludes 1", TRUE, "schema_risk.csv",
+    sprintf('%s > 1', R("S4", "AFL-only", "exac_LCI")), TOL_EXACT)
+reg("RISK-04d", "Label meaning",
+    "S4 AFL-only exacerbation IRR 1.23 matches S2's 1.21", 1.23,
+    "schema_risk.csv", R("S4", "AFL-only", "exac_IRR"), TOL_2DP)
+reg("RISK-04e", "Label meaning",
+    "S2 AFL-only exacerbation IRR 1.21", 1.21,
+    "schema_risk.csv", R("S2", "AFL-only", "exac_IRR"), TOL_2DP)
+reg("RISK-05", "Label meaning", "S4 COPD-minor HR 1.96 tracks S2's 1.83", 1.96,
     "schema_risk.csv", R("S4", "COPD-minor", "all_HR"), TOL_2DP)
-reg("RISK-06", "Label meaning", "S4 COPD-major HR 2.76", 2.76,
+reg("RISK-06", "Label meaning", "S4 COPD-major HR 2.93", 2.93,
     "schema_risk.csv", R("S4", "COPD-major", "all_HR"), TOL_2DP)
 
-reg("RISK-07", "Label meaning", "the CT schema's COPD-major all-cause HR is 2.59",
-    2.59, "schema_risk.csv",
+reg("RISK-07", "Label meaning", "the CT schema's COPD-major all-cause HR is 2.54",
+    2.54, "schema_risk.csv",
     'x$all_HR[x$schema == "S2" & x$category == "COPD-major"]', TOL_2DP)
 reg("RISK-08", "Label meaning",
     "without CT the same category's HR rises to 3.34, being smaller and more severe",
@@ -180,8 +220,8 @@ reg("RISK-08", "Label meaning",
 
 # --- discrimination -------------------------------------------------------
 D <- function(s, fld) sprintf('x$%s[x$schema == "%s"]', fld, s)
-reg("DISC-01", "Discrimination", "S3 has the best all-cause C-index, 0.722",
-    0.722, "schema_discrimination.csv", D("S3", "c_allcause"), TOL_3DP)
+reg("DISC-01", "Discrimination", "S3 has the best all-cause C-index, 0.721",
+    0.721, "schema_discrimination.csv", D("S3", "c_allcause"), TOL_3DP)
 reg("DISC-01b", "Discrimination",
     "S3 out-discriminates every other schema, which the paper must state",
     TRUE, "schema_discrimination.csv",

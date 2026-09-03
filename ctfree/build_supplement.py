@@ -26,7 +26,6 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
-V15_ASSETS = os.path.join(ROOT, "manuscript_assets")
 SUPP_ORDER = ["S1", "S2", "S3", "S4", "S5"]
 
 
@@ -46,34 +45,40 @@ def para(doc, text):
 # --------------------------------------------------------------------------
 def s1_baseline(doc):
     heading(doc, "Supplemental Table S1. Baseline characteristics")
-    rows = load(V15_ASSETS, "Table_S2_baseline_characteristics.csv")
+    rows = load(ASSETS, "supp_baseline.csv")
     keep = [("stratum", "Stratum"), ("n", "n"), ("age", "Age"),
             ("pct_female", "Female"), ("pct_current", "Current smoker"),
             ("pack_years", "Pack-years"), ("FEV1_pp", "FEV₁ %pred"), ("ESI", "ESI")]
     add_table(doc, [h for _, h in keep],
               [[r[k] for k, _ in keep] for r in rows],
               [0.86, 0.60, 0.86, 0.78, 1.00, 0.86, 0.84, 0.70])
+    n_overall = next(r["n"] for r in rows if r["stratum"] == "Overall")
     legend(doc, "Table S1.",
-           "Baseline characteristics of the analytic cohort by GOLD stratum. Values "
-           "are mean (SD) unless marked as a percentage. Carried over unchanged from "
-           "the cohort description of the earlier analysis.")
+           f"Baseline characteristics of the {int(n_overall):,} analytic cohort "
+           "participants by GOLD stratum. Values are mean (SD) unless marked as a "
+           "percentage. The cohort follows the exclusion chain of the source MD-COPD "
+           "report, which removes never-smokers, so there is no never-smoker stratum. "
+           "PRISm is preserved ratio impaired spirometry.")
 
 
 def s2_ct(doc):
     heading(doc, "Supplemental Table S2. ESI and quantitative CT")
-    rows = load(V15_ASSETS, "Supp_Table_CT_correlations.csv")
-    hdr = list(rows[0].keys())
-    label = {"Exp_LAA856_total_Thirona": "Air trapping (LAA-856)",
-             "Insp_LAA950_total_Thirona": "Emphysema (LAA-950)",
-             "PRM_pct_emphysema_Thirona": "PRM emphysema",
-             "PRM_pct_airtrapping_Thirona": "PRM air trapping",
-             "pctEmph_Thirona": "Percent emphysema"}
-    add_table(doc, ["Stratum"] + [label.get(h, h) for h in hdr[1:]],
-              [[r[h] for h in hdr] for r in rows],
-              [1.10] + [1.08] * (len(hdr) - 1))
+    rows = load(ASSETS, "supp_esi_ct.csv")
+    keep = [("stratum", "Stratum"),
+            ("n_LAA", "n"), ("r_LAA", "r (ESI, LAA-950)"),
+            ("n_PRM", "n"), ("r_PRM", "r (ESI, PRM emphysema)")]
+    def cell(r, k):
+        v = r[k]
+        return f"{float(v):.3f}" if k.startswith("r_") else v
+    add_table(doc, [h for _, h in keep],
+              [[cell(r, k) for k, _ in keep] for r in rows],
+              [1.30, 0.75, 1.85, 0.75, 1.85])
     legend(doc, "Table S2.",
-           "Pearson correlations between ESI and quantitative CT measures, overall "
-           "and within GOLD stratum.")
+           "Pearson correlations between ESI and quantitative CT emphysema, overall "
+           "and within GOLD stratum. LAA-950 is the percentage of lung voxels below "
+           "−950 Hounsfield units on inspiratory CT; PRM emphysema is the parametric "
+           "response map emphysema percentage. Correlations are computed on "
+           "participants with both measures available, so n varies by column.")
 
 
 def s3_crossclass(doc):
@@ -167,7 +172,10 @@ def check_citations(produced):
         body = f.read()
     with open(os.path.join(HERE, "METHODS.md")) as f:
         body += f.read()
-    cited = set(re.findall(r"Supplemental Table (S\d+)", body))
+    # Prose sources are hard-wrapped, so "Supplemental Table" and its number
+    # are routinely split across a line. Matching a literal space made the
+    # check report a real citation as missing.
+    cited = set(re.findall(r"Supplemental\s+Table\s+(S\d+)", body))
     missing = sorted(cited - set(produced))
     unused = sorted(set(produced) - cited)
     if missing:
@@ -185,8 +193,7 @@ def main():
                   "multidimensional COPD framework without chest CT")
     r.bold = True
     r.font.size = Pt(14)
-    doc.add_paragraph("Draft v1. Tables generated from ctfree/assets/ and, where "
-                      "marked, from the earlier analysis.")
+    doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
     for fn in (s1_baseline, s2_ct, s3_crossclass, s4_fitting, s5_discrimination):
         fn(doc)
         doc.add_paragraph()

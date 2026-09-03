@@ -6,12 +6,12 @@ Generated from `ctfree/assets/`. Every value is read from an artifact.
 
 | | Major criterion | Minor criteria | noCOPD | AFL-only-noCOPD | COPD-minor | COPD-major |
 |---|---|---|---|---|---|---|
-| **1** Fixed ratio | FEV~1~/FVC < 0.70 | none | 5,289 | — | — | 4,113 |
-| **2** MD-COPD with CT | FEV~1~/FVC < 0.70 | emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3) | 4,203 | 170 | 1,086 | 3,943 |
-| **3** MD-COPD without CT | FEV~1~/FVC < 0.70 | dyspnea, SGRQ, chronic bronchitis (≥2) | 3,981 | 1,119 | 1,308 | 2,994 |
-| **4** MD-COPD with ESI | FEV~1~/FVC < 0.70 | ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2) | 3,903 | 310 | 1,386 | 3,803 |
+| **1** Fixed ratio | FEV~1~/FVC < 0.70 | none | 5,156 | — | — | 4,084 |
+| **2** MD-COPD with CT | FEV~1~/FVC < 0.70 | emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3) | 4,357 | 275 | 799 | 3,809 |
+| **3** MD-COPD without CT | FEV~1~/FVC < 0.70 | dyspnea, SGRQ, chronic bronchitis (≥2) | 3,853 | 1,108 | 1,303 | 2,976 |
+| **4** MD-COPD with ESI | FEV~1~/FVC < 0.70 | ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2) | 3,815 | 543 | 1,341 | 3,541 |
 
-MD-COPD reference counts are 4,203, 170, 1,086 and 3,943.
+MD-COPD reference counts are 4,357, 275, 799 and 3,809.
 
 ## Table 2. Where participants move when CT is removed
 
@@ -24,26 +24,26 @@ place in the same category.
 
 | MD-COPD without CT &darr;&nbsp;&nbsp;/&nbsp;&nbsp;MD-COPD with CT &rarr; | noCOPD | AFL-only | COPD-minor | COPD-major | **total** |
 |---|---|---|---|---|---|
-| **noCOPD** | **3,864** | 0 | 117 | 0 | **3,981** |
-| **AFL-only** | 0 | **170** | 0 | 949 | **1,119** |
-| **COPD-minor** | 339 | 0 | **969** | 0 | **1,308** |
-| **COPD-major** | 0 | 0 | 0 | **2,994** | **2,994** |
-| **total** | 4,203 | 170 | 1,086 | 3,943 | **9,402** |
+| **noCOPD** | **3,778** | 0 | 75 | 0 | **3,853** |
+| **AFL-only** | 0 | **275** | 0 | 833 | **1,108** |
+| **COPD-minor** | 579 | 0 | **724** | 0 | **1,303** |
+| **COPD-major** | 0 | 0 | 0 | **2,976** | **2,976** |
+| **total** | 4,357 | 275 | 799 | 3,809 | **9,240** |
 
-Concordant with MD-COPD in 7,997 of 9,402 participants (85.1%).
+Concordant with MD-COPD in 7,753 of 9,240 participants (83.9%).
 
 
 **Schema 4. MD-COPD with ESI**
 
 | MD-COPD with ESI &darr;&nbsp;&nbsp;/&nbsp;&nbsp;MD-COPD with CT &rarr; | noCOPD | AFL-only | COPD-minor | COPD-major | **total** |
 |---|---|---|---|---|---|
-| **noCOPD** | **3,805** | 0 | 98 | 0 | **3,903** |
-| **AFL-only** | 0 | **77** | 0 | 233 | **310** |
-| **COPD-minor** | 398 | 0 | **988** | 0 | **1,386** |
-| **COPD-major** | 0 | 93 | 0 | **3,710** | **3,803** |
-| **total** | 4,203 | 170 | 1,086 | 3,943 | **9,402** |
+| **noCOPD** | **3,745** | 0 | 70 | 0 | **3,815** |
+| **AFL-only** | 0 | **193** | 0 | 350 | **543** |
+| **COPD-minor** | 612 | 0 | **729** | 0 | **1,341** |
+| **COPD-major** | 0 | 82 | 0 | **3,459** | **3,541** |
+| **total** | 4,357 | 275 | 799 | 3,809 | **9,240** |
 
-Concordant with MD-COPD in 8,580 of 9,402 participants (91.3%).
+Concordant with MD-COPD in 8,126 of 9,240 participants (87.9%).
 
 
 ## Table 3. Crude and adjusted risk within each schema's own categories
@@ -59,20 +59,20 @@ covariates account for.
 
 | Schema | Category | n | All-cause crude RR | All-cause adjusted HR | Respiratory crude RR | Respiratory adjusted HR | Exacerbation crude RR | Exacerbation adjusted IRR |
 |---|---|---|---|---|---|---|---|---|
-| 1 Fixed ratio | noCOPD | 5,289 | reference | reference | reference | reference | reference | reference |
-|  | COPD | 4,111 | 2.84 (2.63–3.08) | 2.17 (1.99–2.37) | 35.08 (24.44–57.33) | 21.98 (14.54–33.23) | 3.16 (2.91–3.46) | 3.03 (2.77–3.32) |
-| 2 MD-COPD with CT | noCOPD | 4,203 | reference | reference | reference | reference | reference | reference |
-|  | AFL-only | 170 | 1.08 (0.73–1.49) | 0.90 (0.62–1.30) | 1.70 (0.00–7.17) | 1.42 (0.19–10.84) | 1.15 (0.81–1.55) | 1.35 (1.00–1.81) |
-|  | COPD-minor | 1,086 | 1.85 (1.60–2.13) | 1.91 (1.64–2.22) | 3.90 (1.56–9.03) | 4.80 (2.14–10.76) | 3.09 (2.65–3.63) | 2.16 (1.88–2.49) |
-|  | COPD-major | 3,941 | 3.39 (3.11–3.71) | 2.59 (2.35–2.86) | 56.05 (35.90–109.15) | 36.27 (20.85–63.07) | 4.46 (4.06–4.92) | 3.82 (3.48–4.21) |
-| 3 without CT | noCOPD | 3,981 | reference | reference | reference | reference | reference | reference |
-|  | AFL-only | 1,119 | 1.56 (1.35–1.79) | 1.13 (0.97–1.31) | 9.64 (5.46–20.20) | 6.61 (3.41–12.79) | 1.74 (1.48–2.03) | 1.80 (1.58–2.05) |
-|  | COPD-minor | 1,308 | 1.73 (1.51–1.98) | 1.97 (1.71–2.28) | 3.53 (1.37–7.89) | 5.05 (2.26–11.29) | 3.36 (2.87–3.88) | 2.40 (2.11–2.73) |
-|  | COPD-major | 2,992 | 4.13 (3.77–4.51) | 3.34 (3.02–3.69) | 76.14 (47.00–155.65) | 51.62 (29.03–91.78) | 6.24 (5.64–6.88) | 4.87 (4.40–5.40) |
-| 4 with ESI | noCOPD | 3,903 | reference | reference | reference | reference | reference | reference |
-|  | AFL-only | 310 | 1.30 (0.98–1.65) | 0.94 (0.72–1.22) | 4.23 (0.71–11.83) | 3.02 (0.96–9.51) | 1.09 (0.84–1.36) | 1.12 (0.89–1.40) |
-|  | COPD-minor | 1,386 | 1.76 (1.53–2.01) | 1.94 (1.68–2.24) | 3.88 (1.63–9.18) | 5.31 (2.37–11.90) | 3.28 (2.82–3.79) | 2.29 (2.01–2.61) |
-|  | COPD-major | 3,801 | 3.55 (3.24–3.88) | 2.76 (2.50–3.05) | 64.23 (39.37–137.90) | 42.72 (23.45–77.82) | 5.18 (4.67–5.71) | 4.19 (3.80–4.62) |
+| 1 Fixed ratio | noCOPD | 5,156 | reference | reference | reference | reference | reference | reference |
+|  | COPD | 4,082 | 2.82 (2.61–3.05) | 2.17 (1.98–2.37) | 34.19 (24.23–56.02) | 21.31 (14.09–32.21) | 3.09 (2.81–3.40) | 3.00 (2.74–3.29) |
+| 2 MD-COPD with CT | noCOPD | 4,357 | reference | reference | reference | reference | reference | reference |
+|  | AFL-only | 275 | 1.05 (0.79–1.37) | 0.87 (0.65–1.16) | 1.76 (0.00–5.75) | 1.39 (0.32–6.04) | 1.00 (0.77–1.25) | 1.21 (0.95–1.54) |
+|  | COPD-minor | 799 | 1.77 (1.50–2.06) | 1.83 (1.55–2.16) | 3.27 (1.16–7.10) | 3.86 (1.65–9.04) | 3.01 (2.52–3.61) | 2.09 (1.79–2.44) |
+|  | COPD-major | 3,807 | 3.30 (3.02–3.59) | 2.54 (2.31–2.79) | 48.46 (31.97–95.51) | 30.80 (18.66–50.83) | 4.15 (3.76–4.55) | 3.69 (3.36–4.06) |
+| 3 without CT | noCOPD | 3,853 | reference | reference | reference | reference | reference | reference |
+|  | AFL-only | 1,108 | 1.54 (1.34–1.76) | 1.12 (0.97–1.30) | 9.38 (5.00–21.95) | 6.37 (3.29–12.34) | 1.72 (1.43–1.98) | 1.78 (1.56–2.03) |
+|  | COPD-minor | 1,303 | 1.72 (1.51–1.98) | 1.97 (1.71–2.29) | 3.42 (1.42–8.24) | 4.88 (2.18–10.89) | 3.31 (2.86–3.81) | 2.38 (2.09–2.71) |
+|  | COPD-major | 2,974 | 4.11 (3.76–4.50) | 3.34 (3.01–3.69) | 73.53 (45.61–164.37) | 49.48 (27.83–87.97) | 6.11 (5.54–6.78) | 4.82 (4.35–5.35) |
+| 4 with ESI | noCOPD | 3,815 | reference | reference | reference | reference | reference | reference |
+|  | AFL-only | 543 | 1.29 (1.05–1.55) | 0.96 (0.78–1.18) | 2.37 (0.44–6.99) | 1.77 (0.56–5.58) | 1.17 (0.94–1.41) | 1.23 (1.03–1.48) |
+|  | COPD-minor | 1,341 | 1.75 (1.53–2.00) | 1.96 (1.70–2.27) | 3.89 (1.64–9.81) | 5.37 (2.40–12.03) | 3.28 (2.83–3.80) | 2.31 (2.03–2.64) |
+|  | COPD-major | 3,539 | 3.70 (3.40–4.06) | 2.93 (2.64–3.24) | 67.83 (40.97–161.48) | 44.81 (24.60–81.63) | 5.38 (4.90–5.99) | 4.41 (4.00–4.87) |
 
 ## Results sentence, replacing the former Table 5
 
@@ -80,9 +80,9 @@ covariates account for.
 > COPD comprises exactly the AFL-only-noCOPD and COPD-major categories, the
 > two models are nested, and the four-category classification added
 > information beyond the fixed ratio for all-cause mortality
-> (likelihood ratio chi-square 110.2 on 2 df), respiratory mortality (53.9)
-> and exacerbations (162.4), all p < 0.001. The gain in discrimination was
-> small, with the C-index rising from 0.694 to 0.703 for all-cause mortality,
+> (likelihood ratio chi-square 122.1 on 2 df), respiratory mortality (76.1)
+> and exacerbations (158.9), all p < 0.001. The gain in discrimination was
+> small, with the C-index rising from 0.693 to 0.703 for all-cause mortality,
 > so the framework's advantage lies in reclassifying an identifiable
 > minority correctly rather than in improved prediction overall.
 
@@ -103,17 +103,17 @@ get it.
 
 | Schema | All-cause C-index | Respiratory C-index | Exacerbation AIC |
 |---|---|---|---|
-| 1 Fixed ratio | 0.6945 | 0.8454 | 30326 |
-| 2 MD-COPD with CT | 0.7034 | 0.8527 | 30168 |
-| 3 without CT | 0.7219 | 0.8755 | 29970 |
-| 4 with ESI | 0.7079 | 0.8581 | 30066 |
+| 1 Fixed ratio | 0.6929 | 0.8439 | 29835 |
+| 2 MD-COPD with CT | 0.7032 | 0.8539 | 29680 |
+| 3 without CT | 0.7208 | 0.8740 | 29486 |
+| 4 with ESI | 0.7124 | 0.8644 | 29519 |
 
 ## Table S2. Fitting the CT-free schemas to approximate MD-COPD
 
 | Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |
 |---|---|---|---|---|
-| 3 without CT | ≥ 2 | — | 0.7202 | 0.7203 |
-| 4 with ESI | ≥ 2 | 1.25 | 0.7542 | 0.7532 |
+| 3 without CT | ≥ 2 | — | 0.7210 | 0.7212 |
+| 4 with ESI | ≥ 2 | 1.50 | 0.7527 | 0.7518 |
 
-Schema 4 exceeds schema 3 by 0.0329 (0.0159 to 0.0498) across 25 held-out folds.
+Schema 4 exceeds schema 3 by 0.0307 (0.0144 to 0.0437) across 25 held-out folds.
 

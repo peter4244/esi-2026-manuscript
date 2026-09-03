@@ -200,6 +200,12 @@ def legend(doc, label, text):
 def table1(doc):
     lab = {(r["schema"], r["category"]): int(r["n"]) for r in load("schema_labels.csv")}
     n = lambda s, c: f"{lab[(s, c)]:,}" if (s, c) in lab else "—"
+    n_total = sum(lab[(s, c)] for (s, c) in lab if s == "S2")
+    # ESI threshold read from the fitted-schema artifact so this cannot drift
+    # from the actual model.
+    fit = {r["schema"]: r for r in load("schema_fit.csv")}
+    esi_t = float(fit["S4"]["t_low"])
+    esi_desc = f"ESI ≥ {esi_t:.2f}, dyspnea, SGRQ, chronic bronchitis (≥2)"
     rows = [
         ["Fixed ratio", "none; COPD is airflow limitation",
          n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
@@ -207,17 +213,17 @@ def table1(doc):
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
         ["NoCT-MD-COPD", "dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
-        ["ESI-MD-COPD", "ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["ESI-MD-COPD", esi_desc,
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
     add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only-noCOPD",
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, "Table 1.",
-           "The four classifications applied to the same 9,402 participants. The major "
-           "criterion is post-bronchodilator FEV₁/FVC below 0.70 in all four, so no "
-           "participant moves between the airflow-limitation categories and the "
-           "preserved-spirometry ones. MD-COPD is the reference NoCT-MD-COPD and "
-           "ESI-MD-COPD are compared against.")
+           f"The four classifications applied to the same {n_total:,} participants. "
+           "The major criterion is post-bronchodilator FEV₁/FVC below 0.70 in all "
+           "four, so no participant moves between the airflow-limitation categories "
+           "and the preserved-spirometry ones. MD-COPD is the reference NoCT-MD-COPD "
+           "and ESI-MD-COPD are compared against.")
 
 
 def table3(doc):
@@ -259,18 +265,25 @@ def table3(doc):
     add_table(doc, ["Outcome", "Classification", "Category", "n",
                     "Crude RR (95% CI)", "Adjusted HR or IRR (95% CI)"],
               rows, [1.05, 1.15, 0.88, 0.58, 1.38, 1.46])
+    n_mort_total = sum(int(risk[(s, c)]["n_mort"])
+                       for (s, c) in risk if s == "S2")
+    n_exac_total = sum(int(risk[(s, c)]["n_exac"])
+                       for (s, c) in risk if s == "S2")
+    n_cohort_total = sum(int(risk[(s, c)]["n_cohort"])
+                         for (s, c) in risk if s == "S2")
     legend(doc, "Table 3.",
-           "Crude and adjusted risk within each classification's own categories, against "
-           "that classification's own noCOPD group. Column pairs are all-cause mortality, "
-           "respiratory mortality and exacerbations. Crude ratios are observed event "
-           "rates with 95% percentile intervals from a subject resample bootstrap; "
-           "adjusted estimates carry age, sex, race, current smoking status, "
-           "pack-years and body mass index, with prior exacerbation frequency added "
-           "for exacerbations. Denominators follow the outcome: mortality models are "
-           "fitted on 9,400 participants and exacerbation models on 8,338, so the "
-           "n column differs between the exacerbation block and the two mortality "
-           "blocks, and both are smaller than the 9,402 of Table 1 because a small "
-           "number of participants lack complete covariate data.")
+           f"Crude and adjusted risk within each classification's own categories, "
+           f"against that classification's own noCOPD group. Column pairs are "
+           f"all-cause mortality, respiratory mortality and exacerbations. Crude "
+           f"ratios are observed event rates with 95% percentile intervals from a "
+           f"subject resample bootstrap; adjusted estimates carry age, sex, race, "
+           f"current smoking status, pack-years and body mass index, with prior "
+           f"exacerbation frequency added for exacerbations. Denominators follow "
+           f"the outcome: mortality models are fitted on {n_mort_total:,} "
+           f"participants and exacerbation models on {n_exac_total:,}, so the n "
+           f"column differs between the exacerbation block and the two mortality "
+           f"blocks, and both are smaller than the {n_cohort_total:,} of Table 1 "
+           f"because a small number of participants lack complete covariate data.")
 
 
 def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):

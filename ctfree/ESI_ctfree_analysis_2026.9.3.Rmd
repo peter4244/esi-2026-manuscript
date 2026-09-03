@@ -269,6 +269,80 @@ kable(cohort_flow, caption = "Cohort construction. `bhatt_n` is the published co
 kable(val, caption = "MD-COPD validated exactly against Bhatt et al. Table 1.")
 ```
 
+## Section 1.1 -- Baseline characteristics by GOLD stratum (Supplemental Table S1)
+
+Described on this cohort rather than carried over from the earlier analysis.
+The exclusion chain removes never-smokers, so there is no never-smoker
+stratum here.
+
+```{r baseline-by-stratum}
+# GOLD stratum from the COPDGene staging variable: -1 is PRISm, 0 is GOLD 0,
+# 1-4 are GOLD 1-4. No "Never" level: never-smokers are excluded upstream.
+stopifnot(!any(trimws(d_b$cohort) == "Never smoked"))
+d_b$stratum <- factor(
+  ifelse(d_b$finalgold_visit == -1, "PRISm",
+         paste0("GOLD", d_b$finalgold_visit)),
+  levels = c("PRISm", paste0("GOLD", 0:4)))
+
+msd <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
+pct <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
+
+base_row <- function(dd, label) data.frame(
+  stratum      = label,
+  n            = nrow(dd),
+  age          = msd(dd$age_visit),
+  pct_female   = pct(dd$gender == 2),
+  pct_current  = pct(dd$SmokCigNow == 1),
+  pack_years   = msd(dd$ATS_PackYears),
+  BMI          = msd(dd$BMI),
+  FEV1_pp      = msd(dd$FEV1pp_utah),
+  FEV1_FVC     = sprintf("%.2f (%.2f)", mean(dd$FEV1_FVC_post, na.rm = TRUE),
+                                        sd(dd$FEV1_FVC_post, na.rm = TRUE)),
+  ESI          = sprintf("%.2f (%.2f)", mean(dd$ESI_v1post, na.rm = TRUE),
+                                        sd(dd$ESI_v1post, na.rm = TRUE)),
+  LAA950       = msd(dd$Insp_LAA950_total_Thirona),
+  pct_mMRC2p   = pct(dd$dysp_yn),
+  pct_SGRQ25p  = pct(dd$qol_yn),
+  pct_CB       = pct(dd$cb_yn),
+  stringsAsFactors = FALSE)
+
+baseline <- do.call(rbind, c(
+  lapply(levels(d_b$stratum), function(lv) base_row(d_b[d_b$stratum == lv, ], lv)),
+  list(base_row(d_b, "Overall"))))
+# The strata must partition the cohort, or a row is being double counted.
+stopifnot(sum(baseline$n[baseline$stratum != "Overall"]) == nrow(d_b))
+write.csv(baseline, file.path(OUT_DIR, "supp_baseline.csv"), row.names = FALSE)
+kable(baseline, caption = "Baseline characteristics by GOLD stratum.")
+```
+
+## Section 1.2 -- ESI against quantitative CT (Supplemental Table S2)
+
+Pearson correlations of ESI with quantitative CT emphysema, overall and within
+stratum. The earlier analysis's supplemental table was a correlation matrix
+*among the CT measures*, which does not support the statement it was cited for;
+this computes what the text actually claims.
+
+```{r esi-ct-correlations}
+rpair <- function(dd, v) {
+  ok <- stats::complete.cases(dd$ESI_v1post, dd[[v]])
+  if (sum(ok) < 3) return(c(n = sum(ok), r = NA_real_))
+  c(n = sum(ok), r = cor(dd$ESI_v1post[ok], dd[[v]][ok]))
+}
+corr_row <- function(dd, label) {
+  a <- rpair(dd, "Insp_LAA950_total_Thirona")
+  b <- rpair(dd, "PRM_pct_emphysema_Thirona")
+  data.frame(stratum = label,
+             n_LAA = as.integer(a["n"]), r_LAA = round(unname(a["r"]), 3),
+             n_PRM = as.integer(b["n"]), r_PRM = round(unname(b["r"]), 3),
+             stringsAsFactors = FALSE)
+}
+esi_ct <- do.call(rbind, c(
+  lapply(levels(d_b$stratum), function(lv) corr_row(d_b[d_b$stratum == lv, ], lv)),
+  list(corr_row(d_b, "All strata"))))
+write.csv(esi_ct, file.path(OUT_DIR, "supp_esi_ct.csv"), row.names = FALSE)
+kable(esi_ct, caption = "ESI against quantitative CT emphysema, by stratum.")
+```
+
 # Section 2 -- The four classifications
 
 Fixed ratio, MD-COPD, NoCT-MD-COPD, and ESI-MD-COPD, applied to the same
@@ -839,6 +913,7 @@ required_csvs <- c(
   "schema_crude.csv", "schema_discrimination.csv",
   "schema_fit.csv", "schema_fit_cv_diff.csv", "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
+  "supp_baseline.csv", "supp_esi_ct.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
