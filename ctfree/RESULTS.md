@@ -155,19 +155,22 @@ those with advanced destructive emphysema, and across airway wall thickening,
 from 0.96 when absent through 1.29 when borderline to 3.32 when definite
 {CTLEV-01, CTLEV-02}.
 
-Pooled across the cohort, ESI discriminates visual emphysema of at least mild
-severity with an area under the curve of 0.78 and definite wall thickening with
-0.80, and FEV₁/FVC discriminates both better, at 0.82 and 0.82 {CTAUC-01}. Stratifying by airflow limitation shows that this is
-largely a reflection of severity rather than of detection. Among participants
-with airflow limitation, ESI achieves 0.75 and 0.75 and FEV₁/FVC 0.78 and 0.75;
-these are the only comparisons in which ESI is not clearly lower, and for wall
-thickening the two are equal to two decimal places {CTAUC-02, CTAUC-02b}.
-Among participants with preserved spirometry, where the ESI criterion actually
-operates in the COPD-minor pathway, ESI achieves only 0.56 and 0.61, and
-FEV₁/FVC 0.67 and 0.64 {CTAUC-03, CTAUC-04} (Table 4). Both CT criteria are
-poorly predicted from spirometry of any kind in that stratum. The same pattern
-holds for quantitative CT, where the correlation between ESI and low attenuation
-area is 0.78 across the cohort but 0.08 within GOLD 0 {CORR-01, CORR-03}.
+ESI's ability to identify these criteria depends entirely on whether a
+participant has airflow limitation. Among participants with airflow limitation,
+where the CT criteria determine whether someone is COPD-major or AFL-only, ESI
+discriminates visual emphysema of at least mild severity with an area under the
+curve of 0.75 and definite wall thickening with 0.75. Among participants with
+preserved spirometry, where the COPD-minor pathway operates, the corresponding
+values are 0.56 and 0.61 {CTAUC-03, CTAUC-04} (Table 4). Pooled across the whole
+cohort ESI appears to discriminate both criteria well, at 0.78 and 0.80
+{CTAUC-01}, but that reflects the mixture of the two strata rather than
+detection within either. The same pattern holds for quantitative CT, where the
+correlation between ESI and low attenuation area is 0.78 across the cohort but
+0.08 within GOLD 0 {CORR-01, CORR-03}. FEV₁/FVC discriminates both criteria at
+least as well as ESI in five of the six stratum-by-criterion comparisons and
+equally in the sixth, but it is not a candidate replacement criterion for the
+reason given below {CTAUC-02, CTAUC-02b} (Supplemental Table S13).
+
 Used as a continuous measure rather than as a threshold, ESI carried all-cause
 mortality beyond FEV₁/FVC (hazard ratio 1.07 per unit, 95% CI: 1.03 to 1.12;
 likelihood ratio P = 0.002) though it added nothing for respiratory mortality

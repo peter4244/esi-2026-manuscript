@@ -27,7 +27,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
 SUPP_ORDER = ["S1", "S2", "S3a", "S3b", "S3c", "S4", "S5", "S6",
-               "S7", "S8", "S9", "S10", "S11"]
+               "S7", "S8", "S9", "S10", "S11", "S12", "S13"]
 
 
 def load(path, name):
@@ -342,6 +342,58 @@ def s9_paired_bootstrap(doc):
            "that outcome only. CI, confidence interval.")
 
 
+def s12_esi_ct_levels(doc):
+    """Dose-response of ESI across the two visual CT scales."""
+    heading(doc, "Supplemental Table S12. Mean ESI by visual CT severity")
+    rows, seen = [], set()
+    for r in load(ASSETS, "esi_ct_levels.csv"):
+        c = r["criterion"]
+        rows.append([c if c not in seen else "", r["label"],
+                     f"{int(r['n']):,}", f"{float(r['mean_ESI']):.2f}"])
+        seen.add(c)
+    add_table(doc, ["CT criterion", "Level", "n", "Mean ESI"],
+              rows, [1.70, 1.90, 1.30, 1.60])
+    legend(doc, "Table S12.",
+           "Mean ESI at each level of the two visual CT criteria. ESI rises "
+           "monotonically across both scales. The MD-COPD framework treats "
+           "emphysema as present at mild or greater and wall thickening as "
+           "present when definite. Discrimination of these criteria by ESI and "
+           "by FEV\u2081/FVC is given in Table 4 of the main text.")
+
+
+def s13_esi_vs_ffvc(doc):
+    """The comparison held out of the main text, with the reason it cannot be
+    read as a recommendation."""
+    heading(doc, "Supplemental Table S13. ESI and FEV\u2081/FVC compared as "
+                 "detectors of the visual CT criteria")
+    au = load(ASSETS, "esi_ct_auc.csv")
+    ORDER = ["All participants", "Airflow limitation", "Preserved spirometry"]
+    rows, seen = [], set()
+    for crit in ("Visual emphysema", "Airway wall thickening"):
+        for st in ORDER:
+            r = next(x for x in au if x["criterion"] == crit and x["stratum"] == st)
+            rows.append([crit if crit not in seen else "", st,
+                         f"{int(r['n']):,}",
+                         f"{float(r['auc_ESI']):.3f}",
+                         f"{float(r['auc_FEV1FVC']):.3f}"])
+            seen.add(crit)
+    add_table(doc, ["CT criterion", "Stratum", "n", "AUC, ESI",
+                    "AUC, FEV\u2081/FVC"],
+              rows, [1.34, 1.40, 0.74, 1.51, 1.51])
+    legend(doc, "Table S13.",
+           "FEV\u2081/FVC discriminates both visual CT criteria at least as well as "
+           "ESI in five of these six comparisons, and equally to two decimal "
+           "places in the sixth. This does not make it a candidate replacement "
+           "criterion. FEV\u2081/FVC below 0.70 is already the major criterion, so a "
+           "minor criterion defined by a threshold above 0.70 is met by every "
+           "participant with airflow limitation and empties the AFL-only category "
+           "entirely, while a threshold below 0.70 is met by no participant with "
+           "preserved spirometry and so cannot contribute to the COPD-minor "
+           "pathway. A replacement criterion has to carry information not already "
+           "used by the major criterion. "
+           "AUC, area under the receiver operating characteristic curve.")
+
+
 def check_citations(produced):
     """The main text and this file must agree on which supplemental tables
     exist. A dangling citation is exactly the defect that reaches reviewers."""
@@ -394,7 +446,8 @@ def main():
     doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
     for fn in (s1_baseline, s2_ct, s3_risk_by_outcome, s4_sweep,
                s5_discrimination, s6_fev1_decline, s7_continuous_esi,
-               s8_esi_trajectory, s9_paired_bootstrap, s3_crossclass, s4_fitting):
+               s8_esi_trajectory, s9_paired_bootstrap, s3_crossclass, s4_fitting,
+               s12_esi_ct_levels, s13_esi_vs_ffvc):
         fn(doc)
         doc.add_paragraph()
     data_files(doc)

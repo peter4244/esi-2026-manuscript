@@ -561,7 +561,12 @@ fig3_1 <- ggplot(plot_dat, aes(ct_only_recovered, macroF1_heldout)) +
   geom_text_repel(aes(label = label, color = family), size = BODY_FS_NATIVE / .pt,
                   lineheight = 0.95, box.padding = 1.0, point.padding = 0.5,
                   min.segment.length = 0, segment.size = 0.4, force = 6,
-                  max.overlaps = Inf, seed = 1L, show.legend = FALSE) +
+                  max.overlaps = Inf, seed = 1L, show.legend = FALSE,
+                  # "none" sits in the corner with nowhere to be repelled to,
+                  # so it is given a starting offset rather than left on top
+                  # of its own marker.
+                  nudge_x = ifelse(plot_dat$criterion == "none", 45, 0),
+                  nudge_y = ifelse(plot_dat$criterion == "none", -0.0018, 0)) +
   scale_color_manual(values = FAM_PAL, name = NULL, breaks = names(FAM_PAL)) +
   scale_shape_manual(values = c("ESI-based" = 16, "CT-based" = 17,
                                 "Other spirometric" = 15, "No replacement" = 4),
@@ -672,7 +677,7 @@ no symptoms fall into AFL-only, which stops being low risk. **The test is
 whether the AFL-only group's mortality, adjusted and against that rule's own
 noCOPD group, is compatible with 1.**
 
-```{r fig-5-1, fig.height = 6.5}
+```{r fig-5-1, fig.height = 7.0}
 fp <- bind_rows(
   res %>% transmute(criterion, rule, outcome = "All-cause mortality",
                     est = afl_all_HR,  lo = afl_all_lo,  hi = afl_all_hi,
@@ -681,7 +686,7 @@ fp <- bind_rows(
                     est = afl_resp_HR, lo = afl_resp_lo, hi = afl_resp_hi,
                     n = n_aflonly)) %>%
   mutate(
-    lab = sprintf("%s  (AFL-only n = %s)", criterion, n_fmt(n)),
+    lab = sprintf("%s (n = %s)", criterion, n_fmt(n)),
     lab = factor(lab, levels = rev(unique(lab[outcome == "All-cause mortality"]))),
     outcome = factor(outcome, c("All-cause mortality", "Respiratory mortality")),
     family = case_when(criterion == "MD-COPD" ~ "Reference",
@@ -700,16 +705,21 @@ fig5_1 <- ggplot(fp, aes(est, lab, color = family)) +
   facet_wrap(~ outcome, scales = "free_x") +
   scale_x_log10() +
   scale_color_manual(values = FP_PAL, name = NULL, breaks = names(FP_PAL)) +
-  labs(x = "Adjusted hazard ratio for AFL-only vs that rule's own noCOPD group (log scale)",
+  guides(color = guide_legend(nrow = 2)) +
+  labs(x = wrap("Adjusted hazard ratio for AFL-only versus that rule's own noCOPD group (log scale)", 62),
        y = NULL,
        subtitle = wrap(sprintf(paste("n = %s participants. Adjusted for age, sex, race,",
                                      "current smoking, pack-years and BMI. Dashed line at 1:",
-                                     "the AFL-only label is true when the interval covers it."),
-                               n_fmt(N_COHORT)))) +
-  theme_esi()
+                                     "the AFL-only label is true when the interval covers it.",
+                                     "Row labels give each rule's own AFL-only group size."),
+                               n_fmt(N_COHORT)), 62)) +
+  theme_esi() +
+  # Anchor the subtitle and axis title to the whole plot, not to the panel:
+  # with row labels this wide the panel-anchored default runs off the canvas.
+  theme(plot.title.position = "plot")
 
 ggsave(file.path(FIGDIR, "fig5_1_aflonly_label.png"), fig5_1,
-       width = NATIVE_W, height = 6.5, dpi = 300)
+       width = NATIVE_W, height = 7.0, dpi = 300)
 fig5_1
 ```
 
@@ -773,6 +783,12 @@ sweep <- do.call(rbind, lapply(seq(0.50, 0.85, by = 0.01), function(t) {
 }))
 stopifnot(nrow(sweep) == 36, any(sweep$aflonly > 0))
 
+# FEV1/FVC is recorded to two decimals, so the collapse is already complete one
+# grid step below the major criterion. Both facts are computed, not asserted.
+FF_GAP        <- sum(d$FEV1_FVC_post > 0.69 & d$FEV1_FVC_post < 0.70)
+FF_MAX_USABLE <- max(sweep$threshold[sweep$aflonly > 0])
+FF_REACH_MAX  <- sweep$reach[which.min(abs(sweep$threshold - FF_MAX_USABLE))]
+
 fig6_1 <- ggplot(sweep, aes(threshold, aflonly)) +
   geom_vline(xintercept = 0.70, linetype = "dashed", color = "grey50") +
   geom_line(color = "#555555", linewidth = 0.9) +
@@ -782,7 +798,7 @@ fig6_1 <- ggplot(sweep, aes(threshold, aflonly)) +
   annotate("text", x = 0.705, y = max(sweep$aflonly) * 0.92, hjust = 0,
            size = BODY_FS_NATIVE / .pt, color = "grey30",
            label = "at and above 0.70 the minor criterion\nfires for everyone with airflow\nlimitation: AFL-only collapses to 0") +
-  annotate("text", x = 0.50, y = sum(d$ref == "AFL-only"), vjust = -0.6, hjust = 0,
+  annotate("text", x = 0.50, y = sum(d$ref == "AFL-only"), vjust = 1.6, hjust = 0,
            size = BODY_FS_NATIVE / .pt, color = unname(PALETTE["CT-based"]),
            label = sprintf("reference MD-COPD AFL-only, n = %s",
                            n_fmt(sum(d$ref == "AFL-only")))) +
@@ -800,10 +816,21 @@ fig6_1
 
 **Figure 6.1.** The circularity. **The message: a second FEV~1~/FVC threshold
 is confined to below 0.70, because at or above 0.70 it annihilates the
-AFL-only category.** Below 0.70 it therefore acts only within the
-airflow-limitation group, and by definition reaches nobody with preserved
-spirometry, which is `r n_fmt(sweep$reach[which.min(abs(sweep$threshold - 0.69))])` people at
-the highest usable threshold.
+AFL-only category.** Below 0.70 it acts only within the airflow-limitation
+group, and reaches nobody with preserved spirometry -- necessarily, because
+the replacement criterion and the major criterion are thresholds on the same
+variable.
+
+Two details the figure shows that are worth stating. The curve reaches zero at
+**`r f2(0.69)`**, one grid step before the major criterion, because
+FEV~1~/FVC is recorded to two decimals in COPDGene and
+**`r n_fmt(FF_GAP)`** participants fall strictly between 0.69 and 0.70. The
+highest threshold that leaves any AFL-only group at all is therefore
+**`r f2(FF_MAX_USABLE)`**, and its reach into preserved spirometry is
+**`r n_fmt(FF_REACH_MAX)`**. And the curve crosses the reference AFL-only size
+of `r n_fmt(sum(d$ref == "AFL-only"))` well below the fitted threshold: matching
+the reference *count* and maximizing label agreement are not the same target
+either, which is Section 4's point in miniature.
 
 ## Section 6.2 -- Reach, and the honest version of ESI's advantage
 

@@ -3,10 +3,13 @@
 Not part of the manuscript pipeline. Nothing here is read by the analysis
 report, the claims registry or the document builders.
 
-## Deferred: co-author report on replacement criteria
+## Co-author report on replacement criteria -- WRITTEN 2026-09-07
 
-**Trigger: once the manuscript is finalized.** Pete asked for this to be
-written up separately for co-authors, whether or not it enters the paper.
+**`replacement_criteria_2026.9.7.Rmd`** (rendered to `.html`) is the co-author
+write-up. It recomputes everything below from source, checks itself against
+`replacement_criteria_comparison.csv` (39 checks, all passing), and carries
+three figures. Written against manuscript draft v1, at Pete's direction, rather
+than waiting for the manuscript to be marked final.
 
 ### The question
 
@@ -46,11 +49,20 @@ Three points the report should make:
    spirometric criterion repairs it is robust; a claim that ESI specifically is
    required is not.
 
-3. **Reach is where ESI is genuinely distinctive.** A second FEV1/FVC threshold
-   must sit below 0.70 or it fires for everyone with airflow limitation and
-   collapses AFL-only to exactly 0 (the circularity, demonstrated in
+3. **Reach is where ESI differs from a second FEV1/FVC threshold** -- not from
+   spirometric alternatives in general. A second FEV1/FVC threshold must sit
+   below 0.70 or it fires for everyone with airflow limitation and collapses
+   AFL-only to exactly 0 (the circularity, demonstrated in
    `fevfvc_as_criterion.R`). Below 0.70 it therefore reaches 0 participants
    with preserved spirometry, against 183 for ESI. Combining both adds 13.
+
+   **Corrected 2026-09-07 while writing the co-author report:** ESI is not the
+   only CT-free criterion with reach. FEV1pp <= 67.5 reaches **318**
+   participants with preserved spirometry, more than ESI's 183 (LAA-950
+   reaches 853 but needs CT). The `reach_preserved` column of the CSV had this
+   all along; the summary above did not. ESI's case against FEV1pp rests on
+   what it reaches (483 CT-only COPD-major recovered against FEV1pp's 300),
+   not on whether it reaches.
 
 ### Open question for the report
 
@@ -64,3 +76,6 @@ was not made here.
   FEV1/FVC vs ESI comparison, with outcome models
 - `replacement_criteria_comparison.R` — the full head-to-head; writes
   `replacement_criteria_comparison.csv`
+- `replacement_criteria_2026.9.7.Rmd` — the co-author report; recomputes both
+  scripts from source, renders three figures into `figures/`, and self-checks
+  against `replacement_criteria_comparison.csv`

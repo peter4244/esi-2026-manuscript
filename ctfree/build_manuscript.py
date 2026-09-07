@@ -283,24 +283,27 @@ def table3(doc):
             f"{int(rr['n']):,}",
             f"{float(rr['rate_all_100py']):.2f}",
             ci(g, "all_HR", "all_LCI", "all_UCI"),
+            f"{float(rr['rate_resp_100py']):.2f}",
             ci(g, "resp_HR", "resp_LCI", "resp_UCI"),
             f"{float(rr['rate_exac_100py']):.1f}",
-            ci(g, "exac_IRR", "exac_LCI", "exac_UCI"),
-            f"{float(rr['prior_exac_mean']):.2f}"])
-    add_table(doc, ["Group", "n", "Deaths per 100 person-years",
-                    "All-cause HR (95% CI)", "Respiratory HR (95% CI)",
-                    "Exacerbations per 100 person-years",
-                    "Exacerbation IRR (95% CI)", "Prior exacerbations"],
-              rows, [0.94, 0.44, 0.80, 0.96, 0.96, 0.80, 0.96, 0.64])
+            ci(g, "exac_IRR", "exac_LCI", "exac_UCI")])
+    # Nine columns split the group names and the counts across lines. Prior
+    # exacerbation burden is one number per group and is already given in the
+    # text, so it moves to the legend rather than squeezing the rest.
+    add_table(doc, ["Group", "n", "All-cause rate", "All-cause HR (95% CI)",
+                    "Respiratory rate", "Respiratory HR (95% CI)",
+                    "Exacerbation rate", "Exacerbation IRR (95% CI)"],
+              rows, [1.30, 0.46, 0.58, 1.02, 0.58, 1.02, 0.58, 0.96])
     legend(doc, "Table 3.",
            "Participants cross-classified by MD-COPD and ESI-MD-COPD within the "
            "preserved-spirometry subgroup, where the two can disagree about a "
            "diagnosis. CT-only-COPD is what ESI-MD-COPD misses; ESI-only-COPD is "
-           "what it adds. Rates are observed events per 100 person-years. Adjusted "
+           "what it adds. All rates are observed events per 100 person-years. Adjusted "
            "estimates are against the Both-noCOPD group and carry age, sex, race, "
            "current smoking status, pack-years and body mass index, with prior "
-           "exacerbation frequency added for exacerbations. Prior exacerbations is the "
-           "mean count in the year before enrollment. The respiratory estimate for "
+           "exacerbation frequency added for exacerbations. Mean exacerbation count "
+           "in the year before enrollment was 0.09, 0.44, 0.16 and 0.50 across the "
+           "four groups in the order shown. The respiratory estimate for "
            "CT-only-COPD is not estimable because that group had no respiratory "
            "deaths during follow-up. "
            "AFL-only, airflow limitation without other criteria; HR, hazard ratio; "
@@ -308,31 +311,35 @@ def table3(doc):
 
 
 def table4(doc):
-    """ESI and FEV1/FVC against the two visual CT criteria they stand in for,
-    pooled and stratified by airflow limitation."""
-    lv = load("esi_ct_levels.csv")
+    """ESI's discrimination of the two visual CT criteria, by stratum. This is
+    the claim that explains where an ESI criterion helps. The comparison with
+    FEV1/FVC belongs in the Supplement: FEV1/FVC cannot serve as the
+    replacement criterion at all, so putting the two side by side in the main
+    text invites a comparison the framework does not permit."""
     au = load("esi_ct_auc.csv")
+    ORDER = ["All participants", "Airflow limitation", "Preserved spirometry"]
     rows, seen = [], set()
-    for r in lv:
-        c = r["criterion"]
-        rows.append([c if c not in seen else "", r["label"],
-                     f"{int(r['n']):,}", f"{float(r['mean_ESI']):.2f}", "", ""])
-        seen.add(c)
-    for r in au:
-        rows.append([r["criterion"] if r["stratum"] == "All participants" else "",
-                     r["stratum"], f"{int(r['n']):,}",
-                     f"{float(r['prevalence']):.1f}%",
-                     f"{float(r['auc_ESI']):.3f}", f"{float(r['auc_FEV1FVC']):.3f}"])
-    add_table(doc, ["Criterion", "Level or stratum", "n",
-                    "Mean ESI / prevalence", "AUC, ESI", "AUC, FEV\u2081/FVC"],
-              rows, [1.30, 1.34, 0.62, 1.24, 1.00, 1.00])
+    for crit in ("Visual emphysema", "Airway wall thickening"):
+        for st in ORDER:
+            r = next(x for x in au if x["criterion"] == crit and x["stratum"] == st)
+            rows.append([crit if crit not in seen else "", st,
+                         f"{int(r['n']):,}", f"{float(r['prevalence']):.1f}",
+                         f"{float(r['auc_ESI']):.2f}"])
+            seen.add(crit)
+    add_table(doc, ["CT criterion", "Stratum", "n", "Prevalence (%)",
+                    "AUC for ESI"],
+              rows, [1.40, 1.46, 0.76, 1.10, 1.78])
     legend(doc, "Table 4.",
-           "Upper rows: mean ESI at each level of the two visual CT criteria. "
-           "Lower rows: how well ESI and FEV\u2081/FVC discriminate each criterion, "
-           "overall and within airflow-limitation stratum, with the prevalence of "
-           "the criterion in that stratum. ESI rises across both scales, but its "
-           "discrimination is confined to participants with airflow limitation and "
-           "does not exceed that of FEV\u2081/FVC in any stratum. "
+           "How well ESI discriminates each of the two visual CT criteria it "
+           "replaces, overall and within stratum of airflow limitation. ESI "
+           "discriminates both criteria among participants with airflow "
+           "limitation, where the CT criteria determine whether a participant is "
+           "COPD-major or AFL-only, and does not among participants with "
+           "preserved spirometry, where the COPD-minor pathway operates. The "
+           "pooled values reflect the mixture of the two strata rather than "
+           "detection within either. Mean ESI at each level of the two scales is "
+           "given in Supplemental Table S12 and the corresponding values for "
+           "FEV\u2081/FVC in Supplemental Table S13. "
            "AUC, area under the receiver operating characteristic curve.")
 
 
