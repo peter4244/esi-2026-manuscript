@@ -215,7 +215,7 @@ def table1(doc):
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
         ["ESI-MD-COPD", esi_desc,
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
-    add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only-noCOPD",
+    add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only",
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, "Table 1.",
@@ -224,6 +224,37 @@ def table1(doc):
            "four, so no participant moves between the airflow-limitation categories "
            "and the preserved-spirometry ones. MD-COPD is the reference NoCT-MD-COPD "
            "and ESI-MD-COPD are compared against.")
+
+
+def table2(doc):
+    """Cross-classification of each CT-free classification against MD-COPD,
+    with per-category F1 folded in beside the diagonal it summarizes."""
+    x = load("crossclass.csv")
+    f1 = {r["category"]: r for r in load("f1_by_category.csv")}
+    O = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
+    cell = {(r["schema"], r["row_cat"], r["col_cat"]): int(r["n"]) for r in x}
+
+    rows = []
+    for schema, name, f1key in (("S3", "NoCT-MD-COPD", "f1_noct"),
+                                ("S4", "ESI-MD-COPD", "f1_esi")):
+        for i, rc in enumerate(O):
+            rows.append([
+                name if i == 0 else "", rc,
+                *[f"{cell[(schema, rc, cc)]:,}" for cc in O],
+                f"{float(f1[rc][f1key]):.2f}"])
+    add_table(doc, ["Classification", "Assigned to",
+                    *[f"MD-COPD {c}" for c in O], "F1"],
+              rows, [1.10, 1.00, 0.92, 0.86, 0.98, 0.96, 0.68])
+    legend(doc, "Table 2.",
+           "Each CT-free classification cross-classified against MD-COPD. Rows are "
+           "the category assigned by the CT-free classification, columns the MD-COPD "
+           "category; the diagonal is agreement. F1 is the per-category harmonic mean "
+           "of precision and recall against MD-COPD, and the mean of the four is the "
+           "macro-averaged F1 the thresholds were fitted on. Both classifications move "
+           "participants out of COPD-major into AFL-only, 833 without CT and 350 with "
+           "ESI, and that column is where the two differ. "
+           "AFL-only, airflow limitation without other criteria; F1, harmonic mean of "
+           "precision and recall.")
 
 
 def table3(doc):
@@ -397,6 +428,7 @@ def main():
     doc.add_paragraph("TABLES", style="Heading 1")
     table1(doc)
     doc.add_paragraph()
+    table2(doc)
     table3(doc)
     table4(doc)
     table5(doc)
@@ -408,7 +440,7 @@ def main():
     add_figure(doc, os.path.join(FIGS, "figure1_flow.png"), "Figure 1.",
                CLAIM_ID.sub("", fig1[-1]))
     for i, (png, cat) in enumerate(
-            [("figure2_aflonly.png", "AFL-only-noCOPD"),
+            [("figure2_aflonly.png", "AFL-only"),
              ("figure3_copdminor.png", "COPD-minor"),
              ("figure4_copdmajor.png", "COPD-major")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",

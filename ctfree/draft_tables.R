@@ -26,7 +26,7 @@ w("# Draft tables — CT-free MD-COPD paper\n")
 w("Generated from `ctfree/assets/`. Every value is read from an artifact.\n")
 
 w("## Table 1. Four classification schemas and how they label the cohort\n")
-w("| | Major criterion | Minor criteria | noCOPD | AFL-only-noCOPD | COPD-minor | COPD-major |")
+w("| | Major criterion | Minor criteria | noCOPD | AFL-only | COPD-minor | COPD-major |")
 w("|---|---|---|---|---|---|---|")
 defs <- list(
  c("**1** Fixed ratio", "FEV~1~/FVC < 0.70", "none", "S1"),
@@ -108,7 +108,7 @@ for (s in c("S1","S2","S3","S4")) {
 # prose still come from a verified source rather than being typed.
 w("\n## Results sentence, replacing the former Table 5\n")
 w("> MD-COPD improved on the fixed ratio for every outcome. Because fixed-ratio")
-w("> COPD comprises exactly the AFL-only-noCOPD and COPD-major categories, the")
+w("> COPD comprises exactly the AFL-only and COPD-major categories, the")
 w("> two models are nested, and the four-category classification added")
 g <- function(o) gate$lrt_chisq[gate$outcome == o]
 w(sprintf("> information beyond the fixed ratio for all-cause mortality"))

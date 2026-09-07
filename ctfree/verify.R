@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 87L
+REGISTRY_N <- 97L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -148,6 +148,37 @@ reg("PAIR-05", "Paired comparison",
     "schema_diff_bootstrap.csv",
     BD("respiratory mortality", "COPD-major", "B_eff"), TOL_EXACT)
 
+# --- numbers the opening Results section quotes ---------------------------
+# The gate is now reported as P values rather than chi-squares, so the P values
+# themselves are pinned; the chi-squares stay registered because the artifact
+# still carries them.
+G <- function(o, fld) sprintf('x$%s[x$outcome == "%s"]', fld, o)
+reg("GATE-01p", "MD-COPD over fixed ratio", "all-cause P < 0.001", TRUE,
+    "gate_fixedratio.csv", sprintf('%s < 0.001', G("ALL-CAUSE MORTALITY","lrt_p")), TOL_EXACT)
+reg("GATE-02p", "MD-COPD over fixed ratio", "respiratory P < 0.001", TRUE,
+    "gate_fixedratio.csv", sprintf('%s < 0.001', G("RESPIRATORY MORTALITY","lrt_p")), TOL_EXACT)
+reg("GATE-03p", "MD-COPD over fixed ratio", "exacerbation P < 0.001", TRUE,
+    "gate_fixedratio.csv", sprintf('%s < 0.001', G("EXACERBATIONS","lrt_p")), TOL_EXACT)
+
+R2 <- function(cat, fld) sprintf('x$%s[x$schema == "S2" & x$category == "%s"]', fld, cat)
+C2 <- function(cat, o, fld)
+  sprintf('x$%s[x$schema == "S2" & x$category == "%s" & x$outcome == "%s"]', fld, cat, o)
+reg("RISK-01r", "Label meaning", "S2 AFL-only respiratory HR 1.39", 1.39,
+    "schema_risk.csv", R2("AFL-only", "resp_HR"), TOL_2DP)
+reg("CRUDE-08", "Crude estimates", "S2 AFL-only crude respiratory ratio 1.76", 1.76,
+    "schema_crude.csv", C2("AFL-only", "resp", "rr"), TOL_2DP)
+reg("CRUDE-09", "Crude estimates", "S2 AFL-only crude exacerbation ratio 1.00", 1.00,
+    "schema_crude.csv", C2("AFL-only", "exac", "rr"), TOL_2DP)
+reg("LAB-01c", "Labels", "S2 reference COPD-minor n = 799", 799,
+    "schema_labels.csv",
+    'x$n[x$schema == "S2" & x$category == "COPD-minor"]', TOL_EXACT)
+reg("RISK-09", "Label meaning", "S2 COPD-minor all-cause HR 1.83", 1.83,
+    "schema_risk.csv", R2("COPD-minor", "all_HR"), TOL_2DP)
+reg("RISK-10", "Label meaning", "S2 COPD-minor respiratory HR 3.86", 3.86,
+    "schema_risk.csv", R2("COPD-minor", "resp_HR"), TOL_2DP)
+reg("RISK-11", "Label meaning", "S2 COPD-minor exacerbation IRR 2.09", 2.09,
+    "schema_risk.csv", R2("COPD-minor", "exac_IRR"), TOL_2DP)
+
 # --- ESI against quantitative CT ------------------------------------------
 # Cited in Results, Study population, and shown as Supplemental Table S2. These
 # were previously unregistered and the table cited for them was a correlation
@@ -196,8 +227,12 @@ reg("FIT-01", "Fitting", "S3 rule is >= 2 of 3 symptom criteria", 2, "schema_fit
 reg("FIT-02a", "Fitting", "S4 rule is >= 2 of 4", 2, "schema_fit.csv", f("S4", "k"), TOL_EXACT)
 reg("FIT-02b", "Fitting", "S4 ESI threshold 1.50", 1.50, "schema_fit.csv",
     f("S4", "t_low"), TOL_3DP)
-reg("FIT-03", "Fitting", "S4 second ESI threshold is inert, at or above 6.0",
-    TRUE, "schema_fit.csv", sprintf('%s >= 6.0', f("S4", "t_high")), TOL_EXACT)
+# The rule previously scored ESI 0/1/2 using an upper threshold fitted at 7.00
+# and reached by 2 of 5,156 participants with preserved spirometry. Dropping it
+# left the fitted rule, every category count and macro-F1 unchanged, so the
+# parameter was carrying nothing. This pins the rule as single-threshold.
+reg("FIT-03", "Fitting", "the ESI rule uses a single threshold", TRUE,
+    "schema_fit.csv", sprintf('is.na(%s)', f("S4", "t_high")), TOL_EXACT)
 reg("FIT-04a", "Fitting", "held-out macro-F1, S4 = 0.752", 0.752, "schema_fit.csv",
     f("S4", "macroF1_heldout"), TOL_3DP)
 reg("FIT-04b", "Fitting", "held-out macro-F1, S3 = 0.721", 0.721, "schema_fit.csv",
@@ -224,7 +259,7 @@ reg("LAB-04", "Labels", "S3 calls 1,108 AFL-only against the reference's 275",
 
 # --- reclassification counts the Results quotes ---------------------------
 RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
-reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only-noCOPD without CT",
+reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only without CT",
     833, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)
 reg("RECL-02", "Reclassification", "350 do so with ESI", 350,
     "reclassification.csv", RC("S4", "major_to_aflonly"), TOL_EXACT)

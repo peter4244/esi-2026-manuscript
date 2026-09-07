@@ -34,38 +34,37 @@ relationships among participants with established airflow obstruction
 
 *(new)*
 
-The four classifications are named as in the Methods: the **fixed ratio**;
-**MD-COPD**, the published CT-based framework; **NoCT-MD-COPD**, with the CT
-criteria removed; and **ESI-MD-COPD**, with ESI in their place.
+The four classifications are named as in the Methods: the fixed ratio; MD-COPD,
+the published CT-based framework; NoCT-MD-COPD, with the CT criteria removed;
+and ESI-MD-COPD, with ESI in their place.
 
-Because fixed-ratio COPD comprises exactly the AFL-only-noCOPD and COPD-major
-categories, the fixed-ratio model is nested within the four-category model and
-the two can be compared directly. The four-category classification added
-information beyond the fixed ratio for all-cause mortality (likelihood ratio
-χ² = 122.1 on 2 df) {GATE-01}, respiratory mortality (χ² = 76.1) {GATE-02} and
-exacerbations (χ² = 158.9) {GATE-03}, all P < 0.001.
+As reported in the initial publication, the MD-COPD classification adds
+prognostic information beyond the fixed ratio for all three outcomes: all-cause
+mortality, respiratory mortality and exacerbations (P < 0.001 for each in
+COPDGene) {GATE-01p, GATE-02p, GATE-03p}. The primary benefit of MD-COPD is
+observed in the subjects that are reclassified relative to the fixed ratio
+diagnosis. The first group is 275 participants with airflow limitation but low
+symptoms that are reclassified as not having COPD (the AFL-only group)
+{LAB-01b}. Relative to individuals with FEV₁/FVC >= 0.7 with low symptoms
+(noCOPD), they show no excess risk on any outcome: adjusted all-cause HR 0.87
+(95% CI: 0.65 - 1.16), respiratory HR 1.39 (95% CI: 0.32 - 6.04) and
+exacerbation IRR 1.21 (95% CI: 0.95 - 1.54) {RISK-01, RISK-01b, RISK-01c,
+RISK-01r, RISK-04e}. The second group is 799 participants with preserved
+spirometry and at least three minor criteria (COPD minor pathway) {LAB-01c}.
+This group carries nearly double the all-cause mortality of the reference
+(HR 1.83, 1.55 to 2.16), four times the respiratory mortality (3.86, 1.65 to
+9.04) and twice the exacerbation rate (IRR 2.09, 1.79 to 2.44) {RISK-09,
+RISK-10, RISK-11}.
 
-The gain in discrimination was small. The C-index for all-cause mortality rose
-from 0.693 to 0.703 {GATE-04, GATE-05}. MD-COPD does not predict better across
-the cohort. It corrects the fixed ratio in two groups.
-
-The first group is 275 participants with airflow limitation and no other
-abnormality. The fixed ratio calls them COPD. They have no excess mortality
-(AFL-only-noCOPD, adjusted all-cause HR 0.87, 95% CI 0.65 to 1.16; crude rate
-ratio 1.05, 0.79 to 1.37) {RISK-01, CRUDE-06}. MD-COPD withholds the diagnosis.
-
-The second group is 799 participants with preserved spirometry and at least
-three minor criteria. The fixed ratio calls them healthy. Their mortality is
-nearly double the reference (COPD-minor, HR 1.83, 1.55 to 2.16) {LAB-01a,
-LAB-01b}. MD-COPD gives them the diagnosis. A CT-free classification has to
-keep both corrections.
+An effective CT-free MD-COPD classification should preserve the prognostic
+benefits of both groups as much as possible.
 
 ## What is lost when the CT criteria are removed
 
 *(new)*
 
 Removing the CT criteria without replacing them costs the COPD-major category
-833 of its 3,809 participants, who are reclassified as AFL-only-noCOPD
+833 of its 3,809 participants, who are reclassified as AFL-only
 {RECL-01, LAB-02}. Those 833 are the participants whose only minor criterion
 was a CT finding {RECL-05}. They account for 21.9% of the COPD-major category
 {RECL-03, RECL-04}. None of them has a symptom criterion. Remove CT without
@@ -100,7 +99,7 @@ participants into a category named as not having COPD.
 
 *(new)*
 
-The AFL-only-noCOPD category exists to identify participants whom the fixed
+The AFL-only category exists to identify participants whom the fixed
 ratio would call COPD but who do not have it, so a classification is usable only if
 that category is genuinely low risk. Under MD-COPD it is. Adjusted all-cause
 HR 0.87 (0.65 to 1.16), respiratory HR 1.39 (0.32 to 6.04) and exacerbation
@@ -122,7 +121,7 @@ RISK-04b}. The exacerbation estimate does not (IRR 1.23, 1.03 to 1.48), and
 neither does the crude all-cause rate ratio (1.29, 1.05 to 1.55) {CRUDE-04,
 CRUDE-05}. The exacerbation estimate is the same size as MD-COPD's own for this
 category, 1.23 against 1.21; its interval excludes 1 because ESI-MD-COPD
-assigns 543 participants to AFL-only-noCOPD against MD-COPD's 275, not because
+assigns 543 participants to AFL-only against MD-COPD's 275, not because
 the rate is higher. The remaining categories track the reference: COPD-minor HR
 1.96 against 1.83, COPD-major 2.93 against 2.54 {RISK-05, RISK-06} (Table 3,
 Figures 2 to 4).
@@ -133,7 +132,7 @@ Figures 2 to 4).
 
 FEV₁ decline separates the categories less clearly than mortality or
 exacerbations do. Under MD-COPD no category differs from its own noCOPD group
-(AFL-only-noCOPD −0.8 mL/yr, P = 0.71; COPD-minor −3.0, P = 0.08; COPD-major
+(AFL-only −0.8 mL/yr, P = 0.71; COPD-minor −3.0, P = 0.08; COPD-major
 1.4, P = 0.16) {DEC-01} (Supplemental Table S6).
 
 Under both CT-free classifications the COPD-major category declines more
@@ -205,7 +204,7 @@ overlapping intervals cannot settle. Participants were resampled and both
 classifications refitted within every resample, so the difference in the log
 estimate for a given category is taken on the same people each time.
 
-For AFL-only-noCOPD and COPD-minor the two are indistinguishable. No outcome
+For AFL-only and COPD-minor the two are indistinguishable. No outcome
 shows a difference for either category, with two-sided P from 0.18 to 0.86
 {PAIR-01, PAIR-02} (Table 5).
 

@@ -1,6 +1,6 @@
 "check","computed","expected","status"
 "MD-COPD noCOPD n vs Bhatt 4,439","4439.000","4439.000","PASS"
-"MD-COPD AFL-only-noCOPD n vs Bhatt 282","282.000","282.000","PASS"
+"MD-COPD AFL-only n vs Bhatt 282","282.000","282.000","PASS"
 "MD-COPD COPD-minor n vs Bhatt 811","811.000","811.000","PASS"
 "MD-COPD COPD-major n vs Bhatt 3,884","3884.000","3884.000","PASS"
 "analytic cohort n (with baseline ESI)","9240.000","9240.000","PASS"

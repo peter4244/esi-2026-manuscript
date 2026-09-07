@@ -32,7 +32,7 @@ cohort membership by 23 people in identifiable ways (13 with missing symptom
 data we kept and they excluded; 10 without a quantitative CT variable that
 was never part of their published criteria). Using their file directly
 reproduces all four published category counts exactly (n = 9,416: noCOPD
-4,439, AFL-only-noCOPD 282, COPD-minor 811, COPD-major 3,884). NoCT-MD-COPD
+4,439, AFL-only 282, COPD-minor 811, COPD-major 3,884). NoCT-MD-COPD
 and ESI-MD-COPD are ours, built from the individual criteria directly.
 -->
 
@@ -107,7 +107,7 @@ CV_REPEATS      <- 5L
 CV_FOLDS        <- 5L
 CV_SEED         <- 20260901L
 CRUDE_B         <- 1000L
-BHATT_MDCOPD_N  <- c(noCOPD = 4439L, `AFL-only-NoCOPD` = 282L,
+BHATT_MDCOPD_N  <- c(noCOPD = 4439L, `AFL-only` = 282L,
                      `COPD-minor` = 811L, `COPD-major` = 3884L)
 ```
 
@@ -125,7 +125,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
                       dpi = 150, fig.width = 7, fig.height = 5)
 
 suppressPackageStartupMessages({
-  library(dplyr); library(survival); library(MASS); library(knitr)
+  library(dplyr); library(survival); library(MASS); library(knitr); library(digest)
 })
 
 read_any <- function(p, ...) {
@@ -225,12 +225,12 @@ for (v in c("emph_yn", "wall_yn", "dysp_yn", "qol_yn", "cb_yn"))
 
 # ---- MD-COPD classification, from Bhatt's file directly ------------------
 # score 1 = COPD-major, score 2 = COPD-minor, score 0 = neither; the last
-# is split into AFL-only-noCOPD vs. noCOPD by the major criterion.
-ORD <- c("noCOPD", "AFL-only-NoCOPD", "COPD-minor", "COPD-major")
+# is split into AFL-only vs. noCOPD by the major criterion.
+ORD <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
 d_b$bhatt_cls <- factor(
   ifelse(d_b$MultiDim_COPD_score == 1, "COPD-major",
   ifelse(d_b$MultiDim_COPD_score == 2, "COPD-minor",
-  ifelse(d_b$major_criterion, "AFL-only-NoCOPD", "noCOPD"))),
+  ifelse(d_b$major_criterion, "AFL-only", "noCOPD"))),
   levels = ORD)
 
 # Validate against Bhatt et al. Table 1. Only the score == 0 split is
@@ -348,7 +348,7 @@ kable(esi_ct, caption = "ESI against quantitative CT emphysema, by stratum.")
 Fixed ratio, MD-COPD, NoCT-MD-COPD, and ESI-MD-COPD, applied to the same
 `r nrow(d_b)` participants. All four use the same major criterion
 (post-bronchodilator FEV1/FVC < 0.70), so no participant moves between the
-airflow-limitation pair (AFL-only-noCOPD and COPD-major) and the
+airflow-limitation pair (AFL-only and COPD-major) and the
 preserved-spirometry pair (noCOPD and COPD-minor).
 
 ```{r classifications}
@@ -370,16 +370,23 @@ d_b$S1 <- factor(ifelse(d_b$afl, "COPD", "noCOPD"),
                  levels = c("noCOPD", "COPD"))
 
 # S2  MD-COPD (from Bhatt's file, level names normalised).
-d_b$S2 <- factor(sub("AFL-only-NoCOPD", "AFL-only",
-                     as.character(d_b$bhatt_cls)), levels = O)
+d_b$S2 <- factor(as.character(d_b$bhatt_cls), levels = O)
 
 # S3  NoCT-MD-COPD. Symptom criteria only; count threshold is fitted below.
 s3 <- function(df, k) label(df, df$om >= k, df$om == 0)
 
-# S4  ESI-MD-COPD. ESI is scored 0/1/2 by two thresholds; both thresholds
-# and the count threshold are fitted below. This is the same 5-criterion,
-# 2-threshold shape as the v15 draft rule; the values change.
-s4 <- function(df, k, tl, th) {
+# S4  ESI-MD-COPD. ESI is a single criterion, met at or above one fitted
+# threshold, so it counts like any of the three symptom criteria. An earlier
+# version scored ESI 0/1/2 using a second, upper threshold that let ESI alone
+# satisfy the count. That threshold was fitted at 7.00 and reached by 2 of the
+# 5,156 participants with preserved spirometry, so it bought essentially
+# nothing for an extra fitted parameter and is dropped.
+s4 <- function(df, k, tl) label(df, (as.integer(df$ESI >= tl) + df$om) >= k,
+                                   (as.integer(df$ESI >= tl) + df$om) == 0)
+
+# Retained only to score the v15 draft rule, which WAS a two-threshold rule,
+# so that historical comparison stays faithful to what was actually drafted.
+s4_two <- function(df, k, tl, th) {
   s <- ifelse(df$ESI >= th, 2, ifelse(df$ESI >= tl, 1, 0))
   label(df, (s + df$om) >= k, (s + df$om) == 0)
 }
@@ -396,7 +403,7 @@ than a restatement of the fit.
 The objective is macro-averaged F1 across the four MD-COPD categories.
 Cohen's kappa and mean per-category sensitivity were considered and rejected
 because they fail in OPPOSITE directions on this problem: kappa lets a
-schema over-diagnose COPD by assigning almost no one to AFL-only-noCOPD,
+schema over-diagnose COPD by assigning almost no one to AFL-only,
 mean sensitivity encourages the reverse by ignoring false positives.
 Macro-F1 penalises both.
 
@@ -417,12 +424,8 @@ kappa_full <- function(ref, est) {
 # Search grids.
 KS  <- 1:3
 TL  <- seq(0.50, 4.00, by = 0.25)
-TH  <- seq(1.00, 8.00, by = 0.50)
-G4  <- do.call(rbind, lapply(2:4, function(k) {
-  g <- expand.grid(t_low = TL, t_high = TH)
-  g <- g[g$t_high >= g$t_low, ]
-  cbind(k = k, g)
-}))
+G4  <- do.call(rbind, lapply(2:4, function(k)
+  data.frame(k = k, t_low = TL)))
 
 fit3 <- function(df) {
   r <- df$S2
@@ -431,18 +434,18 @@ fit3 <- function(df) {
 fit4 <- function(df) {
   r <- df$S2
   scores <- vapply(seq_len(nrow(G4)), function(j)
-    macroF1(r, s4(df, G4$k[j], G4$t_low[j], G4$t_high[j])), numeric(1))
+    macroF1(r, s4(df, G4$k[j], G4$t_low[j])), numeric(1))
   G4[which.max(scores), ]
 }
 
 k3   <- fit3(d_b)
 p4   <- fit4(d_b)
 d_b$S3 <- s3(d_b, k3)
-d_b$S4 <- s4(d_b, p4$k, p4$t_low, p4$t_high)
+d_b$S4 <- s4(d_b, p4$k, p4$t_low)
 
 cat(sprintf("NoCT-MD-COPD fitted: COPD-minor if >= %d of 3 symptom criteria\n", k3))
-cat(sprintf("ESI-MD-COPD  fitted: COPD-minor if >= %d; ESI thresholds %.2f / %.2f\n",
-            p4$k, p4$t_low, p4$t_high))
+cat(sprintf("ESI-MD-COPD  fitted: COPD-minor if >= %d of 4; ESI criterion met at >= %.2f\n",
+            p4$k, p4$t_low))
 ```
 
 ## Section 3.1 -- What each candidate objective selects
@@ -459,9 +462,9 @@ for (nm in c("kappa", "mean_sensitivity", "macro_F1")) {
     mean_sensitivity = function(e) mean_recall(d_b$S2, e),
     macro_F1         = function(e) macroF1(d_b$S2, e))
   v <- vapply(seq_len(nrow(G4)), function(j)
-    scorer(s4(d_b, G4$k[j], G4$t_low[j], G4$t_high[j])), numeric(1))
+    scorer(s4(d_b, G4$k[j], G4$t_low[j])), numeric(1))
   b <- G4[which.max(v), ]
-  est <- s4(d_b, b$k, b$t_low, b$t_high)
+  est <- s4(d_b, b$k, b$t_low)
   obj_rows[[length(obj_rows) + 1]] <- data.frame(
     objective = nm, k = b$k, t_low = b$t_low, score = max(v),
     n_aflonly = sum(est == "AFL-only"),
@@ -472,13 +475,73 @@ objsel <- do.call(rbind, obj_rows)
 objsel$ref_aflonly <- sum(d_b$S2 == "AFL-only")
 objsel$ref_major   <- sum(d_b$S2 == "COPD-major")
 # The two rejected objectives must err in opposite directions on
-# AFL-only-noCOPD or the Results sentence describing them is wrong.
+# AFL-only or the Results sentence describing them is wrong.
 stopifnot(objsel$n_aflonly[objsel$objective == "kappa"]
             < objsel$ref_aflonly[1],
           objsel$n_aflonly[objsel$objective == "mean_sensitivity"]
             > objsel$ref_aflonly[1])
 write.csv(objsel, file.path(OUT_DIR, "objective_selection.csv"), row.names = FALSE)
 kable(objsel, caption = "What each candidate objective selects. Kappa and mean sensitivity fail in opposite directions.")
+```
+
+## Section 3.1b -- Parameter sweep and where ESI's advantage comes from
+
+The fitting above reports only the selected rule. These two blocks record what
+the alternatives would have given, which is what justifies the selection, and
+decompose the difference between the two CT-free classifications by category.
+
+```{r metric-sweep}
+bal_acc <- function(ref, est) mean_recall(ref, est)   # balanced accuracy is
+                                                     # macro-averaged recall
+sweep_row <- function(label, schema, param, est) data.frame(
+  schema = schema, parameter = param, label = label,
+  n_noCOPD = sum(est == "noCOPD"), n_aflonly = sum(est == "AFL-only"),
+  n_minor  = sum(est == "COPD-minor"), n_major = sum(est == "COPD-major"),
+  macroF1 = macroF1(d_b$S2, est), bal_acc = bal_acc(d_b$S2, est),
+  kappa = kappa_full(d_b$S2, est), stringsAsFactors = FALSE)
+
+rows <- list(sweep_row("MD-COPD (reference)", "reference", NA_character_, d_b$S2))
+for (k in 1:3)
+  rows[[length(rows)+1]] <- sweep_row(sprintf(">= %d of 3 symptom criteria", k),
+                                      "S3", as.character(k), s3(d_b, k))
+for (t in c(0.75, 1.00, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00))
+  rows[[length(rows)+1]] <- sweep_row(sprintf("ESI >= %.2f", t), "S4",
+                                      sprintf("%.2f", t), s4(d_b, 2, t))
+metric_sweep <- do.call(rbind, rows)
+metric_sweep$selected <- with(metric_sweep,
+  (schema == "S3" & parameter == as.character(k3)) |
+  (schema == "S4" & parameter == sprintf("%.2f", p4$t_low)))
+# Each metric's optimum must fall somewhere in the swept range, or the range is
+# too narrow to justify the selection.
+for (m in c("macroF1", "bal_acc", "kappa")) {
+  sub <- metric_sweep[metric_sweep$schema == "S4", ]
+  stopifnot(which.max(sub[[m]]) %in% seq_len(nrow(sub)))
+}
+write.csv(metric_sweep, file.path(OUT_DIR, "metric_sweep.csv"), row.names = FALSE)
+kable(metric_sweep, digits = 3, caption = "Parameter sweep. Category sizes and each candidate metric.")
+```
+
+```{r f1-decomposition}
+# Macro-F1 is the mean of four per-category F1 values, so the difference
+# between the two CT-free classifications decomposes exactly by category.
+f1_cat <- function(ref, est, g) {
+  tp <- sum(ref == g & est == g)
+  if (tp == 0) return(0)
+  2 * tp / (sum(est == g) + sum(ref == g))
+}
+f1_by_cat <- do.call(rbind, lapply(O, function(g) data.frame(
+  category = g,
+  n_ref  = sum(d_b$S2 == g),
+  n_noct = sum(d_b$S3 == g), n_esi = sum(d_b$S4 == g),
+  f1_noct = f1_cat(d_b$S2, d_b$S3, g), f1_esi = f1_cat(d_b$S2, d_b$S4, g),
+  stringsAsFactors = FALSE)))
+f1_by_cat$gain <- f1_by_cat$f1_esi - f1_by_cat$f1_noct
+# The per-category F1 values must average to the macro-F1 reported above, or
+# the decomposition is not of the quantity that was optimized.
+stopifnot(abs(mean(f1_by_cat$f1_esi)  - macroF1(d_b$S2, d_b$S4)) < 1e-12,
+          abs(mean(f1_by_cat$f1_noct) - macroF1(d_b$S2, d_b$S3)) < 1e-12)
+write.csv(f1_by_cat, file.path(OUT_DIR, "f1_by_category.csv"), row.names = FALSE)
+kable(f1_by_cat, digits = 3, caption = "Per-category F1. The macro-averaged value is the mean of the four.")
 ```
 
 ## Section 3.2 -- Repeated stratified cross-validation
@@ -503,9 +566,9 @@ for (rep_i in seq_len(CV_REPEATS)) {
     cv_rows[[length(cv_rows) + 1]] <- data.frame(
       rep = rep_i, fold = kf,
       k3 = a,  f3 = macroF1(rt, s3(te, a)),
-      k4 = b$k, tl = b$t_low, th = b$t_high,
-      f4 = macroF1(rt, s4(te, b$k, b$t_low, b$t_high)),
-      f_draft = macroF1(rt, s4(te, 3, 1.00, 2.50)),
+      k4 = b$k, tl = b$t_low,
+      f4 = macroF1(rt, s4(te, b$k, b$t_low)),
+      f_draft = macroF1(rt, s4_two(te, 3, 1.00, 2.50)),
       stringsAsFactors = FALSE)
   }
 }
@@ -522,10 +585,10 @@ write.csv(data.frame(
   schema = c("S3", "S4", "S4_v15draft"),
   k      = c(k3, p4$k, 3),
   t_low  = c(NA, p4$t_low, 1.00),
-  t_high = c(NA, p4$t_high, 2.50),
+  t_high = c(NA, NA, 2.50),   # S4 is single-threshold; only the v15 draft had an upper one
   macroF1_insample = c(macroF1(d_b$S2, s3(d_b, k3)),
-                       macroF1(d_b$S2, s4(d_b, p4$k, p4$t_low, p4$t_high)),
-                       macroF1(d_b$S2, s4(d_b, 3, 1.00, 2.50))),
+                       macroF1(d_b$S2, s4(d_b, p4$k, p4$t_low)),
+                       macroF1(d_b$S2, s4_two(d_b, 3, 1.00, 2.50))),
   macroF1_heldout  = c(mean(cv$f3), mean(cv$f4), mean(cv$f_draft)),
   stringsAsFactors = FALSE),
   file.path(OUT_DIR, "schema_fit.csv"), row.names = FALSE)
@@ -625,7 +688,7 @@ cat(sprintf("Exacerbation n = %d\n", nrow(exa)))
 
 # Section 6 -- MD-COPD vs. the fixed ratio (nested LR test)
 
-Fixed-ratio COPD is exactly the AFL-only-noCOPD and COPD-major categories
+Fixed-ratio COPD is exactly the AFL-only and COPD-major categories
 of MD-COPD, so the fixed-ratio model is nested in the four-category model
 and the two are compared by likelihood ratio test on 2 degrees of freedom
 rather than by comparing summary measures.
@@ -639,7 +702,7 @@ exa$fixed_ratio  <- factor(ifelse(exa$afl,  "COPD", "noCOPD"),
                            levels = c("noCOPD", "COPD"))
 exa$bhatt_grp    <- d_b$bhatt_cls[match(exa$pid,  d_b$pid)]
 stopifnot(all((mort$fixed_ratio == "COPD") ==
-              (mort$bhatt_grp %in% c("AFL-only-NoCOPD", "COPD-major"))))
+              (mort$bhatt_grp %in% c("AFL-only", "COPD-major"))))
 
 cox_pair <- function(ev, label) {
   f0 <- as.formula(sprintf("Surv(days_followed/365.25, %s) ~ fixed_ratio + %s", ev, COV))
@@ -694,7 +757,7 @@ write.csv(data.frame(aic_fixedratio = AIC(n0), aic_mdcopd = AIC(n1)),
 Cox proportional hazards models for mortality and negative binomial models
 with a follow-up-year offset for exacerbations. Each estimate is expressed
 against its OWN classification's noCOPD category, so a CT-free
-classification's AFL-only-noCOPD group is compared to its own noCOPD group
+classification's AFL-only group is compared to its own noCOPD group
 rather than to MD-COPD's.
 
 ```{r adjusted-risk}
@@ -910,6 +973,72 @@ kable(cont_esi, digits = 3,
       caption = "Continuous ESI beside FEV1/FVC in the same model. HR per 1 ESI unit and per 0.1 FEV1/FVC; the likelihood ratio tests adding ESI to a FEV1/FVC model.")
 ```
 
+## Section 8c.1b -- ESI against the two visual CT criteria
+
+The ESI criterion stands in for the two visual CT criteria, so how well it
+tracks them, and where, is what explains the pattern in the classification
+results. Reported with FEV1/FVC alongside, because the question is not whether
+ESI relates to CT abnormality but whether it does so beyond the spirometry
+already in the framework, and stratified by airflow limitation, because a
+pooled figure over a cohort this heterogeneous mostly reflects severity.
+
+```{r esi-visual-ct}
+auc <- function(score, lab) {
+  lab <- as.logical(lab)
+  n1 <- sum(lab); n0 <- sum(!lab)
+  if (n1 == 0 || n0 == 0) return(NA_real_)
+  r <- rank(score)
+  (sum(r[lab]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+d_b$emph_pos <- d_b$emph_yn
+d_b$wall_pos <- d_b$wall_yn
+
+# Mean ESI at each level of each visual scale.
+lvl_rows <- list()
+EMPH_LAB <- c("none","trace","mild","moderate","confluent","advanced destructive")
+for (k in 0:5) {
+  i <- which(d_b$CT_Visual_Emph_Severity == k)
+  if (length(i)) lvl_rows[[length(lvl_rows)+1]] <- data.frame(
+    criterion = "Visual emphysema", level = k, label = EMPH_LAB[k+1],
+    n = length(i), mean_ESI = mean(d_b$ESI[i]), stringsAsFactors = FALSE)
+}
+WALL_LAB <- c("absent","borderline","definite")
+for (k in 0:2) {
+  i <- which(d_b$CT_Visual_Wall_Thickening == k)
+  if (length(i)) lvl_rows[[length(lvl_rows)+1]] <- data.frame(
+    criterion = "Airway wall thickening", level = k, label = WALL_LAB[k+1],
+    n = length(i), mean_ESI = mean(d_b$ESI[i]), stringsAsFactors = FALSE)
+}
+esi_ct_levels <- do.call(rbind, lvl_rows)
+# ESI must rise monotonically across both scales for the dose-response
+# statement in the Results to hold.
+for (cr in unique(esi_ct_levels$criterion)) {
+  v <- esi_ct_levels$mean_ESI[esi_ct_levels$criterion == cr]
+  stopifnot(all(diff(v) > 0))
+}
+write.csv(esi_ct_levels, file.path(OUT_DIR, "esi_ct_levels.csv"), row.names = FALSE)
+
+# Discrimination of each criterion, pooled and by airflow limitation.
+strata <- list(list("All participants", rep(TRUE, nrow(d_b))),
+               list("Airflow limitation", d_b$afl),
+               list("Preserved spirometry", !d_b$afl))
+crit <- list(list("Visual emphysema", d_b$emph_pos),
+             list("Airway wall thickening", d_b$wall_pos))
+auc_rows <- list()
+for (st in strata) for (cr in crit) {
+  i <- which(st[[2]]); y <- cr[[2]][i]
+  auc_rows[[length(auc_rows)+1]] <- data.frame(
+    stratum = st[[1]], criterion = cr[[1]], n = length(i),
+    prevalence = 100 * mean(y),
+    auc_ESI = auc(d_b$ESI[i], y),
+    auc_FEV1FVC = auc(-d_b$FEV1_FVC_post[i], y), stringsAsFactors = FALSE)
+}
+esi_ct_auc <- do.call(rbind, auc_rows)
+write.csv(esi_ct_auc, file.path(OUT_DIR, "esi_ct_auc.csv"), row.names = FALSE)
+kable(esi_ct_levels, digits = 2, caption = "Mean ESI at each level of the two visual CT criteria.")
+kable(esi_ct_auc, digits = 3, caption = "Discrimination of each visual CT criterion, by ESI and by FEV1/FVC.")
+```
+
 ## Section 8c.2 -- Baseline ESI and subsequent decline in GOLD 0
 
 ```{r continuous-esi-gold0}
@@ -1118,10 +1247,17 @@ CATS   <- c("AFL-only", "COPD-minor", "COPD-major")
           paste("Surv(py, ev_resp) ~ S +",      COV),
           paste("Total_Exacerbations ~ S +", COV,
                 "+ prior_exac + offset(log(Years_Followed))"))
+# The formulas and row counts are identical whether or not the S4 rule
+# changed, so a fingerprint built from those alone would silently reuse a
+# bootstrap describing the previous classification. Carry the label vectors
+# themselves.
+.labels <- paste(paste(as.integer(d_b$S2), collapse = ""),
+                 paste(as.integer(d_b$S4), collapse = ""), sep = "|")
 .want <- list(n_mort = nrow(mort), n_exac = nrow(exa), B = B_DIFF,
               deaths = sum(mort$vital_status), resp = sum(mort$ev_resp),
               cats = paste(CATS, collapse = ","), fml = paste(.fml, collapse = "|"),
-              version = 1L)
+              labels = substr(digest::digest(.labels), 1, 12),
+              version = 2L)
 .cached <- if (file.exists(CPATH)) readRDS(CPATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("paired-bootstrap cache stale; recomputing")
@@ -1248,8 +1384,8 @@ checks <- list(
   # ---- Bhatt Table 1 reproduction (before ESI restriction) --------------
   selfcheck("MD-COPD noCOPD n vs Bhatt 4,439",
             MDV("noCOPD"),          4439L),
-  selfcheck("MD-COPD AFL-only-noCOPD n vs Bhatt 282",
-            MDV("AFL-only-NoCOPD"), 282L),
+  selfcheck("MD-COPD AFL-only n vs Bhatt 282",
+            MDV("AFL-only"), 282L),
   selfcheck("MD-COPD COPD-minor n vs Bhatt 811",
             MDV("COPD-minor"),      811L),
   selfcheck("MD-COPD COPD-major n vs Bhatt 3,884",
@@ -1272,7 +1408,7 @@ checks <- list(
   selfcheck("ESI-MD-COPD count threshold",  p4$k,     2L),
   selfcheck("ESI-MD-COPD T_low",            p4$t_low, 1.50, tol = 0.001),
 
-  # ---- AFL-only-noCOPD risk, the load-bearing category ------------------
+  # ---- AFL-only risk, the load-bearing category ------------------
   selfcheck("MD-COPD AFL-only all-cause HR",
             R2("S2", "AFL-only", "all_HR"),  0.87, tol = 0.02),
   selfcheck("NoCT-MD-COPD AFL-only respiratory HR (should be highly elevated)",
@@ -1306,7 +1442,8 @@ required_csvs <- c(
   "schema_crude.csv", "schema_discrimination.csv",
   "schema_fit.csv", "schema_fit_cv_diff.csv", "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
-  "supp_baseline.csv", "supp_esi_ct.csv",
+  "supp_baseline.csv", "supp_esi_ct.csv", "metric_sweep.csv",
+  "f1_by_category.csv", "esi_ct_levels.csv", "esi_ct_auc.csv",
   "discord_counts.csv", "discord_rates.csv", "discord_adjusted.csv",
   "schema_diff_bootstrap.csv", "fev1_decline.csv",
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
@@ -1334,7 +1471,7 @@ provenance <- c(
   sprintf("fitted_S3_k=%d", k3),
   sprintf("fitted_S4_k=%d", p4$k),
   sprintf("fitted_S4_t_low=%.3f", p4$t_low),
-  sprintf("fitted_S4_t_high=%.3f", p4$t_high))
+  sprintf("fitted_S4_threshold_count=%d", 1L))
 writeLines(provenance, file.path(OUT_DIR, "PROVENANCE.txt"))
 cat(paste(provenance, collapse = "\n"), "\n")
 ```

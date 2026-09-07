@@ -101,7 +101,7 @@ def s3_crossclass(doc):
            "Full cross-classification of each CT-free schema against the CT-based "
            "framework. Diagonal cells are participants both schemas place in the "
            "same category. The COPD-major column shows where the two schemas differ: "
-           "949 of those participants fall into AFL-only-noCOPD without CT, against "
+           "949 of those participants fall into AFL-only without CT, against "
            "233 with ESI.")
 
 
@@ -141,7 +141,7 @@ def s5_discrimination(doc):
            "Discrimination for each schema, every model carrying the same "
            "covariates. The symptoms-only schema has the highest C-index for both "
            "mortality outcomes and the lowest exacerbation AIC. Table 3 of the main "
-           "text shows what that costs: its AFL-only-noCOPD category carries 6.6 "
+           "text shows what that costs: its AFL-only category carries 6.6 "
            "times the respiratory mortality of its own reference.")
 
 

@@ -14,7 +14,7 @@ using spirometry and symptoms alone?
 v15 asks whether an ESI-based framework reproduces the CT-based one, and
 answers with 91% agreement and kappa 0.82 at the binary COPD-versus-noCOPD
 level. Per category that agreement is much weaker: 50.5% for COPD-minor and
-12.4% for AFL-only-noCOPD, because the binary figure is carried by noCOPD and
+12.4% for AFL-only, because the binary figure is carried by noCOPD and
 COPD-major, which are 86.6% of the cohort and already agree at 97.8% and 98.4%.
 
 Reproducing the CT classification is also the wrong target. What matters is
@@ -59,7 +59,7 @@ paths and is git-ignored; see `config_paths.R.example` for the template.
 
 **Metrics that ignore over-calling pick a schema that mislabels people.**
 Cohen's kappa, mean recall and the C-index each select the CT-free schema that
-puts 1,119 participants in AFL-only-noCOPD to capture the 170 real ones. That
+puts 1,119 participants in AFL-only to capture the 170 real ones. That
 group carries 6.6x respiratory mortality, so the label is false. Macro-averaged
 F1 is used instead: symmetric across categories, but balancing precision
 against recall within each.

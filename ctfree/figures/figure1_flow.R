@@ -14,7 +14,7 @@
 # the join is clipped at the panel edge.
 #
 # The comparison the figure exists to make: the COPD-major ribbon splits
-# heavily into AFL-only-noCOPD on the left, where the structural criterion is
+# heavily into AFL-only on the left, where the structural criterion is
 # simply dropped, and much less so on the right, where ESI stands in for it.
 #
 # MOCKUP STAGE: relaxed rigor, no validator gate yet.
@@ -136,7 +136,7 @@ writeLines(c(
                 "and pale ribbons agree. %s of %s",
                 "participants (%.1f%%) keep their category without CT and %s (%.1f%%) with",
                 "ESI. The difference is concentrated in COPD-major, of whom %d are",
-                "reclassified as AFL-only-noCOPD without CT against %d with ESI. Strata",
+                "reclassified as AFL-only without CT against %d with ESI. Strata",
                 "smaller than 3.5%% of the cohort are left unlabelled."),
           format(conc_left, big.mark = ","), format(n, big.mark = ","), 100 * conc_left / n,
           format(conc_right, big.mark = ","), 100 * conc_right / n, lost_left, lost_right)),

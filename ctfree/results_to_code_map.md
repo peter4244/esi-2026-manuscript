@@ -38,7 +38,7 @@ Rscript /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/render_mass
 | | Produced by | Legend | Artifact | Claims |
 |---|---|---|---|---|
 | Figure 1, reclassification flow | `figures/figure1_flow.R` | `figures/figure1_flow_legend.md` | `schema_labels.rds` | LAB-02, LAB-03, LAB-04 |
-| Figure 2, AFL-only-noCOPD | `figures/figure2_risk.R` | *(to write)* | `schema_risk.csv`, `schema_crude.csv` | RISK-01, RISK-02, RISK-03, RISK-04 |
+| Figure 2, AFL-only | `figures/figure2_risk.R` | *(to write)* | `schema_risk.csv`, `schema_crude.csv` | RISK-01, RISK-02, RISK-03, RISK-04 |
 | Figure 3, COPD-minor | `figures/figure2_risk.R` | *(to write)* | same | RISK-05 |
 | Figure 4, COPD-major | `figures/figure2_risk.R` | *(to write)* | same | RISK-06 |
 

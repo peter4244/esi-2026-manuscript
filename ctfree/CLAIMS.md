@@ -36,7 +36,7 @@ what appear in the prose, tables and figures.
   categories. Symmetric across categories, but balancing precision against
   recall within each. Cohen's kappa, mean recall and the C-index were all
   tested and all select a schema that labels 1,119 participants
-  AFL-only-noCOPD to capture the 170 real ones, because none penalizes
+  AFL-only to capture the 170 real ones, because none penalizes
   over-calling a small category. That group carries 6.6x respiratory
   mortality, so the label is false and the metric that prefers it is wrong for
   this problem.
@@ -61,7 +61,7 @@ what appear in the prose, tables and figures.
 
 ### C-GATE — MD-COPD improves on the fixed ratio
 
-The two models are nested: fixed-ratio COPD is exactly AFL-only-noCOPD plus
+The two models are nested: fixed-ratio COPD is exactly AFL-only plus
 COPD-major, so this is a likelihood ratio test on 2 df.
 
 | id | claim | artifact | field |
@@ -101,7 +101,7 @@ any table.
 
 ### C-RISK — do the labels mean what they say
 
-The load-bearing claim of the paper. AFL-only-noCOPD exists to correct the
+The load-bearing claim of the paper. AFL-only exists to correct the
 fixed ratio's over-diagnosis, so that category must be genuinely low risk or
 the schema is mislabelling people.
 

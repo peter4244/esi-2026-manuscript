@@ -48,7 +48,7 @@ uncertainty when used to define stable disease characteristics (29).
 
 *(new; v15 ¶88 promoted from an aside)*
 
-The AFL-only-noCOPD category is where a CT-free classification succeeds or
+The AFL-only category is where a CT-free classification succeeds or
 fails. It exists to withhold a diagnosis from participants the fixed ratio
 would call COPD, so it is defensible only while the participants in it are
 genuinely at low risk. Under MD-COPD they are. Under NoCT-MD-COPD they are not: that category carries 6.4 times the
