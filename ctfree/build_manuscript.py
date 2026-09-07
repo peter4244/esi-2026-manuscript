@@ -258,66 +258,6 @@ def table2(doc):
 
 
 def table3(doc):
-    risk = {(r["schema"], r["category"]): r for r in load("schema_risk.csv")}
-    crd = {(r["schema"], r["category"], r["outcome"]): r for r in load("schema_crude.csv")}
-
-    def ci(s, c, stem):
-        r = risk.get((s, c))
-        est = "exac_IRR" if stem == "exac" else stem + "_HR"
-        if not r or r[est] in ("", "NA"):
-            return "reference"
-        return (f"{float(r[est]):.2f} ({float(r[stem+'_LCI']):.2f}–"
-                f"{float(r[stem+'_UCI']):.2f})")
-
-    def cr(s, c, o):
-        r = crd.get((s, c, o))
-        if not r or r["rr"] in ("", "NA"):
-            return "—"
-        if c == "noCOPD":
-            return "reference"
-        return f"{float(r['rr']):.2f} ({float(r['lo']):.2f}–{float(r['hi']):.2f})"
-
-    # Nine columns of interval strings cannot fit a 6.5 inch text block, so
-    # outcome becomes a row dimension rather than three column pairs. That
-    # keeps every value on one line at 9 pt without going landscape.
-    rows = []
-    for okey, olabel, adj in [("all", "All-cause mortality", "HR"),
-                              ("resp", "Respiratory mortality", "HR"),
-                              ("exac", "Exacerbations", "IRR")]:
-        first_of_outcome = True
-        for s in ["S1", "S2", "S3", "S4"]:
-            cats = ["noCOPD", "COPD"] if s == "S1" else CATS
-            for i, c in enumerate(cats):
-                rows.append([olabel if first_of_outcome else "",
-                             SCHEMA_NAME[s] if i == 0 else "", c,
-                             f"{int(risk[(s, c)][N_COL[okey]]):,}",
-                             cr(s, c, okey), ci(s, c, okey)])
-                first_of_outcome = False
-    add_table(doc, ["Outcome", "Classification", "Category", "n",
-                    "Crude RR (95% CI)", "Adjusted HR or IRR (95% CI)"],
-              rows, [1.05, 1.15, 0.88, 0.58, 1.38, 1.46])
-    n_mort_total = sum(int(risk[(s, c)]["n_mort"])
-                       for (s, c) in risk if s == "S2")
-    n_exac_total = sum(int(risk[(s, c)]["n_exac"])
-                       for (s, c) in risk if s == "S2")
-    n_cohort_total = sum(int(risk[(s, c)]["n_cohort"])
-                         for (s, c) in risk if s == "S2")
-    legend(doc, "Table 3.",
-           f"Crude and adjusted risk within each classification's own categories, "
-           f"against that classification's own noCOPD group. Column pairs are "
-           f"all-cause mortality, respiratory mortality and exacerbations. Crude "
-           f"ratios are observed event rates with 95% percentile intervals from a "
-           f"subject resample bootstrap; adjusted estimates carry age, sex, race, "
-           f"current smoking status, pack-years and body mass index, with prior "
-           f"exacerbation frequency added for exacerbations. Denominators follow "
-           f"the outcome: mortality models are fitted on {n_mort_total:,} "
-           f"participants and exacerbation models on {n_exac_total:,}, so the n "
-           f"column differs between the exacerbation block and the two mortality "
-           f"blocks, and both are smaller than the {n_cohort_total:,} of Table 1 "
-           f"because a small number of participants lack complete covariate data.")
-
-
-def table4(doc):
     """Cross-classification of MD-COPD against ESI-MD-COPD, preserved
     spirometry. Rates and adjusted estimates in one table so the effect of
     adjustment is readable."""
@@ -343,57 +283,57 @@ def table4(doc):
             f"{int(rr['n']):,}",
             f"{float(rr['rate_all_100py']):.2f}",
             ci(g, "all_HR", "all_LCI", "all_UCI"),
+            ci(g, "resp_HR", "resp_LCI", "resp_UCI"),
             f"{float(rr['rate_exac_100py']):.1f}",
             ci(g, "exac_IRR", "exac_LCI", "exac_UCI"),
             f"{float(rr['prior_exac_mean']):.2f}"])
-    add_table(doc, ["Group", "n", "Deaths /100py", "Adjusted HR (95% CI)",
-                    "Exac /100py", "Adjusted IRR (95% CI)", "Prior exac"],
-              rows, [1.16, 0.52, 0.86, 1.30, 0.72, 1.30, 0.64])
-    legend(doc, "Table 4.",
+    add_table(doc, ["Group", "n", "Deaths per 100 person-years",
+                    "All-cause HR (95% CI)", "Respiratory HR (95% CI)",
+                    "Exacerbations per 100 person-years",
+                    "Exacerbation IRR (95% CI)", "Prior exacerbations"],
+              rows, [0.94, 0.44, 0.80, 0.96, 0.96, 0.80, 0.96, 0.64])
+    legend(doc, "Table 3.",
            "Participants cross-classified by MD-COPD and ESI-MD-COPD within the "
            "preserved-spirometry subgroup, where the two can disagree about a "
            "diagnosis. CT-only-COPD is what ESI-MD-COPD misses; ESI-only-COPD is "
            "what it adds. Rates are observed events per 100 person-years. Adjusted "
            "estimates are against the Both-noCOPD group and carry age, sex, race, "
            "current smoking status, pack-years and body mass index, with prior "
-           "exacerbation frequency added for exacerbations. Prior exac is the mean "
-           "number of exacerbations in the year before enrollment. The respiratory "
-           "mortality estimate for CT-only-COPD is not estimable because that group "
-           "had no respiratory deaths.")
+           "exacerbation frequency added for exacerbations. Prior exacerbations is the "
+           "mean count in the year before enrollment. The respiratory estimate for "
+           "CT-only-COPD is not estimable because that group had no respiratory "
+           "deaths during follow-up. "
+           "AFL-only, airflow limitation without other criteria; HR, hazard ratio; "
+           "IRR, incidence rate ratio; CI, confidence interval.")
 
 
-def table5(doc):
-    """Paired bootstrap: does the classification change the effect size for a
-    given category?"""
-    rows_in = load("schema_diff_bootstrap.csv")
-    label = {"all-cause mortality": "All-cause mortality",
-             "respiratory mortality": "Respiratory mortality",
-             "exacerbations": "Exacerbations"}
+def table4(doc):
+    """ESI and FEV1/FVC against the two visual CT criteria they stand in for,
+    pooled and stratified by airflow limitation."""
+    lv = load("esi_ct_levels.csv")
+    au = load("esi_ct_auc.csv")
     rows, seen = [], set()
-    for r in rows_in:
-        o = r["outcome"]
-        p = float(r["p_two_sided"])
-        rows.append([
-            label.get(o, o) if o not in seen else "",
-            r["category"],
-            f"{float(r['ratio_S4_over_S2']):.2f} "
-            f"({float(r['lo']):.2f}–{float(r['hi']):.2f})",
-            "<0.001" if p < 0.001 else f"{p:.3f}",
-            f"{int(r['B_eff']):,}"])
-        seen.add(o)
-    add_table(doc, ["Outcome", "Category",
-                    "ESI-MD-COPD / MD-COPD (95% CI)", "P", "Resamples"],
-              rows, [1.52, 1.14, 2.08, 0.86, 0.90])
-    legend(doc, "Table 5.",
-           "Ratio of the effect size ESI-MD-COPD assigns to a category to the one "
-           "MD-COPD assigns to the same category. Participants were resampled and "
-           "both classifications refitted within every resample, so each pair of "
-           "estimates comes from the same people; the interval and P are percentile "
-           "values from the distribution of the difference in log estimates. A ratio "
-           "of 1 means the two classifications assign the same effect size. "
-           "Respiratory resamples number fewer than 1,000 because a resample with "
-           "too few respiratory events cannot be fitted, and those are dropped for "
-           "that outcome only.")
+    for r in lv:
+        c = r["criterion"]
+        rows.append([c if c not in seen else "", r["label"],
+                     f"{int(r['n']):,}", f"{float(r['mean_ESI']):.2f}", "", ""])
+        seen.add(c)
+    for r in au:
+        rows.append([r["criterion"] if r["stratum"] == "All participants" else "",
+                     r["stratum"], f"{int(r['n']):,}",
+                     f"{float(r['prevalence']):.1f}%",
+                     f"{float(r['auc_ESI']):.3f}", f"{float(r['auc_FEV1FVC']):.3f}"])
+    add_table(doc, ["Criterion", "Level or stratum", "n",
+                    "Mean ESI / prevalence", "AUC, ESI", "AUC, FEV\u2081/FVC"],
+              rows, [1.30, 1.34, 0.62, 1.24, 1.00, 1.00])
+    legend(doc, "Table 4.",
+           "Upper rows: mean ESI at each level of the two visual CT criteria. "
+           "Lower rows: how well ESI and FEV\u2081/FVC discriminate each criterion, "
+           "overall and within airflow-limitation stratum, with the prevalence of "
+           "the criterion in that stratum. ESI rises across both scales, but its "
+           "discrimination is confined to participants with airflow limitation and "
+           "does not exceed that of FEV\u2081/FVC in any stratum. "
+           "AUC, area under the receiver operating characteristic curve.")
 
 
 def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):
@@ -411,9 +351,11 @@ def main():
                   "framework without chest CT")
     r.bold = True
     r.font.name, r.font.size = FONT_NAME, Pt(14)
-    doc.add_paragraph("Draft v1. Prose from METHODS.md and RESULTS.md; tables and "
-                      "figures generated from ctfree/assets/.")
+    doc.add_paragraph("Draft v1. Prose from the .md sources; tables and figures "
+                      "generated from ctfree/assets/.")
 
+    doc.add_paragraph("ABSTRACT", style="Heading 1")
+    add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
     doc.add_paragraph("INTRODUCTION", style="Heading 1")
     n_i = add_prose(doc, os.path.join(HERE, "INTRODUCTION.md"))
     doc.add_paragraph("METHODS", style="Heading 1")
@@ -431,7 +373,6 @@ def main():
     table2(doc)
     table3(doc)
     table4(doc)
-    table5(doc)
 
     doc.add_page_break()
     doc.add_paragraph("FIGURES", style="Heading 1")
@@ -439,15 +380,20 @@ def main():
         fig1 = [l for l in f.read().split("\n") if l.strip()]
     add_figure(doc, os.path.join(FIGS, "figure1_flow.png"), "Figure 1.",
                CLAIM_ID.sub("", fig1[-1]))
-    for i, (png, cat) in enumerate(
-            [("figure2_aflonly.png", "AFL-only"),
-             ("figure3_copdminor.png", "COPD-minor"),
-             ("figure4_copdmajor.png", "COPD-major")], start=2):
+    for i, (png, outcome) in enumerate(
+            [("figure2_allcause.png", "all-cause mortality"),
+             ("figure3_respiratory.png", "respiratory mortality"),
+             ("figure4_exacerbations.png", "exacerbations")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
-                   f"Crude (open) and adjusted (filled) risk for the {cat} category under "
-                   f"each classification, against that classification's own noCOPD group. "
-                   f"The fixed ratio has a single COPD category and so appears only "
-                   f"alongside COPD-major.")
+                   f"Crude (open circles) and adjusted (filled circles) risk of "
+                   f"{outcome} for each diagnostic category, under each "
+                   f"classification, against that classification's own noCOPD group. "
+                   f"Panels share the same rows and scale across Figures 2 to 4, so "
+                   f"the three outcomes are directly comparable. The fixed ratio has "
+                   f"a single COPD category and so appears only in the COPD-major "
+                   f"panel. An interval drawn open at its lower end denotes a "
+                   f"category in which a bootstrap resample can contain no events. "
+                   f"AFL-only, airflow limitation without other criteria.")
 
     doc.save(OUT)
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "

@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 97L
+REGISTRY_N <- 116L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -36,6 +36,98 @@ reg("COH-02", "Cohort", "4,084 with airflow limitation", 4084, "cohort.txt",
     'as.numeric(x[["n_afl"]])', TOL_EXACT)
 reg("COH-03", "Cohort", "5,156 without airflow limitation", 5156, "cohort.txt",
     'as.numeric(x[["n_noafl"]])', TOL_EXACT)
+
+# --- per-category F1, reclassification detail, crude COPD-minor, visual CT --
+FC <- function(cat, fld) sprintf('x$%s[x$category == "%s"]', fld, cat)
+reg("F1CAT-01", "Fitting", "per-category F1 for AFL-only rises from 0.40 to 0.47", TRUE,
+    "f1_by_category.csv",
+    sprintf('abs(%s - 0.40) < 0.01 && abs(%s - 0.47) < 0.01',
+            FC("AFL-only","f1_noct"), FC("AFL-only","f1_esi")), TOL_EXACT)
+reg("F1CAT-02", "Fitting", "and for COPD-major from 0.88 to 0.94", TRUE,
+    "f1_by_category.csv",
+    sprintf('abs(%s - 0.88) < 0.01 && abs(%s - 0.94) < 0.01',
+            FC("COPD-major","f1_noct"), FC("COPD-major","f1_esi")), TOL_EXACT)
+reg("F1CAT-03", "Fitting",
+    "and is fractionally lower for noCOPD and COPD-minor", TRUE,
+    "f1_by_category.csv",
+    sprintf('%s < 0 && %s < 0', FC("noCOPD","gain"), FC("COPD-minor","gain")), TOL_EXACT)
+
+RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
+reg("RECL-07", "Reclassification",
+    "NoCT moves 579 noCOPD to COPD-minor and 75 the other way", TRUE,
+    "reclassification.csv",
+    sprintf('%s == 579 && %s == 75', RC("S3","nocopd_to_minor"), RC("S3","minor_to_nocopd")),
+    TOL_EXACT)
+reg("RECL-08", "Reclassification",
+    "NoCT retains all 275 AFL-only, ESI retains 193", TRUE,
+    "reclassification.csv",
+    sprintf('%s == 275 && %s == 193', RC("S3","aflonly_kept"), RC("S4","aflonly_kept")),
+    TOL_EXACT)
+
+CM <- function(sch, o) sprintf('x$rr[x$schema == "%s" & x$category == "COPD-minor" & x$outcome == "%s"]', sch, o)
+reg("CRUDE-10", "Crude estimates",
+    "COPD-minor crude all-cause 1.77, 1.72 and 1.75", TRUE, "schema_crude.csv",
+    sprintf('abs(%s-1.77)<0.005 && abs(%s-1.72)<0.005 && abs(%s-1.75)<0.005',
+            CM("S2","all"), CM("S3","all"), CM("S4","all")), TOL_EXACT)
+reg("CRUDE-11", "Crude estimates",
+    "COPD-minor crude respiratory 3.27, 3.42 and 3.89", TRUE, "schema_crude.csv",
+    sprintf('abs(%s-3.27)<0.005 && abs(%s-3.42)<0.005 && abs(%s-3.89)<0.005',
+            CM("S2","resp"), CM("S3","resp"), CM("S4","resp")), TOL_EXACT)
+reg("CRUDE-12", "Crude estimates",
+    "COPD-minor crude exacerbations 3.01, 3.31 and 3.28", TRUE, "schema_crude.csv",
+    sprintf('abs(%s-3.01)<0.005 && abs(%s-3.31)<0.005 && abs(%s-3.28)<0.005',
+            CM("S2","exac"), CM("S3","exac"), CM("S4","exac")), TOL_EXACT)
+
+DG <- function(g, fld) sprintf('x$%s[x$group == "%s"]', fld, g)
+reg("DISC2-10", "Discordance", "Both-COPD all-cause HR 1.94", 1.94,
+    "discord_adjusted.csv", DG("Both-COPD","all_HR"), TOL_2DP)
+reg("DISC2-11", "Discordance", "Both-COPD respiratory HR 5.10", 5.10,
+    "discord_adjusted.csv", DG("Both-COPD","resp_HR"), 0.05)
+reg("DISC2-12", "Discordance", "Both-COPD exacerbation IRR 2.10", 2.10,
+    "discord_adjusted.csv", DG("Both-COPD","exac_IRR"), TOL_2DP)
+reg("DISC2-13", "Discordance", "the group ESI adds has respiratory HR 3.63", 3.63,
+    "discord_adjusted.csv", DG("ESI-only-COPD","resp_HR"), 0.05)
+
+CL <- function(cr, lab) sprintf('x$mean_ESI[x$criterion == "%s" & x$label == "%s"]', cr, lab)
+reg("CTLEV-01", "ESI and CT",
+    "mean ESI rises from 1.04 at no emphysema to 6.62 at advanced destructive", TRUE,
+    "esi_ct_levels.csv",
+    sprintf('abs(%s-1.04)<0.01 && abs(%s-6.62)<0.01',
+            CL("Visual emphysema","none"), CL("Visual emphysema","advanced destructive")),
+    TOL_EXACT)
+reg("CTLEV-02", "ESI and CT",
+    "and from 0.96 to 3.32 across wall thickening", TRUE, "esi_ct_levels.csv",
+    sprintf('abs(%s-0.96)<0.01 && abs(%s-3.32)<0.01',
+            CL("Airway wall thickening","absent"), CL("Airway wall thickening","definite")),
+    TOL_EXACT)
+
+CA <- function(st, cr, fld)
+  sprintf('x$%s[x$stratum == "%s" & x$criterion == "%s"]', fld, st, cr)
+reg("CTAUC-01", "ESI and CT", "pooled ESI AUC 0.78 for emphysema", 0.78,
+    "esi_ct_auc.csv", CA("All participants","Visual emphysema","auc_ESI"), TOL_2DP)
+# FEV1/FVC discriminates better in five of the six stratum-by-criterion
+# comparisons. The exception is wall thickening among participants with
+# airflow limitation, where the two are equal to two decimal places
+# (0.746 vs 0.745). Pinned as "five of six" rather than "every", which is
+# what the prose originally claimed and the artifact refuted.
+reg("CTAUC-02", "ESI and CT",
+    "FEV1/FVC discriminates at least as well in five of six comparisons", 5L,
+    "esi_ct_auc.csv", 'sum(x$auc_FEV1FVC >= x$auc_ESI)', TOL_EXACT)
+reg("CTAUC-02b", "ESI and CT",
+    "the exception is a tie to two decimals, not an ESI advantage", TRUE,
+    "esi_ct_auc.csv",
+    'all(round(x$auc_ESI, 2) <= round(x$auc_FEV1FVC, 2))', TOL_EXACT)
+reg("CTAUC-03", "ESI and CT",
+    "in preserved spirometry ESI reaches only 0.56 for emphysema", 0.56,
+    "esi_ct_auc.csv", CA("Preserved spirometry","Visual emphysema","auc_ESI"), TOL_2DP)
+reg("CTAUC-04", "ESI and CT",
+    "ESI discriminates better with airflow limitation than without, for both criteria",
+    TRUE, "esi_ct_auc.csv",
+    sprintf('%s > %s && %s > %s',
+            CA("Airflow limitation","Visual emphysema","auc_ESI"),
+            CA("Preserved spirometry","Visual emphysema","auc_ESI"),
+            CA("Airflow limitation","Airway wall thickening","auc_ESI"),
+            CA("Preserved spirometry","Airway wall thickening","auc_ESI")), TOL_EXACT)
 
 # --- FEV1 decline and continuous ESI ---------------------------------------
 FD <- function(sch, cat, fld)

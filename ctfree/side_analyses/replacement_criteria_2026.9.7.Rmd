@@ -1,0 +1,964 @@
+---
+title: "If the CT criteria are removed from MD-COPD, what should replace them? A head-to-head comparison of candidate replacement criteria (2026-09-07)"
+author: "Peter J. Castaldi"
+date: "2026-09-07"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    df_print: paged
+    code_folding: show
+---
+
+<!--
+CO-AUTHOR REPORT. Side analysis, not part of the manuscript pipeline: nothing
+here is read by ESI_ctfree_analysis_2026.9.3.Rmd, by CLAIMS.md, by verify.R or
+by the document builders, and no number here appears in the manuscript.
+
+It exists to answer one question a reader of the CT-free paper will ask, and to
+answer it in the open rather than in a reviewer response: the paper removes the
+two CT criteria from MD-COPD and replaces them with ESI. Is ESI the right
+replacement, and by what standard?
+
+Written against manuscript draft v1 (ctfree/manuscript/), at Pete's direction.
+
+Recomputes, from source, everything in:
+  side_analyses/replacement_criteria_comparison.R
+  side_analyses/fevfvc_as_criterion.R
+and checks itself against the committed
+  side_analyses/replacement_criteria_comparison.csv
+in Section 8, so drift between this report and those scripts fails loudly.
+-->
+
+<style>
+body { font-size: 18px; line-height: 1.65; }
+table { font-size: 16px; }
+pre code { font-size: 15px; }
+#TOC { font-size: 15px; }
+</style>
+
+# Overview {-}
+
+The CT-free manuscript takes Bhatt et al.'s multidimensional COPD framework
+(MD-COPD), removes its two CT criteria, and puts the Emphysema Severity Index
+(ESI) in their place. This report asks whether ESI is the right thing to put
+there, by fitting every plausible replacement the same way and judging them
+all on the same three yardsticks.
+
+**The three findings, stated up front.**
+
+1. **Macro-averaged F1 and "recovers the people CT was needed for" are
+   different objectives, and the paper optimizes the first while arguing the
+   second.** A second FEV1/FVC threshold beats ESI on held-out macro-F1 while
+   recovering fewer of the participants who reached COPD-major only through
+   CT. Quantitative CT itself, the actual structural measurement, scores
+   nearly worst on macro-F1 while recovering the most. Two of the candidates
+   rank in opposite orders on the two yardsticks, which is close to a proof
+   that macro-F1 is the wrong lens for this particular question.
+
+2. **Every spirometric replacement repairs the AFL-only label, not just ESI.**
+   With no replacement, AFL-only carries a large excess of respiratory
+   mortality and the label is false. Every candidate tested brings that
+   interval back across 1. The paper's claim that removing CT breaks the
+   AFL-only label and a spirometric criterion repairs it is robust. A claim
+   that ESI specifically is *required* to repair it is not supported by
+   anything here.
+
+3. **Reach into preserved spirometry is where ESI differs from a second
+   FEV1/FVC threshold specifically** -- not from spirometric alternatives in
+   general. A second FEV1/FVC threshold must sit below 0.70 or it fires for
+   everyone with airflow limitation, so it reaches nobody with preserved
+   spirometry. ESI reaches a substantial group. But FEV1 percent predicted
+   reaches a larger one, so "ESI is the only CT-free criterion with reach"
+   would be an overstatement.
+
+Sections 3 to 5 give each of these its data, its method and its numbers.
+Section 6 states what the paper may and may not claim on this evidence.
+Section 7 records the one question this analysis does not settle.
+
+# PATHS -- supplied at run time
+
+Same six COPDGene inputs the manuscript uses. Copy `config_paths.R.example`
+to `config_paths.R` at the repository root, fill in the local file locations,
+and knit.
+
+```{r paths, fig.keep = "none"}
+# Locate this report's own directory so it runs from any working directory.
+# knitr sets the working directory to the .Rmd's location during rendering, so
+# getwd() is the primary signal; the --file= fallback covers a plain
+# `Rscript -e rmarkdown::render(...)` invocation from elsewhere.
+.b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+SELF <- "replacement_criteria_2026.9.7.Rmd"
+HERE <- {
+  if (file.exists(SELF)) normalizePath(".")
+  else if (length(.b) && file.exists(file.path(
+             dirname(normalizePath(sub("^--file=", "", .b[1]))), SELF)))
+    dirname(normalizePath(sub("^--file=", "", .b[1])))
+  else if (file.exists(file.path("ctfree", "side_analyses", SELF)))
+    normalizePath(file.path("ctfree", "side_analyses"))
+  else stop("cannot locate this report's directory; knit from ",
+            "ctfree/side_analyses/ or from the repository root")
+}
+CTFREE <- dirname(HERE)
+ROOT   <- dirname(CTFREE)
+CONFIG <- file.path(ROOT, "config_paths.R")
+if (!file.exists(CONFIG))
+  stop("cannot find ", CONFIG, "; copy config_paths.R.example to ",
+       "config_paths.R and fill in the local file paths")
+source(CONFIG)
+
+# Figure styling comes from the ESI project's single source of truth. No font
+# size or palette entry is retyped here; a change in style.R reaches this
+# report on the next render.
+source(file.path(ROOT, "figures", "style.R"))
+
+FIGDIR <- file.path(HERE, "figures")
+dir.create(FIGDIR, recursive = TRUE, showWarnings = FALSE)
+
+# ---- Analytic constants, matching replacement_criteria_comparison.R -------
+CV_REPEATS <- 3L
+CV_FOLDS   <- 5L
+CV_SEED    <- 20260901L
+```
+
+```{r setup, include = FALSE, fig.keep = "none"}
+# Warnings printed as they happen rather than buffered to the end of the knit,
+# so a warning is attributable to the chunk that raised it.
+options(warn = 1, stringsAsFactors = FALSE)
+suppressPackageStartupMessages({
+  library(dplyr); library(survival); library(ggplot2)
+  library(ggrepel); library(knitr)
+})
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  fig.width = NATIVE_W, fig.align = "center", dpi = 150)
+
+# Number formatting used throughout the prose, so no value is ever typed.
+n_fmt  <- function(x) formatC(x, format = "d", big.mark = ",")
+f3     <- function(x) sprintf("%.3f", x)
+f2     <- function(x) sprintf("%.2f", x)
+ci_fmt <- function(e, lo, hi) sprintf("%.2f (%.2f to %.2f)", e, lo, hi)
+```
+
+# Section 1 -- The question, the cohort, and the yardsticks
+
+## Section 1.1 -- The question
+
+MD-COPD classifies a participant on one major criterion (post-bronchodilator
+FEV~1~/FVC < 0.70, here called **airflow limitation**, AFL) and a count of
+minor criteria. In the published framework the minor criteria are three
+symptom-based items and two visual CT findings (emphysema and airway wall
+thickening). The four categories are:
+
+| Category | Definition |
+|---|---|
+| **noCOPD** | no airflow limitation, and fewer than *k* minor criteria met |
+| **AFL-only** | airflow limitation, and no minor criterion met |
+| **COPD-minor** | no airflow limitation, but at least *k* minor criteria met |
+| **COPD-major** | airflow limitation, and at least one minor criterion met |
+
+Remove the two CT criteria and two things happen. Participants who reached
+COPD-major only through a CT finding fall back to AFL-only, and AFL-only --
+which in the published framework is a genuinely low-risk category -- fills up
+with people who are not low risk. The manuscript's answer is to put ESI in the
+place the CT criteria vacated. **This report asks what else could go there,
+and how the candidates compare when each is given the same freedom to fit.**
+
+## Section 1.2 -- Cohort
+
+Identical construction to the manuscript: COPDGene visit 1, no exclusionary
+disease, ever-smokers, non-missing post-bronchodilator FEV~1~/FVC, present in
+Bhatt et al.'s per-subject MD-COPD classification file, and with a
+post-bronchodilator baseline ESI value.
+
+```{r cohort}
+read_any <- function(p, ...) {
+  h <- readLines(p, n = 1, warn = FALSE)
+  read.delim(p, sep = if (grepl("\t", h)) "\t" else ",",
+             stringsAsFactors = FALSE, ...)
+}
+# Participant identifier column name differs between site copies of these
+# files; config_paths.R names it, and a merge-suffixed ".x" variant is
+# detected automatically.
+bp <- function(d) {
+  d$pid <- as.character(d[[intersect(c(ID_COL, paste0(ID_COL, ".x")),
+                                     names(d))[1]]])
+  d
+}
+
+phe <- bp(read_any(PHE_PATH, na.strings = c("", "NA")))
+mdc <- bp(read_any(MDCOPD_PATH)); esi <- bp(read_any(ESI_PATH))
+vs  <- bp(read_any(VS_PATH));     cod <- bp(read_any(COD_PATH))
+
+# Cause of death: TORCH Basic underlying cause, group 1 = respiratory.
+u <- suppressWarnings(as.integer(cod$Torch_Group_Basic))
+cod$UCD_Resp <- as.integer(!is.na(u) & u == 1L)
+
+v1 <- phe[phe$visitnum == 1, ]
+b  <- v1[is.na(v1$ExclusionaryDisease), ]
+b  <- b[trimws(b$cohort) != "Never smoked", ]
+b  <- b[!is.na(b$FEV1_FVC_post), ]
+b  <- merge(b, mdc[!is.na(mdc$MultiDim_COPD_score),
+                   c("pid", "MultiDim_COPD_score")], by = "pid")
+# Post-bronchodilator ESI at visit 1, one value per participant.
+ev <- esi %>% filter(visitnum == 1, PrePost == 1) %>%
+  group_by(pid) %>% summarise(ESI = mean(ESI, na.rm = TRUE), .groups = "drop")
+d <- merge(b, ev, by = "pid"); d <- d[!is.na(d$ESI), ]
+
+# The three symptom minor criteria. A missing item counts as not met, which is
+# what the published framework does.
+f <- function(x) { x[is.na(x)] <- FALSE; x }
+d$om  <- f(d$MMRCDyspneaScor >= 2) + f(d$SGRQ_scoreTotal >= 25) +
+         f(d$Chronic_Bronchitis == 1)
+d$afl <- d$FEV1_FVC_post < 0.70
+
+O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
+# The reference classification is taken from Bhatt et al.'s own file, not
+# reconstructed: score 1 = COPD-major, 2 = COPD-minor, 0 = neither, and the
+# last is split into AFL-only vs noCOPD by the major criterion.
+d$ref <- factor(ifelse(d$MultiDim_COPD_score == 1, "COPD-major",
+                ifelse(d$MultiDim_COPD_score == 2, "COPD-minor",
+                ifelse(d$afl, "AFL-only", "noCOPD"))), levels = O)
+
+# The group a CT-free rule has to recover: COPD-major in the reference with
+# zero symptom criteria met, so their COPD-major status rested entirely on a
+# CT finding.
+d$ct_only <- d$ref == "COPD-major" & d$om == 0
+N_COHORT <- nrow(d); N_CTONLY <- sum(d$ct_only)
+N_PRESERVED <- sum(!d$afl)
+
+kable(as.data.frame(table(Category = d$ref)) %>%
+        rename(n = Freq) %>% mutate(`% of cohort` = sprintf("%.1f", 100 * n / N_COHORT)),
+      caption = sprintf(
+        "Reference MD-COPD categories in the analytic cohort (n = %s participants).",
+        n_fmt(N_COHORT)))
+```
+
+The cohort is **`r n_fmt(N_COHORT)` participants**. Of these,
+**`r n_fmt(N_CTONLY)`** are COPD-major in the reference *with no symptom
+criterion met*: their COPD-major status rested entirely on a CT finding. That
+group of `r n_fmt(N_CTONLY)` is the thing a CT-free replacement has to recover,
+and it is the denominator behind every "recovered" count in this report.
+`r n_fmt(N_PRESERVED)` participants have preserved spirometry
+(FEV~1~/FVC >= 0.70).
+
+## Section 1.3 -- The three yardsticks
+
+Each candidate is judged on three things. They measure different objectives
+and, as Section 3 shows, they do not agree.
+
+```{r yardsticks, echo = FALSE}
+kable(data.frame(
+  Yardstick = c("Macro-averaged F1 (in-sample)",
+                "Macro-averaged F1 (held-out)",
+                "CT-only COPD-major recovered",
+                "AFL-only hazard ratio",
+                "Reach in preserved spirometry"),
+  `What it measures` = c(
+    "agreement with the reference labels, averaged over the four categories",
+    "the same, with thresholds refitted inside every training fold",
+    "how many of the participants who reached COPD-major only through CT are put back in COPD-major",
+    "mortality in the rule's own AFL-only group, against the rule's own noCOPD group",
+    "participants with FEV1/FVC >= 0.70 in whom the replacement criterion fires at all"),
+  Unit = c("proportion, 0 to 1", "proportion, 0 to 1",
+           sprintf("participants, out of %s", n_fmt(N_CTONLY)),
+           "hazard ratio, adjusted", sprintf("participants, out of %s", n_fmt(N_PRESERVED))),
+  `Zero point / null` = c(
+    "1 = exact reproduction of the reference; the reference row is 1 by construction",
+    "no fixed maximum; the reference cannot be scored, having no free parameters",
+    "833 = full recovery, 0 = none",
+    "1 = the AFL-only label is true (that group is no worse off than noCOPD)",
+    "0 = the criterion can never act outside airflow limitation"),
+  check.names = FALSE),
+  caption = "The yardsticks, with units and null values.")
+```
+
+**The distinction the rest of this report turns on.** Macro-F1 is symmetric
+across the four categories: it rewards putting the right number of people in
+each, and it penalizes over-calling as much as under-calling. Recovery of the
+CT-only group is asymmetric: it counts only one direction of one category. A
+rule can score well on the first by getting noCOPD, AFL-only and COPD-minor
+right while doing a mediocre job on the specific people CT was needed for.
+
+# Section 2 -- The candidates, and how each was fitted
+
+Six candidates, plus the reference. Every one is given the same freedom: its
+own threshold is searched over its own grid, jointly with the same minor-count
+threshold *k* in 1 to 3, and the winner is the combination maximizing
+macro-averaged F1 against the reference labels. **No candidate is handed a
+threshold from the manuscript or from anywhere else** -- otherwise the
+comparison would be between a fitted rule and un-fitted ones.
+
+```{r candidates-fit}
+# The classifier: a candidate contributes a 0/1 score, added to the symptom
+# count, and the four categories follow the MD-COPD rules.
+mk <- function(dd, s, k) {
+  tot <- s + dd$om
+  factor(ifelse(dd$afl & tot >  0, "COPD-major",
+         ifelse(dd$afl & tot == 0, "AFL-only",
+         ifelse(!dd$afl & tot >= k, "COPD-minor", "noCOPD"))), levels = O)
+}
+# Macro-averaged F1: the unweighted mean of the four per-category F1 values.
+mF1 <- function(ref, est) mean(vapply(O, function(g) {
+  tp <- sum(ref == g & est == g); if (tp == 0) return(0)
+  2 * tp / (sum(est == g) + sum(ref == g)) }, numeric(1)))
+
+CAND <- list(
+  none       = list(var = NULL,                        grid = NA),
+  `FEV1/FVC` = list(var = "FEV1_FVC_post", dir = "le", grid = seq(0.50, 0.69, by = 0.01)),
+  FEV1pp     = list(var = "FEV1pp_utah",   dir = "le", grid = seq(30, 100, by = 2.5)),
+  ESI        = list(var = "ESI",           dir = "ge", grid = seq(0.50, 4.00, by = 0.25)),
+  `LAA-950`  = list(var = "Insp_LAA950_total_Thirona", dir = "ge",
+                    grid = seq(1, 20, by = 0.5)))
+
+score_of <- function(dd, cn, t) {
+  cd <- CAND[[cn]]
+  if (is.null(cd$var)) return(rep(0L, nrow(dd)))
+  v <- dd[[cd$var]]
+  # A missing value cannot meet the criterion, in either direction.
+  v[is.na(v)] <- if (cd$dir == "ge") -Inf else Inf
+  as.integer(if (cd$dir == "ge") v >= t else v <= t)
+}
+fit_one <- function(dd, cn) {
+  g <- if (is.null(CAND[[cn]]$var)) NA else CAND[[cn]]$grid
+  best <- list(f1 = -Inf)
+  for (k in 1:3) for (t in g) {
+    v <- mF1(dd$ref, mk(dd, score_of(dd, cn, t), k))
+    if (v > best$f1) best <- list(f1 = v, k = k, t = t)
+  }
+  best
+}
+# The combined rule gets a two-dimensional search, so it is not handicapped
+# relative to the single-criterion rules.
+fit_both <- function(dd) {
+  best <- list(f1 = -Inf)
+  for (k in 1:3) for (tf in seq(0.50, 0.69, by = 0.01))
+                  for (te in seq(0.50, 4.00, by = 0.25)) {
+    s <- as.integer(dd$FEV1_FVC_post <= tf) + as.integer(dd$ESI >= te)
+    v <- mF1(dd$ref, mk(dd, s, k))
+    if (v > best$f1) best <- list(f1 = v, k = k, tf = tf, te = te)
+  }
+  best
+}
+lab_both <- function(dd, p) mk(dd, as.integer(dd$FEV1_FVC_post <= p$tf) +
+                                   as.integer(dd$ESI >= p$te), p$k)
+
+FITS <- lapply(names(CAND), function(cn) fit_one(d, cn)); names(FITS) <- names(CAND)
+FB   <- fit_both(d)
+LAB  <- lapply(names(CAND), function(cn)
+          mk(d, score_of(d, cn, FITS[[cn]]$t), FITS[[cn]]$k))
+names(LAB) <- names(CAND)
+LAB[["FEV1/FVC+ESI"]] <- lab_both(d, FB)
+```
+
+```{r candidate-table, echo = FALSE}
+kable(data.frame(
+  Candidate = c("none", "FEV1/FVC", "FEV1pp", "ESI", "LAA-950", "FEV1/FVC+ESI"),
+  `What it is` = c(
+    "no replacement -- the NoCT-MD-COPD classification as published in the manuscript",
+    "a second, lower threshold on the same variable that defines the major criterion",
+    "FEV1 percent predicted, the conventional severity measure",
+    "the Emphysema Severity Index, the manuscript's choice",
+    "quantitative CT emphysema (Thirona, inspiratory, % voxels < -950 HU)",
+    "both FEV1/FVC and ESI, each with its own fitted threshold"),
+  `CT-free?` = c("yes", "yes", "yes", "yes", "**no**", "yes"),
+  `Grid searched` = c("--", "0.50 to 0.69 by 0.01", "30 to 100 by 2.5",
+                      "0.50 to 4.00 by 0.25", "1 to 20 by 0.5",
+                      "the two grids jointly"),
+  check.names = FALSE),
+  caption = "The candidates. LAA-950 is not a CT-free option and is not a proposal; it is included as the ceiling a genuine structural measurement reaches when fitted the same way, which is the only way to know whether a CT-free rule is doing well or badly.")
+```
+
+**Why held-out performance is reported alongside in-sample.** A rule with a
+free threshold can fit the reference labels better simply by having a free
+threshold. Held-out macro-F1 refits each candidate's threshold *and* its count
+threshold inside every training fold and scores it on the held-out fold, so a
+candidate gains nothing from flexibility it cannot generalize. `r CV_REPEATS`
+repeats of `r CV_FOLDS`-fold cross-validation, stratified on the reference
+categories.
+
+```{r cv, cache = FALSE}
+set.seed(CV_SEED)
+held <- setNames(numeric(length(LAB)), names(LAB))
+for (r in seq_len(CV_REPEATS)) {
+  fold <- integer(nrow(d))
+  for (lv in O) {
+    i <- which(d$ref == lv); fold[i] <- sample(rep_len(seq_len(CV_FOLDS), length(i)))
+  }
+  for (kf in seq_len(CV_FOLDS)) {
+    tr <- d[fold != kf, ]; te <- d[fold == kf, ]
+    for (cn in names(CAND)) {
+      p <- fit_one(tr, cn)
+      held[cn] <- held[cn] + mF1(te$ref, mk(te, score_of(te, cn, p$t), p$k))
+    }
+    p <- fit_both(tr)
+    held["FEV1/FVC+ESI"] <- held["FEV1/FVC+ESI"] + mF1(te$ref, lab_both(te, p))
+  }
+}
+held <- held / (CV_REPEATS * CV_FOLDS)
+```
+
+# Section 3 -- Head-to-head, and where the two objectives part company
+
+## Section 3.1 -- Outcome models and assembly
+
+The AFL-only hazard ratios below are adjusted for age, sex, race, current
+smoking, pack-years and BMI, and are taken **against each rule's own noCOPD
+group** -- not against a common reference. That is the right comparison,
+because the question is whether *that rule's* AFL-only label describes a group
+that is genuinely no worse off than *that rule's* healthy group.
+
+```{r assemble}
+m <- d %>%
+  inner_join(vs %>% dplyr::select(pid, vital_status, days_followed), by = "pid") %>%
+  left_join(cod %>% dplyr::select(pid, UCD_Resp), by = "pid") %>%
+  mutate(ev_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
+         py = days_followed / 365.25) %>%
+  filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
+COV <- "age_visit + factor(gender) + factor(race) + factor(SmokCigNow) + ATS_PackYears + BMI"
+
+hr_afl <- function(lv, ev) {
+  m$g <- factor(lv[match(m$pid, d$pid)], levels = O)
+  if (sum(m$g == "AFL-only") < 5) return(rep(NA_real_, 3))
+  s <- summary(coxph(as.formula(sprintf("Surv(py, %s) ~ g + %s", ev, COV)),
+                     data = m))$conf.int
+  if (!"gAFL-only" %in% rownames(s)) return(rep(NA_real_, 3))
+  unname(s["gAFL-only", c(1, 3, 4)])
+}
+cidx <- function(lv) {
+  m$g <- factor(lv[match(m$pid, d$pid)], levels = O)
+  summary(coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)),
+                data = m))$concordance[1]
+}
+
+rows <- lapply(names(LAB), function(cn) {
+  lv <- LAB[[cn]]
+  a <- hr_afl(lv, "vital_status"); rr <- hr_afl(lv, "ev_resp")
+  p <- if (cn == "FEV1/FVC+ESI") FB else FITS[[cn]]
+  data.frame(
+    criterion = cn,
+    rule = if (cn == "none") "no replacement"
+           else if (cn == "FEV1/FVC+ESI")
+             sprintf("FEV1/FVC<=%.2f & ESI>=%.2f, k=%d", p$tf, p$te, p$k)
+           else sprintf("%s %s %s, k=%d", cn,
+                        ifelse(CAND[[cn]]$dir == "ge", ">=", "<="),
+                        format(p$t), p$k),
+    n_aflonly = sum(lv == "AFL-only"), n_minor = sum(lv == "COPD-minor"),
+    n_major = sum(lv == "COPD-major"),
+    ct_only_recovered = sum(d$ct_only & lv == "COPD-major"),
+    macroF1_insample = mF1(d$ref, lv), macroF1_heldout = held[[cn]],
+    afl_all_HR = a[1], afl_all_lo = a[2], afl_all_hi = a[3],
+    afl_resp_HR = rr[1], afl_resp_lo = rr[2], afl_resp_hi = rr[3],
+    c_index = cidx(lv),
+    # Reach: participants with preserved spirometry in whom the replacement
+    # criterion fires. For the combined rule only the ESI component can fire
+    # outside airflow limitation, so that is the component scored.
+    reach_preserved = if (cn == "none") 0L else
+      sum(!d$afl & score_of(d, if (cn == "FEV1/FVC+ESI") "ESI" else cn,
+          if (cn == "FEV1/FVC+ESI") FB$te else FITS[[cn]]$t) == 1L))
+})
+res <- do.call(rbind, rows)
+
+ref_row <- data.frame(
+  criterion = "MD-COPD", rule = "reference (CT available)",
+  n_aflonly = sum(d$ref == "AFL-only"), n_minor = sum(d$ref == "COPD-minor"),
+  n_major = sum(d$ref == "COPD-major"), ct_only_recovered = sum(d$ct_only),
+  macroF1_insample = 1, macroF1_heldout = NA,
+  afl_all_HR  = hr_afl(d$ref, "vital_status")[1],
+  afl_all_lo  = hr_afl(d$ref, "vital_status")[2],
+  afl_all_hi  = hr_afl(d$ref, "vital_status")[3],
+  afl_resp_HR = hr_afl(d$ref, "ev_resp")[1],
+  afl_resp_lo = hr_afl(d$ref, "ev_resp")[2],
+  afl_resp_hi = hr_afl(d$ref, "ev_resp")[3],
+  c_index = cidx(d$ref), reach_preserved = NA)
+res <- rbind(ref_row, res)
+
+# Convenience accessor used by the prose below, so no number is typed.
+R <- function(cn, fld) res[[fld]][res$criterion == cn]
+```
+
+## Section 3.2 -- The table
+
+```{r headline-table, echo = FALSE}
+kable(res %>%
+        transmute(Replacement = criterion, `Fitted rule` = rule,
+                  `AFL-only n` = n_aflonly, `COPD-minor n` = n_minor,
+                  `COPD-major n` = n_major,
+                  `CT-only recovered` = ifelse(is.na(ct_only_recovered), "--",
+                                               n_fmt(ct_only_recovered)),
+                  `macro-F1 in-sample` = f3(macroF1_insample),
+                  `macro-F1 held-out` = ifelse(is.na(macroF1_heldout), "--",
+                                               f3(macroF1_heldout))),
+      caption = sprintf(paste("Every candidate, fitted by the same objective over the same",
+                              "count grid. n = %s participants; the CT-only column is out of %s."),
+                        n_fmt(N_COHORT), n_fmt(N_CTONLY)))
+```
+
+**The result, as a sentence.** The candidate with the best held-out macro-F1 is
+**`r res$criterion[which.max(res$macroF1_heldout)]`**
+(`r f3(max(res$macroF1_heldout, na.rm = TRUE))`), and the candidate that
+recovers the most CT-only COPD-major participants is
+**`r res$criterion[res$criterion != "MD-COPD"][which.max(res$ct_only_recovered[res$criterion != "MD-COPD"])]`**
+(`r n_fmt(max(res$ct_only_recovered[res$criterion != "MD-COPD"]))` of
+`r n_fmt(N_CTONLY)`). **They are not the same candidate.**
+
+## Section 3.3 -- Figure 3.1
+
+**The message of this figure: the two yardsticks rank the candidates
+differently, so choosing between candidates requires choosing between the
+yardsticks first.** If the two agreed, the points would fall on a rising line
+and the choice of objective would not matter.
+
+**Reading the axes.** The x axis counts participants and is asymmetric: it
+credits only one direction of one category (CT-only participants put back into
+COPD-major), with a hard maximum at `r n_fmt(N_CTONLY)`, which only the
+reference reaches. The y axis is a proportion, symmetric across all four
+categories, and penalizes over-calling as much as under-calling. Neither axis
+has a meaningful zero in the plotted range, so both are shown on their
+occupied range rather than from 0.
+
+```{r fig-3-1, fig.height = 6.0}
+plot_dat <- res %>%
+  filter(criterion != "MD-COPD") %>%
+  mutate(
+    family = case_when(
+      criterion == "ESI"      ~ "ESI-based",
+      criterion == "LAA-950"  ~ "CT-based",
+      criterion == "none"     ~ "No replacement",
+      TRUE                    ~ "Other spirometric"),
+    label = sprintf("%s\n%s", criterion, rule))
+
+# A panel that renders empty errors nowhere, so assert the data is there.
+stopifnot(nrow(plot_dat) == 6, all(is.finite(plot_dat$macroF1_heldout)),
+          all(is.finite(plot_dat$ct_only_recovered)))
+
+# Semantic colors, consistent with the manuscript figures: ESI red, CT blue,
+# everything else neutral grey.
+FAM_PAL <- c("ESI-based"         = unname(PALETTE["ESI-based"]),
+             "CT-based"          = unname(PALETTE["CT-based"]),
+             "Other spirometric" = "#555555",
+             "No replacement"    = "#AAAAAA")
+
+fig3_1 <- ggplot(plot_dat, aes(ct_only_recovered, macroF1_heldout)) +
+  geom_point(aes(color = family, shape = family), size = 4) +
+  geom_text_repel(aes(label = label, color = family), size = BODY_FS_NATIVE / .pt,
+                  lineheight = 0.95, box.padding = 0.7, point.padding = 0.4,
+                  min.segment.length = 0, seed = 1L, show.legend = FALSE) +
+  scale_color_manual(values = FAM_PAL, name = NULL,
+                     breaks = names(FAM_PAL)) +
+  scale_shape_manual(values = c("ESI-based" = 16, "CT-based" = 17,
+                                "Other spirometric" = 15, "No replacement" = 4),
+                     name = NULL, breaks = names(FAM_PAL)) +
+  scale_x_continuous(expand = expansion(mult = 0.18)) +
+  scale_y_continuous(expand = expansion(mult = 0.14)) +
+  labs(
+    x = sprintf("CT-only COPD-major participants recovered (of %s)", n_fmt(N_CTONLY)),
+    y = "Held-out macro-averaged F1",
+    subtitle = sprintf(paste("n = %s participants. Each point is one replacement criterion,",
+                             "fitted by macro-F1 over the same grid.\nUp is better on the",
+                             "objective the paper optimizes; right is better on the objective",
+                             "the paper argues."),
+                       n_fmt(N_COHORT))) +
+  theme_esi()
+
+ggsave(file.path(FIGDIR, "fig3_1_objectives_disagree.png"), fig3_1,
+       width = NATIVE_W, height = 6.0, dpi = 300)
+fig3_1
+```
+
+**Figure 3.1.** Held-out macro-averaged F1 against recovery of the CT-only
+COPD-major group, one point per candidate replacement criterion, all fitted
+identically on the same `r n_fmt(N_COHORT)` participants. The reference
+MD-COPD classification is not plotted: it has no free parameters, so it cannot
+be scored out of sample, and it recovers all `r n_fmt(N_CTONLY)` by
+construction. LAA-950 requires CT and is not a CT-free proposal; it marks what
+a genuine structural measurement achieves.
+
+# Section 4 -- Point 1: macro-F1 and recovery are different objectives
+
+**The data.** Figure 3.1 and the table in Section 3.2.
+
+**The method.** Rank the candidates on each yardstick separately and compare
+the rankings.
+
+```{r rankings, echo = FALSE}
+rk <- res %>% filter(criterion != "MD-COPD") %>%
+  transmute(Replacement = criterion,
+            `macro-F1 held-out` = f3(macroF1_heldout),
+            `rank by macro-F1` = rank(-macroF1_heldout, ties.method = "min"),
+            `CT-only recovered` = ct_only_recovered,
+            `rank by recovery` = rank(-ct_only_recovered, ties.method = "min")) %>%
+  arrange(`rank by macro-F1`)
+kable(rk, caption = "The same six candidates, ranked twice.")
+```
+
+**The overall result.** The two rankings disagree, and they disagree on the
+candidates that matter.
+
+- A second FEV1/FVC threshold, **`r R("FEV1/FVC", "rule")`**, achieves held-out
+  macro-F1 **`r f3(R("FEV1/FVC", "macroF1_heldout"))`** against ESI's
+  **`r f3(R("ESI", "macroF1_heldout"))`** -- it beats ESI on the objective the
+  manuscript fits by. On recovery it puts back
+  **`r n_fmt(R("FEV1/FVC", "ct_only_recovered"))`** of the
+  `r n_fmt(N_CTONLY)` CT-only COPD-major participants, against ESI's
+  **`r n_fmt(R("ESI", "ct_only_recovered"))`** --
+  `r n_fmt(R("ESI", "ct_only_recovered") - R("FEV1/FVC", "ct_only_recovered"))`
+  fewer people.
+- **LAA-950**, quantitative CT emphysema and therefore the actual structural
+  measurement the visual criteria were standing in for, scores
+  **`r f3(R("LAA-950", "macroF1_heldout"))`** on held-out macro-F1 --
+  `r rk$"rank by macro-F1"[rk$Replacement == "LAA-950"]`th of six, ahead only
+  of no replacement at all -- while recovering
+  **`r n_fmt(R("LAA-950", "ct_only_recovered"))`**, more than any other
+  candidate.
+
+**A specific example, to anchor it.** Take the LAA-950 row on its own. If
+macro-F1 were the right lens, the honest reading of that row is that measuring
+emphysema directly on the CT scan is a poor way to replace a CT criterion,
+barely better than deleting the criterion outright. That conclusion is
+absurd on its face, and the reason it comes out of the analysis is that
+macro-F1 is answering a different question: LAA-950 buys its recovery by
+reclassifying `r n_fmt(R("LAA-950", "n_minor"))` participants into COPD-minor,
+more than any other candidate, and macro-F1 charges it for every one of those
+that the reference did not also call COPD-minor.
+
+**What follows for the manuscript.** The paper fits its replacement criterion
+by macro-F1 and then argues for it on the grounds that it recovers the people
+CT was needed for. Those are two different objectives, and on this evidence
+optimizing the first does not optimize the second. This does not make the
+paper's fitted rule wrong. It means the paper cannot present the fitted rule
+as though the fitting procedure had selected for recovery, because it did not.
+Section 7 records the decision this raises.
+
+# Section 5 -- Point 2: every spirometric replacement repairs the AFL-only label
+
+## Section 5.1 -- Why this category is load-bearing
+
+AFL-only is the category the CT-free framework is most at risk of breaking.
+In the reference framework it means "airflow limitation and nothing else",
+a genuinely low-risk group; the manuscript's argument for MD-COPD over the
+fixed ratio rests substantially on that category being real. Remove the CT
+criteria with nothing in their place and participants who had a CT finding and
+no symptoms fall into AFL-only, which stops being low risk. **The test is
+whether the AFL-only group's mortality, adjusted and against that rule's own
+noCOPD group, is compatible with 1.**
+
+```{r fig-5-1, fig.height = 6.5}
+fp <- bind_rows(
+  res %>% transmute(criterion, rule, outcome = "All-cause mortality",
+                    est = afl_all_HR,  lo = afl_all_lo,  hi = afl_all_hi,
+                    n = n_aflonly),
+  res %>% transmute(criterion, rule, outcome = "Respiratory mortality",
+                    est = afl_resp_HR, lo = afl_resp_lo, hi = afl_resp_hi,
+                    n = n_aflonly)) %>%
+  mutate(
+    lab = sprintf("%s  (AFL-only n = %s)", criterion, n_fmt(n)),
+    lab = factor(lab, levels = rev(unique(lab[outcome == "All-cause mortality"]))),
+    outcome = factor(outcome, c("All-cause mortality", "Respiratory mortality")),
+    family = case_when(criterion == "MD-COPD" ~ "Reference",
+                       criterion == "none"    ~ "No replacement",
+                       criterion == "ESI"     ~ "ESI-based",
+                       criterion == "LAA-950" ~ "CT-based",
+                       TRUE                   ~ "Other spirometric"))
+stopifnot(nrow(fp) == 14, all(is.finite(fp$est)))
+
+FP_PAL <- c("Reference" = "#000000", FAM_PAL)
+
+fig5_1 <- ggplot(fp, aes(est, lab, color = family)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50") +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.22) +
+  geom_point(size = 2.6) +
+  facet_wrap(~ outcome, scales = "free_x") +
+  scale_x_log10() +
+  scale_color_manual(values = FP_PAL, name = NULL, breaks = names(FP_PAL)) +
+  labs(x = "Adjusted hazard ratio for AFL-only vs that rule's own noCOPD group (log scale)",
+       y = NULL,
+       subtitle = sprintf(paste("n = %s participants. Adjusted for age, sex, race, current",
+                                "smoking, pack-years and BMI.\nDashed line at 1: the AFL-only",
+                                "label is true when the interval covers it."),
+                          n_fmt(N_COHORT))) +
+  theme_esi()
+
+ggsave(file.path(FIGDIR, "fig5_1_aflonly_label.png"), fig5_1,
+       width = NATIVE_W, height = 6.5, dpi = 300)
+fig5_1
+```
+
+**Figure 5.1.** Whether each rule's AFL-only label is true. **The message: the
+only rule whose AFL-only group is clearly not low risk is the one with no
+replacement criterion at all; every replacement, spirometric or not, brings
+the interval back across 1.** Note that the panels have independent x scales,
+because respiratory mortality spans a far wider range than all-cause.
+
+```{r afl-table, echo = FALSE}
+kable(res %>% transmute(
+        Replacement = criterion, `Fitted rule` = rule, `AFL-only n` = n_aflonly,
+        `All-cause HR (95% CI)`   = ci_fmt(afl_all_HR, afl_all_lo, afl_all_hi),
+        `Respiratory HR (95% CI)` = ci_fmt(afl_resp_HR, afl_resp_lo, afl_resp_hi),
+        `Covers 1?` = ifelse(afl_resp_lo <= 1 & afl_resp_hi >= 1, "yes", "**no**")),
+      caption = "AFL-only risk under each rule, against that rule's own noCOPD group.")
+```
+
+**The overall result.** With no replacement, AFL-only carries an adjusted
+respiratory mortality hazard ratio of
+**`r ci_fmt(R("none","afl_resp_HR"), R("none","afl_resp_lo"), R("none","afl_resp_hi"))`**:
+the label is false, and by a wide margin. Every replacement repairs it:
+FEV~1~/FVC **`r f2(R("FEV1/FVC","afl_all_HR"))`**, ESI
+**`r f2(R("ESI","afl_all_HR"))`**, FEV~1~pp **`r f2(R("FEV1pp","afl_all_HR"))`**
+on all-cause mortality, each with a respiratory interval covering 1, against
+the reference framework's own **`r f2(R("MD-COPD","afl_all_HR"))`**.
+
+**What follows for the manuscript. This is the point to state without
+softening it.** The manuscript can claim that removing the CT criteria breaks
+the AFL-only label and that a spirometric replacement repairs it; that claim
+is robust, and it is supported by every candidate tested. **The manuscript
+cannot claim that ESI is uniquely required to repair it.** Three different
+spirometric criteria repair it about equally well, and nothing in these data
+distinguishes ESI from the others on this yardstick. Any sentence in the paper
+that reads as "ESI is needed to keep AFL-only low risk" should read "a
+spirometric minor criterion is needed", with ESI's case made on the grounds in
+Section 6 instead.
+
+# Section 6 -- Point 3: reach into preserved spirometry, and the FEV1/FVC circularity
+
+## Section 6.1 -- Why a second FEV1/FVC threshold cannot reach preserved spirometry
+
+The natural objection to ESI is: why not use FEV~1~/FVC itself as the
+replacement minor criterion, rather than importing a new measure? There is a
+structural answer before there is an empirical one. FEV~1~/FVC < 0.70 is
+already the **major** criterion, so a *minor* criterion built on a threshold at
+or above 0.70 fires for every participant who has airflow limitation. Everyone
+in AFL-only then has at least one minor criterion, and AFL-only collapses to
+exactly zero -- destroying the very category the framework exists to get right.
+
+**The method.** Sweep the FEV~1~/FVC minor threshold across both regimes at the
+fitted count threshold and count the resulting AFL-only category.
+
+```{r fig-6-1, fig.height = 5.0}
+sweep <- do.call(rbind, lapply(seq(0.50, 0.85, by = 0.01), function(t) {
+  s <- as.integer(d$FEV1_FVC_post <= t)
+  est <- mk(d, s, 2L)
+  data.frame(threshold = t, aflonly = sum(est == "AFL-only"),
+             macroF1 = mF1(d$ref, est),
+             reach = sum(!d$afl & d$FEV1_FVC_post <= t))
+}))
+stopifnot(nrow(sweep) == 36, any(sweep$aflonly > 0))
+
+fig6_1 <- ggplot(sweep, aes(threshold, aflonly)) +
+  geom_vline(xintercept = 0.70, linetype = "dashed", color = "grey50") +
+  geom_line(color = "#555555", linewidth = 0.9) +
+  geom_point(color = "#555555", size = 1.8) +
+  geom_hline(yintercept = sum(d$ref == "AFL-only"), linetype = "dotted",
+             color = unname(PALETTE["CT-based"])) +
+  annotate("text", x = 0.705, y = max(sweep$aflonly) * 0.92, hjust = 0,
+           size = BODY_FS_NATIVE / .pt, color = "grey30",
+           label = "at and above 0.70 the minor criterion\nfires for everyone with airflow\nlimitation: AFL-only collapses to 0") +
+  annotate("text", x = 0.50, y = sum(d$ref == "AFL-only"), vjust = -0.6, hjust = 0,
+           size = BODY_FS_NATIVE / .pt, color = unname(PALETTE["CT-based"]),
+           label = sprintf("reference MD-COPD AFL-only, n = %s",
+                           n_fmt(sum(d$ref == "AFL-only")))) +
+  labs(x = "FEV1/FVC threshold for the replacement minor criterion",
+       y = "Participants classified AFL-only",
+       subtitle = sprintf(paste("n = %s participants, count threshold k = 2.",
+                                "Dashed line: the major criterion, FEV1/FVC = 0.70."),
+                          n_fmt(N_COHORT))) +
+  theme_esi()
+
+ggsave(file.path(FIGDIR, "fig6_1_fevfvc_circularity.png"), fig6_1,
+       width = NATIVE_W, height = 5.0, dpi = 300)
+fig6_1
+```
+
+**Figure 6.1.** The circularity. **The message: a second FEV~1~/FVC threshold
+is confined to below 0.70, because at or above 0.70 it annihilates the
+AFL-only category.** Below 0.70 it therefore acts only within the
+airflow-limitation group, and by definition reaches nobody with preserved
+spirometry, which is `r n_fmt(sweep$reach[which.min(abs(sweep$threshold - 0.69))])` people at
+the highest usable threshold.
+
+## Section 6.2 -- Reach, and the honest version of ESI's advantage
+
+**Reach** is the number of participants with preserved spirometry
+(FEV~1~/FVC >= 0.70, n = `r n_fmt(N_PRESERVED)`) in whom the replacement
+criterion fires at all. It is a capability, not a reclassification count: with
+*k* = 2 a participant with preserved spirometry needs a second minor criterion
+as well to become COPD-minor. Reach of zero means the criterion can never act
+outside airflow limitation, whatever the rest of the framework does.
+
+```{r reach-table, echo = FALSE}
+kable(res %>% filter(criterion != "MD-COPD") %>%
+        transmute(Replacement = criterion, `Fitted rule` = rule,
+                  `Reach in preserved spirometry` = n_fmt(reach_preserved),
+                  `% of preserved spirometry` = sprintf("%.1f", 100 * reach_preserved / N_PRESERVED),
+                  `CT-free?` = ifelse(criterion == "LAA-950", "**no**", "yes")),
+      caption = sprintf("Reach, out of %s participants with preserved spirometry.",
+                        n_fmt(N_PRESERVED)))
+```
+
+**The overall result, stated carefully.** A second FEV~1~/FVC threshold reaches
+**`r n_fmt(R("FEV1/FVC","reach_preserved"))`** participants with preserved
+spirometry -- necessarily, by Section 6.1. ESI reaches
+**`r n_fmt(R("ESI","reach_preserved"))`**. Adding ESI on top of the FEV~1~/FVC
+rule adds **`r n_fmt(R("FEV1/FVC+ESI","reach_preserved"))`**, because the
+combined fit pushes ESI's threshold up to
+`r f2(FB$te)` where few participants meet it.
+
+**But the README framing of this point needs correcting, and the correction
+matters.** ESI is not the only CT-free criterion with reach.
+**FEV~1~ percent predicted reaches `r n_fmt(R("FEV1pp","reach_preserved"))`
+participants with preserved spirometry, more than ESI's
+`r n_fmt(R("ESI","reach_preserved"))`.** LAA-950 reaches
+`r n_fmt(R("LAA-950","reach_preserved"))`, but requires CT and so is not
+available. The correct statement is therefore narrower than "reach is where
+ESI is distinctive":
+
+> A second threshold on FEV~1~/FVC cannot serve as the replacement minor
+> criterion, because it is structurally confined to the airflow-limitation
+> group. ESI is not so confined. Neither is FEV~1~pp, which reaches a larger
+> group still; ESI's case against FEV~1~pp has to be made on what it reaches
+> (`r n_fmt(R("ESI","ct_only_recovered"))` CT-only COPD-major participants
+> recovered against FEV~1~pp's `r n_fmt(R("FEV1pp","ct_only_recovered"))`),
+> not on whether it reaches.
+
+That last clause is where ESI's real advantage sits, and it is a recovery
+argument, not a macro-F1 argument -- which is Section 4's point again from the
+other direction.
+
+# Section 7 -- What this licenses, what it does not, and the open question
+
+```{r verdict, echo = FALSE}
+kable(data.frame(
+  Claim = c(
+    "Removing the two CT criteria breaks the AFL-only label",
+    "A spirometric minor criterion repairs the AFL-only label",
+    "ESI is uniquely required to repair the AFL-only label",
+    "ESI reproduces the reference labels better than any CT-free alternative",
+    "A second FEV1/FVC threshold is not a viable replacement",
+    "ESI is the only CT-free criterion that reaches preserved spirometry",
+    "ESI recovers more CT-only COPD-major participants than any CT-free alternative"),
+  Verdict = c("**supported**", "**supported**", "**not supported**",
+              "**not supported**", "**supported**", "**not supported**",
+              "**supported**"),
+  Evidence = c(
+    "AFL-only respiratory HR with no replacement, Section 5",
+    "every candidate's AFL-only interval covers 1, Section 5",
+    "three spirometric criteria repair it about equally, Section 5",
+    "a second FEV1/FVC threshold has higher held-out macro-F1, Section 4",
+    "the circularity at 0.70, Section 6.1",
+    "FEV1pp reaches more, Section 6.2",
+    "recovery column, Section 3.2, among CT-free candidates"),
+  check.names = FALSE),
+  caption = "What the comparison does and does not license the manuscript to claim.")
+```
+
+**The open question, which this analysis raises and does not settle.** Should
+the replacement criterion be fitted by recovery of the CT-identified group
+rather than by macro-averaged F1? Section 4 shows the two objectives select
+differently, and that the objective the paper fits by is not the objective the
+paper argues from. Changing it is a paper-level decision with consequences
+beyond this comparison -- it would change the fitted threshold, the
+cross-validation, and the framing of the whole Results section -- and it was
+deliberately not made here. Three options, for the co-authors:
+
+1. **Keep macro-F1 and align the prose to it.** Argue the fitted rule on label
+   agreement, and present recovery as a descriptive consequence rather than as
+   the justification.
+2. **Refit by recovery** and re-run the comparison. This would likely move
+   ESI's threshold and would need its own cross-validation, since recovery has
+   no penalty for over-calling and will push thresholds toward firing often.
+3. **Keep macro-F1 as the fitting objective and report both yardsticks
+   explicitly**, including this comparison, so a reader can see that the two
+   disagree and why the fitted rule was chosen anyway.
+
+# Section 8 -- Self-check
+
+Every value below is recomputed by this report and compared against the value
+recorded in the committed `replacement_criteria_comparison.csv`, which the
+original side-analysis script wrote. A FAIL means this report and that script
+have diverged, and one of them must be corrected deliberately rather than
+silently.
+
+```{r self-check, echo = FALSE}
+csv_path <- file.path(HERE, "replacement_criteria_comparison.csv")
+selfcheck <- function(name, computed, expected, tol = 0.002) {
+  ok <- if (is.numeric(computed) && is.numeric(expected))
+          isTRUE(abs(computed - expected) < tol) else identical(computed, expected)
+  data.frame(check = name,
+             computed = if (is.numeric(computed)) sprintf("%.4f", computed)
+                        else as.character(computed),
+             expected = if (is.numeric(expected)) sprintf("%.4f", expected)
+                        else as.character(expected),
+             status = ifelse(ok, "PASS", "FAIL"))
+}
+
+checks <- list()
+if (file.exists(csv_path)) {
+  ref_csv <- read.csv(csv_path, stringsAsFactors = FALSE, check.names = FALSE)
+  E <- function(cn, fld) ref_csv[[fld]][ref_csv$criterion == cn]
+  for (cn in res$criterion) {
+    checks <- c(checks, list(
+      selfcheck(sprintf("%s -- fitted rule string", cn),
+                R(cn, "rule"), E(cn, "rule")),
+      selfcheck(sprintf("%s -- CT-only recovered", cn),
+                as.numeric(R(cn, "ct_only_recovered")),
+                as.numeric(E(cn, "ct_only_recovered")), tol = 0.5),
+      selfcheck(sprintf("%s -- AFL-only n", cn),
+                as.numeric(R(cn, "n_aflonly")), as.numeric(E(cn, "n_aflonly")), tol = 0.5),
+      selfcheck(sprintf("%s -- held-out macro-F1", cn),
+                as.numeric(R(cn, "macroF1_heldout")),
+                as.numeric(E(cn, "macroF1_heldout"))),
+      selfcheck(sprintf("%s -- reach in preserved spirometry", cn),
+                as.numeric(R(cn, "reach_preserved")),
+                as.numeric(E(cn, "reach_preserved")), tol = 0.5)))
+  }
+} else {
+  checks <- list(selfcheck("replacement_criteria_comparison.csv present",
+                           "missing", "present"))
+}
+
+# Structural invariants that must hold whatever the numbers are.
+checks <- c(checks, list(
+  selfcheck("FEV1/FVC reach in preserved spirometry is exactly 0 (the circularity)",
+            as.numeric(R("FEV1/FVC", "reach_preserved")), 0, tol = 0.5),
+  selfcheck("reference recovers all CT-only COPD-major by construction",
+            as.numeric(R("MD-COPD", "ct_only_recovered")), as.numeric(N_CTONLY), tol = 0.5),
+  selfcheck("no replacement recovers none by construction",
+            as.numeric(R("none", "ct_only_recovered")), 0, tol = 0.5),
+  selfcheck("the two objectives select different candidates",
+            identical(res$criterion[which.max(res$macroF1_heldout)],
+                      res$criterion[res$criterion != "MD-COPD"][
+                        which.max(res$ct_only_recovered[res$criterion != "MD-COPD"])]),
+            FALSE)))
+
+sc <- do.call(rbind, checks)
+kable(sc, caption = "Self-check: this report recomputed, against the committed CSV and against structural invariants.")
+cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d).\n",
+            sum(sc$status == "PASS"), sum(sc$status == "FAIL"), nrow(sc)))
+```
+
+`r if (exists("sc") && any(sc$status == "FAIL")) "**One or more self-checks FAILED. Do not circulate this report until the discrepancy is resolved.**" else "All self-checks pass."`
+
+# Section 9 -- Provenance
+
+```{r provenance, echo = FALSE}
+kable(data.frame(
+  Item = c("This report", "Recomputes", "Compared against", "Figures written to",
+           "Cohort", "Data inputs", "Manuscript state at writing", "Status"),
+  Value = c(
+    file.path("ctfree/side_analyses", SELF),
+    "side_analyses/replacement_criteria_comparison.R, side_analyses/fevfvc_as_criterion.R",
+    "side_analyses/replacement_criteria_comparison.csv",
+    "side_analyses/figures/ (fig3_1, fig5_1, fig6_1)",
+    sprintf("%s COPDGene participants, visit 1", n_fmt(N_COHORT)),
+    "PHE_PATH, MDCOPD_PATH, ESI_PATH, VS_PATH, COD_PATH (config_paths.R)",
+    "manuscript draft v1",
+    "SIDE ANALYSIS -- not part of the manuscript pipeline; no number here appears in the paper"),
+  check.names = FALSE),
+  caption = "Provenance.")
+```
+
+```{r session, echo = FALSE}
+sessionInfo()
+```

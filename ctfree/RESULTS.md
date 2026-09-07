@@ -30,202 +30,187 @@ minimal structural abnormalities (GOLD 0, r = 0.08) {CORR-03} and stronger
 relationships among participants with established airflow obstruction
 (GOLD 3, r = 0.58) {CORR-04, CORR-05} (Supplemental Table S2).
 
-## What the multidimensional framework adds to the fixed ratio
+## Optimization of the ESI-MD-COPD and NoCT-MD-COPD classifications
 
 *(new)*
 
-The four classifications are named as in the Methods: the fixed ratio; MD-COPD,
-the published CT-based framework; NoCT-MD-COPD, with the CT criteria removed;
-and ESI-MD-COPD, with ESI in their place.
+Both modified classifications require a threshold for the number of minor
+criteria sufficient for the COPD-minor pathway, and ESI-MD-COPD additionally
+requires a threshold for ESI itself. Thresholds were determined against the
+MD-COPD labels alone. Mortality and exacerbation data were excluded from the
+fitting, so the outcome comparisons reported below are an independent check
+rather than a restatement of the fit.
 
-As reported in the initial publication, the MD-COPD classification adds
-prognostic information beyond the fixed ratio for all three outcomes: all-cause
-mortality, respiratory mortality and exacerbations (P < 0.001 for each in
-COPDGene) {GATE-01p, GATE-02p, GATE-03p}. The primary benefit of MD-COPD is
-observed in the subjects that are reclassified relative to the fixed ratio
-diagnosis. The first group is 275 participants with airflow limitation but low
-symptoms that are reclassified as not having COPD (the AFL-only group)
-{LAB-01b}. Relative to individuals with FEV₁/FVC >= 0.7 with low symptoms
-(noCOPD), they show no excess risk on any outcome: adjusted all-cause HR 0.87
-(95% CI: 0.65 - 1.16), respiratory HR 1.39 (95% CI: 0.32 - 6.04) and
-exacerbation IRR 1.21 (95% CI: 0.95 - 1.54) {RISK-01, RISK-01b, RISK-01c,
-RISK-01r, RISK-04e}. The second group is 799 participants with preserved
-spirometry and at least three minor criteria (COPD minor pathway) {LAB-01c}.
-This group carries nearly double the all-cause mortality of the reference
-(HR 1.83, 1.55 to 2.16), four times the respiratory mortality (3.86, 1.65 to
-9.04) and twice the exacerbation rate (IRR 2.09, 1.79 to 2.44) {RISK-09,
-RISK-10, RISK-11}.
+The objective scores a four-category classification, and it macro-averages, so
+that each category contributes equally regardless of how many participants it
+contains. This matters because noCOPD and COPD-major together account for 88%
+of the cohort; a score that is not category-weighted is determined almost
+entirely by them and is nearly indifferent to AFL-only, which contains 275
+participants. Within each category, F1 combines precision and recall, so that
+assigning too many participants to a category is penalized as well as assigning
+too few. Cohen's κ and mean per-category sensitivity, also known as balanced
+accuracy, were examined and rejected: κ is a single overall agreement statistic
+that is not category-weighted, and balanced accuracy averages recall alone.
+Neither penalizes over-assignment, and their optima lie where AFL-only is
+respectively almost empty and more than triple the size of the reference
+(Supplemental Table S4).
 
-An effective CT-free MD-COPD classification should preserve the prognostic
-benefits of both groups as much as possible.
+The fitted rules assign COPD-minor at two or more of three symptom criteria for
+NoCT-MD-COPD, and at two or more of four criteria with the ESI criterion met at
+ESI ≥ 1.50 for ESI-MD-COPD. ESI-MD-COPD achieved a held-out macro-averaged F1
+of 0.752 against 0.721 for NoCT-MD-COPD, a difference of 0.031 (95% across
+folds: 0.014 to 0.044) {FIT-04a, FIT-04b, FIT-05a} (Supplemental Table S11). The cross-classifications
+locate that difference (Table 2). Removing the CT criteria without replacement
+moves 833 participants out of COPD-major, and replacing them with ESI reduces
+that to 350 {RECL-01, RECL-02}. Per-category F1 against MD-COPD improves for
+AFL-only, from 0.40 to 0.47, and for COPD-major, from 0.88 to 0.94, and is
+fractionally lower for noCOPD and COPD-minor {F1CAT-01, F1CAT-02, F1CAT-03}.
+The advantage of an ESI criterion is therefore confined to the two categories
+defined by airflow limitation.
 
-## What is lost when the CT criteria are removed
-
-*(new)*
-
-Removing the CT criteria without replacing them costs the COPD-major category
-833 of its 3,809 participants, who are reclassified as AFL-only
-{RECL-01, LAB-02}. Those 833 are the participants whose only minor criterion
-was a CT finding {RECL-05}. They account for 21.9% of the COPD-major category
-{RECL-03, RECL-04}. None of them has a symptom criterion. Remove CT without
-replacing it and nothing is left to identify them.
-
-ESI-MD-COPD reduces that loss from 833 to 350 {RECL-02}
-and holds the COPD-major category at 3,541 against the reference's 3,809
-{LAB-03}. Overall, 8,126 of 9,240 participants (87.9%) retain their MD-COPD
-category under ESI-MD-COPD against 7,753 (83.9%) under NoCT-MD-COPD (Figure 1, Supplemental Table S3).
-
-NoCT-MD-COPD and ESI-MD-COPD were both fitted to approximate the CT-based classification by
-the same objective and over the same parameter space. ESI-MD-COPD achieved a held-out macro-averaged F1 of 0.752 against 0.721 for NoCT-MD-COPD, a difference of 0.031 (95% across folds 0.014 to 0.044)
-{FIT-04a, FIT-04b, FIT-05a, FIT-05b}. The fitted rule uses a single ESI
-threshold of 1.50 and a count of two of four minor criteria {FIT-01, FIT-02a,
-FIT-02b, FIT-03} (Supplemental Table S4).
-
-## Discrimination favors the classification that should not be used
+## Cross-classification and outcome risks
 
 *(new)*
 
-Discrimination did not track the quality of the classification. NoCT-MD-COPD had the highest C-index of the four for all-cause
-mortality (0.721 against 0.703 for MD-COPD) and the highest for
-respiratory mortality, and the lowest exacerbation AIC {DISC-01, DISC-01b}
-(Supplemental Table S5). ESI-MD-COPD also discriminated marginally better than MD-COPD {DISC-02, DISC-03}.
+All classifications share the same major criterion, so no participant moves
+between the airflow-limitation categories and the preserved-spirometry ones,
+and reclassification occurs only within each pair. NoCT-MD-COPD moves 833
+participants from COPD-major to AFL-only, 579 from noCOPD to COPD-minor and 75
+from COPD-minor to noCOPD, and retains all 275 of the participants MD-COPD
+assigns to AFL-only. ESI-MD-COPD moves 350, 612 and 70 respectively, and
+retains 193, moving the remaining 82 into COPD-major {RECL-07, RECL-08}.
+Removing a criterion can only lower a participant's count, so NoCT-MD-COPD
+cannot move anyone out of AFL-only; restoring a criterion in the form of ESI
+can. The 833 participants lost from COPD-major are those whose only minor
+criterion was a CT finding, 21.9% of that category {RECL-03}. Overall, 7,753
+participants (83.9%) retain their MD-COPD category under NoCT-MD-COPD and 8,126
+(87.9%) under ESI-MD-COPD (Figure 1, Supplemental Table S10).
 
-A C-index does not test what the categories are called. It tests how well they
-rank risk. NoCT-MD-COPD ranks risk well because its COPD-major category is smaller and more severe: 2,976 participants rather than 3,809, with
-an adjusted hazard ratio of 3.34 against 2.54 {RISK-07, RISK-08}. It gets there by moving 833
-participants into a category named as not having COPD.
+The AFL-only category withholds a COPD diagnosis from participants the fixed
+ratio would diagnose, so it is defensible only while the participants within it
+are at genuinely low risk. Under MD-COPD they are, with crude rate ratios of
+1.05 (95% CI: 0.79 to 1.37) for all-cause mortality, 1.76 (0 to 5.75) for
+respiratory mortality and 1.00 (0.77 to 1.25) for exacerbations {CRUDE-06,
+CRUDE-08, CRUDE-09}. Under NoCT-MD-COPD they are not: 1.54 (1.34 to 1.76), 9.38
+(5.00 to 21.95) and 1.72 (1.43 to 1.98) {CRUDE-01, CRUDE-03}. The excess is
+attributable to the 833 participants moved into that category, who have
+structural disease identified only by chest CT and who are placed by a CT-free
+classification into a category named for the absence of COPD. Under
+ESI-MD-COPD, which recovers most of them, the estimates return close to those
+of MD-COPD: 1.29 (1.05 to 1.55), 2.37 (0.44 to 6.99) and 1.17 (0.94 to 1.41)
+{CRUDE-04}. Adjusted estimates follow the same ordering (Figures 2 to 4,
+Supplemental Tables S3a to S3c).
 
-## Whether the category labels remain true
+At the COPD-minor boundary the three multidimensional classifications are
+close to indistinguishable. Crude all-cause rate ratios are 1.77, 1.72 and 1.75
+for MD-COPD, NoCT-MD-COPD and ESI-MD-COPD; respiratory 3.27, 3.42 and 3.89; and
+exacerbations 3.01, 3.31 and 3.28 {CRUDE-10, CRUDE-11, CRUDE-12}. The symptom
+criteria alone reproduce this category about as well as ESI does, which is
+consistent with the per-category F1 reported above, where ESI-MD-COPD is
+fractionally lower than NoCT-MD-COPD. Resampling participants and refitting
+both classifications within every resample confirms that the two assign
+statistically indistinguishable effect sizes to this category on all three
+outcomes, while differing for COPD-major (Supplemental Table S9). The reason is
+taken up below.
 
-*(new)*
-
-The AFL-only category exists to identify participants whom the fixed
-ratio would call COPD but who do not have it, so a classification is usable only if
-that category is genuinely low risk. Under MD-COPD it is. Adjusted all-cause
-HR 0.87 (0.65 to 1.16), respiratory HR 1.39 (0.32 to 6.04) and exacerbation
-IRR 1.21 (0.95 to 1.54) all cross the null {RISK-01, RISK-01b, RISK-01c}, as
-does the crude exacerbation rate ratio (1.00, 0.77 to 1.25) {CRUDE-07}.
-
-Under NoCT-MD-COPD it is not. That category carries 6.4 times the
-respiratory mortality of its own noCOPD reference (adjusted HR 6.37, 3.29 to
-12.34) and 1.8 times the exacerbation rate (IRR 1.78, 1.56 to 2.03) {RISK-02,
-RISK-02b, RISK-03}. The crude estimates are worse than the adjusted ones rather
-than better: unadjusted, participants in that category died at 1.54 times the
-rate of the reference (95% CI 1.34 to 1.76) {CRUDE-01, CRUDE-02} and had 9.4
-times the respiratory mortality {CRUDE-03}. Adjustment masked an excess that
-participants actually experienced.
-
-Under ESI-MD-COPD the label largely holds. Adjusted all-cause HR 0.96 (0.78 to
-1.18) and respiratory HR 1.77 (0.56 to 5.58) both cross the null {RISK-04,
-RISK-04b}. The exacerbation estimate does not (IRR 1.23, 1.03 to 1.48), and
-neither does the crude all-cause rate ratio (1.29, 1.05 to 1.55) {CRUDE-04,
-CRUDE-05}. The exacerbation estimate is the same size as MD-COPD's own for this
-category, 1.23 against 1.21; its interval excludes 1 because ESI-MD-COPD
-assigns 543 participants to AFL-only against MD-COPD's 275, not because
-the rate is higher. The remaining categories track the reference: COPD-minor HR
-1.96 against 1.83, COPD-major 2.93 against 2.54 {RISK-05, RISK-06} (Table 3,
-Figures 2 to 4).
-
-## Longitudinal FEV~1~ decline
-
-*(new)*
-
-FEV₁ decline separates the categories less clearly than mortality or
-exacerbations do. Under MD-COPD no category differs from its own noCOPD group
-(AFL-only −0.8 mL/yr, P = 0.71; COPD-minor −3.0, P = 0.08; COPD-major
-1.4, P = 0.16) {DEC-01} (Supplemental Table S6).
-
-Under both CT-free classifications the COPD-major category declines more
-slowly than its own noCOPD group, not faster (NoCT-MD-COPD 2.8 mL/yr,
-P = 0.014; ESI-MD-COPD 2.6 mL/yr, P = 0.013) {DEC-02}. The direction is the
-opposite of what the label implies. Participants in these categories already
-have low FEV₁ at baseline, and the categories that gain participants when CT
-is removed are the ones with most room to decline, so this comparison is not
-informative about the classifications and we do not read a claim from it.
-
-## ESI as a continuous measure
+## Outcome risks by MD-COPD and ESI-MD-COPD cross-classification
 
 *(new)*
 
-Used continuously rather than as a threshold, ESI carries prognostic
-information beyond FEV₁/FVC for one outcome of the two. In a model containing
-both, each ESI unit carried an all-cause hazard ratio of 1.07 (1.03 to 1.12)
-while FEV₁/FVC did not reach significance, and adding ESI to a FEV₁/FVC model
-improved fit (likelihood ratio χ² = 9.3, P = 0.002) {CONT-01, CONT-02}
-(Supplemental Table S7). For respiratory mortality the reverse holds: FEV₁/FVC
-carries the association and ESI adds nothing (χ² = 0.6, P = 0.44) {CONT-03}.
+To examine the disagreements at the level of individual participants, binary
+COPD status under MD-COPD and under ESI-MD-COPD was cross-classified within the
+preserved-spirometry subgroup, where the two classifications can disagree about
+a diagnosis rather than about which COPD category applies. Of these
+participants, 3,745 are classified as not having COPD by both, 612 by
+ESI-MD-COPD only, 70 by MD-COPD only and 729 by both {DISC2-01, DISC2-02,
+DISC2-03}. ESI-MD-COPD therefore agrees with 729 of the 799 participants
+MD-COPD assigns to COPD-minor, or 91.2% {DISC2-04}. Observed all-cause
+mortality rises across the four groups, at 1.46, 2.30, 2.13 and 2.84 per 100
+person-years, as do exacerbations, at 11.2, 31.0, 21.7 and 42.9 (Table 3).
 
-Among GOLD 0 participants, each 1-unit higher baseline ESI predicted an
-additional 4.6 mL/yr of subsequent FEV₁ decline (P = 0.002), independent of
-baseline FEV₁/FVC {CONT-04, CONT-05}. Baseline ESI was similar in GOLD 0 and
-PRISm, but PRISm participants gained more ESI over follow-up {CONT-08}
-(Supplemental Table S8).
+Against participants both classifications call noCOPD, the group both call COPD
+carries an adjusted all-cause hazard ratio of 1.94 (95% CI: 1.62 to 2.32),
+respiratory 5.10 (1.92 to 13.5) and an exacerbation incidence rate ratio of
+2.10 (1.72 to 2.57) {DISC2-10, DISC2-11, DISC2-12}. The 612 participants added
+by ESI-MD-COPD approach these values on every outcome, at 1.59 (1.30 to 1.95),
+3.63 (1.20 to 11.0) and 1.82 (1.48 to 2.25) {DISC2-05, DISC2-13, DISC2-07}. The
+70 participants ESI-MD-COPD does not identify carry 1.25 (0.70 to 2.22) for
+all-cause mortality and 1.88 (1.05 to 3.35) for exacerbations, and had no
+respiratory deaths during follow-up, so no respiratory estimate is available for
+them {DISC2-08}. The errors are therefore asymmetric in the direction that
+matters for a diagnostic label: the participants ESI-MD-COPD adds carry risk
+approaching that of established COPD-minor, and the participants it misses are
+few. Prior exacerbation burden rises across the groups from 0.09 to 0.44 and
+0.50 exacerbations per participant in the year before enrollment {DISC2-09}, so
+part of the gradient in subsequent exacerbations reflects history already
+present at baseline.
 
-ESI was essentially unchanged by bronchodilation, with a mean within-participant
-difference between pre- and post-bronchodilator measurements of −0.09 across
-9,234 paired measurements in this cohort {CONT-06, CONT-07}.
-
-## Who the two classifications disagree about
-
-*(new)*
-
-NoCT-MD-COPD is set aside from here on. The preceding sections establish that
-it underdiagnoses a group carrying raised mortality, which is the reason a
-symptom-only substitute is not usable; what remains is whether ESI-MD-COPD
-reproduces MD-COPD at the level of individual participants. Binary COPD status
-under the two was cross-classified within the preserved-spirometry subgroup,
-where they can disagree about a diagnosis rather than about which COPD category
-applies.
-
-ESI-MD-COPD misses 70 of the 799 participants MD-COPD assigns to COPD-minor,
-agreeing on the other 729, or 91.2% {DISC2-01, DISC2-03, DISC2-04}. It calls
-COPD in a further 612 whom MD-COPD does not {DISC2-02}.
-
-Those 612 are not noise. Against participants both classifications call
-noCOPD, they carry an adjusted all-cause hazard ratio of 1.59 (1.30 to 1.95)
-{DISC2-05, DISC2-06}, respiratory 3.63 (1.20 to 11.0), and an exacerbation
-incidence rate ratio of 1.82 (1.48 to 2.25) {DISC2-07} (Table 4). Observed
-exacerbation rates rise across the four groups, from 11.2 per 100 person-years
-in the doubly negative group to 31.0 in the ESI-only group, 21.7 in the CT-only
-group and 42.9 where both agree. Prior exacerbation burden follows the same
-ordering, 0.09 against 0.44 in the ESI-only group {DISC2-09}, so part of the
-difference in future exacerbations is history already present at baseline.
-
-The 70 participants ESI-MD-COPD misses had no respiratory deaths during
-follow-up, so no respiratory hazard ratio is estimable for that group
-{DISC2-08}.
-
-## Whether the two classifications assign the same risk
+## ESI and the visual CT criteria
 
 *(new)*
 
-Reporting two classifications side by side invites a comparison that
-overlapping intervals cannot settle. Participants were resampled and both
-classifications refitted within every resample, so the difference in the log
-estimate for a given category is taken on the same people each time.
+Mean ESI rises monotonically across the visual emphysema scale, from 1.04 in
+participants with no emphysema through 1.22, 1.59, 2.91 and 5.21 to 6.62 in
+those with advanced destructive emphysema, and across airway wall thickening,
+from 0.96 when absent through 1.29 when borderline to 3.32 when definite
+{CTLEV-01, CTLEV-02}.
 
-For AFL-only and COPD-minor the two are indistinguishable. No outcome
-shows a difference for either category, with two-sided P from 0.18 to 0.86
-{PAIR-01, PAIR-02} (Table 5).
+Pooled across the cohort, ESI discriminates visual emphysema of at least mild
+severity with an area under the curve of 0.78 and definite wall thickening with
+0.80, and FEV₁/FVC discriminates both better, at 0.82 and 0.82 {CTAUC-01}. Stratifying by airflow limitation shows that this is
+largely a reflection of severity rather than of detection. Among participants
+with airflow limitation, ESI achieves 0.75 and 0.75 and FEV₁/FVC 0.78 and 0.75;
+these are the only comparisons in which ESI is not clearly lower, and for wall
+thickening the two are equal to two decimal places {CTAUC-02, CTAUC-02b}.
+Among participants with preserved spirometry, where the ESI criterion actually
+operates in the COPD-minor pathway, ESI achieves only 0.56 and 0.61, and
+FEV₁/FVC 0.67 and 0.64 {CTAUC-03, CTAUC-04} (Table 4). Both CT criteria are
+poorly predicted from spirometry of any kind in that stratum. The same pattern
+holds for quantitative CT, where the correlation between ESI and low attenuation
+area is 0.78 across the cohort but 0.08 within GOLD 0 {CORR-01, CORR-03}.
+Used as a continuous measure rather than as a threshold, ESI carried all-cause
+mortality beyond FEV₁/FVC (hazard ratio 1.07 per unit, 95% CI: 1.03 to 1.12;
+likelihood ratio P = 0.002) though it added nothing for respiratory mortality
+{CONT-01, CONT-02, CONT-03}, and among GOLD 0 participants each unit predicted
+4.6 mL/yr of additional FEV₁ decline (P = 0.002) {CONT-04} (Supplemental Tables
+S7 and S8).
 
-COPD-major differs on all three outcomes. ESI-MD-COPD assigns 1.15 times the
-all-cause effect (1.11 to 1.20), 1.49 times the respiratory effect (1.09 to
-2.28) and 1.20 times the exacerbation effect (1.14 to 1.26), all P < 0.01
-{PAIR-03, PAIR-04}. This is the same mechanism described above for
-NoCT-MD-COPD, at smaller magnitude. ESI-MD-COPD's COPD-major category holds
-3,541 participants against MD-COPD's 3,809, and the 350 it does not retain are
-those whose only minor criterion was a CT finding. Removing them leaves a
-smaller and more severe category, which raises the estimated effect without any
-participant's risk having changed. Respiratory estimates rest on 863 of 1,000
-resamples, the remainder having too few events to fit {PAIR-05}.
+This accounts for the results above. ESI substitutes for the CT criteria among
+participants with airflow limitation, which is precisely where COPD-major is
+lost when CT is removed, and is why ESI-MD-COPD holds that category at 3,541
+participants rather than the 2,976 of NoCT-MD-COPD {LAB-02, LAB-03}. It does
+not detect CT abnormality among participants with preserved spirometry, which is
+why the three multidimensional classifications are indistinguishable at the
+COPD-minor boundary. FEV₁/FVC cannot serve as the replacement criterion despite
+discriminating the CT findings at least as well, because it is already the major
+criterion: a minor criterion defined by a threshold above 0.70 is met by every
+participant with airflow limitation, which would empty the AFL-only category
+entirely and remove the correction the framework exists to make.
+
+## Longitudinal FEV₁ decline
+
+*(new)*
+
+Annualized change in FEV₁ was estimated for every category under all four
+classifications, against each classification's own noCOPD group. Fixed-ratio
+COPD declined 1.66 mL/yr faster than the reference (P = 0.07). Under MD-COPD no
+category differed from the reference: AFL-only −0.84 mL/yr (P = 0.71),
+COPD-minor −3.05 (P = 0.08) and COPD-major 1.39 (P = 0.16) {DEC-01}. Under
+NoCT-MD-COPD the estimates were −0.95 (P = 0.48), 1.65 (P = 0.23) and 2.78
+(P = 0.014), and under ESI-MD-COPD −1.63 (P = 0.36), 1.70 (P = 0.21) and 2.59
+(P = 0.013) {DEC-02} (Supplemental Table S6). Two of the ten estimates reach
+significance, both for COPD-major under a CT-free classification, and both in
+the direction of slower decline than the noCOPD reference rather than faster.
+Baseline FEV₁ is already low in those categories, and removing the CT criteria
+moves into them participants with more room to decline, so the comparison
+reflects a change in composition rather than a difference in disease behavior.
+This outcome does not distinguish between the classifications and no claim is
+drawn from it.
 
 ---
 
 ## Open
 
-- The COPD-minor figure shows the three multidimensional classifications essentially
-  superimposed. ESI adds nothing at that boundary, and the text should say so
-  rather than leave the figure to say it.
-- Whether the v15 secondary analyses of continuous ESI (v15 ¶80) are retained.
-- The bronchodilator ΔESI quoted in the Discussion (−0.09) is computed on
-  10,160 paired measurements from the full COPDGene, not on this cohort.
+- Abstract and References remain to be written.
+- Whether the continuous-ESI material now compressed into one sentence of the
+  ESI-and-CT section deserves more room, or belongs only in the Supplement.

@@ -26,7 +26,8 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
-SUPP_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
+SUPP_ORDER = ["S1", "S2", "S3a", "S3b", "S3c", "S4", "S5", "S6",
+               "S7", "S8", "S9", "S10", "S11"]
 
 
 def load(path, name):
@@ -81,8 +82,82 @@ def s2_ct(doc):
            "participants with both measures available, so n varies by column.")
 
 
+def s3_risk_by_outcome(doc):
+    """The main-text risk table, split by outcome. One table per outcome keeps
+    each on a single scale; the main text shows these as Figures 2 to 4."""
+    risk = {(r["schema"], r["category"]): r for r in load(ASSETS, "schema_risk.csv")}
+    crd = {(r["schema"], r["category"], r["outcome"]): r
+           for r in load(ASSETS, "schema_crude.csv")}
+    NAME = {"S1": "Fixed ratio", "S2": "MD-COPD",
+            "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    CATS = {"S1": ["noCOPD", "COPD"],
+            "S2": ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]}
+    for suffix, okey, olabel, est_col, n_col in (
+            ("a", "all",  "all-cause mortality",   "all_HR",   "n_mort"),
+            ("b", "resp", "respiratory mortality", "resp_HR",  "n_mort"),
+            ("c", "exac", "exacerbations",         "exac_IRR", "n_exac")):
+        heading(doc, f"Supplemental Table S3{suffix}. Risk of {olabel} "
+                     f"under each classification")
+        rows, seen = [], set()
+        for sc in ("S1", "S2", "S3", "S4"):
+            for c in CATS.get(sc, CATS["S2"]):
+                r = risk.get((sc, c)); k = crd.get((sc, c, okey))
+                if r is None:
+                    continue
+                if c == "noCOPD":
+                    ci = cr = "reference"
+                else:
+                    stem = "exac" if okey == "exac" else okey
+                    ci = ("not estimable" if r[est_col] in ("", "NA")
+                          else f"{float(r[est_col]):.2f} "
+                               f"({float(r[stem+'_LCI']):.2f}–{float(r[stem+'_UCI']):.2f})")
+                    cr = ("not estimable" if k is None or k["rr"] in ("", "NA")
+                          else f"{float(k['rr']):.2f} "
+                               f"({float(k['lo']):.2f}–{float(k['hi']):.2f})")
+                rows.append([NAME[sc] if sc not in seen else "", c,
+                             f"{int(r[n_col]):,}", cr, ci])
+                seen.add(sc)
+        add_table(doc, ["Classification", "Category", "n",
+                        "Crude rate ratio (95% CI)",
+                        "Adjusted HR or IRR (95% CI)"],
+                  rows, [1.24, 1.10, 0.62, 1.76, 1.78])
+        legend(doc, f"Table S3{suffix}.",
+               f"Crude and adjusted risk of {olabel} within each classification's "
+               "own categories, against that classification's own noCOPD group. "
+               "Adjusted estimates carry age, sex, race, current smoking status, "
+               "pack-years and body mass index, with prior exacerbation frequency "
+               "added for exacerbations. Shown in the main text as Figures 2 to 4. "
+               "AFL-only, airflow limitation without other criteria; HR, hazard "
+               "ratio; IRR, incidence rate ratio; CI, confidence interval.")
+
+
+def s4_sweep(doc):
+    """The parameter sweep behind the threshold selection."""
+    heading(doc, "Supplemental Table S4. Threshold selection")
+    rows = []
+    for r in load(ASSETS, "metric_sweep.csv"):
+        sel = r["selected"].upper() == "TRUE"
+        lab = r["label"] + (" (selected)" if sel else "")
+        rows.append([lab, f"{int(r['n_noCOPD']):,}", f"{int(r['n_aflonly']):,}",
+                     f"{int(r['n_minor']):,}", f"{int(r['n_major']):,}",
+                     f"{float(r['macroF1']):.3f}", f"{float(r['bal_acc']):.3f}",
+                     f"{float(r['kappa']):.3f}"])
+    add_table(doc, ["Rule", "noCOPD", "AFL-only", "COPD-minor", "COPD-major",
+                    "Macro-F1", "Balanced accuracy", "Cohen's κ"],
+              rows, [1.42, 0.68, 0.72, 0.80, 0.80, 0.72, 0.72, 0.64])
+    legend(doc, "Table S11.",
+           "Category sizes and each candidate selection metric across the "
+           "thresholds examined, against the MD-COPD reference in the first row. "
+           "Macro-averaged F1 weights the four categories equally and penalizes "
+           "both over- and under-assignment; balanced accuracy averages recall "
+           "alone and Cohen's κ is not category-weighted, so neither penalizes "
+           "over-assignment, and their optima sit where AFL-only is respectively "
+           "almost empty and more than triple the reference. "
+           "AFL-only, airflow limitation without other criteria.")
+
+
 def s3_crossclass(doc):
-    heading(doc, "Supplemental Table S3. Reclassification against the CT-based framework")
+    heading(doc, "Supplemental Table S10. Reclassification against the CT-based framework")
     x = load(ASSETS, "crossclass.csv")
     nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
     for s in ("S3", "S4"):
@@ -97,7 +172,7 @@ def s3_crossclass(doc):
         add_table(doc, ["", *CATS, "Total"], rows,
                   [1.30, 1.02, 1.02, 1.06, 1.06, 1.04])
         doc.add_paragraph()
-    legend(doc, "Table S3.",
+    legend(doc, "Table S10.",
            "Full cross-classification of each CT-free schema against the CT-based "
            "framework. Diagonal cells are participants both schemas place in the "
            "same category. The COPD-major column shows where the two schemas differ: "
@@ -106,7 +181,7 @@ def s3_crossclass(doc):
 
 
 def s4_fitting(doc):
-    heading(doc, "Supplemental Table S4. Fitting the CT-free schemas")
+    heading(doc, "Supplemental Table S11. Fitted rules and cross-validated performance")
     fit = load(ASSETS, "schema_fit.csv")
     cvd = load(ASSETS, "schema_fit_cv_diff.csv")[0]
     nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
@@ -118,7 +193,7 @@ def s4_fitting(doc):
     add_table(doc, ["Schema", "Count threshold", "ESI threshold",
                     "In-sample macro-F1", "Held-out macro-F1"], rows,
               [1.55, 1.20, 1.05, 1.32, 1.38])
-    legend(doc, "Table S4.",
+    legend(doc, "Table S11.",
            "Thresholds fitted to approximate the CT-based classification, by "
            "macro-averaged F1 across the four categories, over the full parameter "
            "space of each schema. Held-out values are from five repeats of "
@@ -236,17 +311,69 @@ def s8_esi_trajectory(doc):
            "flow-volume curve shape further from normal.")
 
 
+def s9_paired_bootstrap(doc):
+    """Whether the two classifications assign different effect sizes to the
+    same category. Adjusted only: the crude comparison is not yet computed."""
+    heading(doc, "Supplemental Table S9. ESI-MD-COPD compared with MD-COPD")
+    rows, seen = [], set()
+    label = {"all-cause mortality": "All-cause mortality",
+             "respiratory mortality": "Respiratory mortality",
+             "exacerbations": "Exacerbations"}
+    for r in load(ASSETS, "schema_diff_bootstrap.csv"):
+        o = r["outcome"]; pv = float(r["p_two_sided"])
+        rows.append([label.get(o, o) if o not in seen else "", r["category"],
+                     f"{float(r['ratio_S4_over_S2']):.2f} "
+                     f"({float(r['lo']):.2f}–{float(r['hi']):.2f})",
+                     "<0.001" if pv < 0.001 else f"{pv:.3f}",
+                     f"{int(r['B_eff']):,}"])
+        seen.add(o)
+    add_table(doc, ["Outcome", "Category", "Ratio of adjusted estimates (95% CI)",
+                    "P", "Resamples"],
+              rows, [1.52, 1.14, 2.08, 0.86, 0.90])
+    legend(doc, "Table S9.",
+           "Ratio of the adjusted effect size ESI-MD-COPD assigns to a category "
+           "to the one MD-COPD assigns to the same category. Participants were "
+           "resampled and both classifications refitted within every resample, so "
+           "each pair of estimates comes from the same people; the interval and P "
+           "are percentile values from the distribution of the difference in log "
+           "estimates. A ratio of 1 means the two assign the same effect size. "
+           "Respiratory resamples number fewer than 1,000 because a resample with "
+           "too few respiratory events cannot be fitted, and those are dropped for "
+           "that outcome only. CI, confidence interval.")
+
+
 def check_citations(produced):
     """The main text and this file must agree on which supplemental tables
     exist. A dangling citation is exactly the defect that reaches reviewers."""
-    with open(os.path.join(HERE, "RESULTS.md")) as f:
-        body = f.read()
-    with open(os.path.join(HERE, "METHODS.md")) as f:
-        body += f.read()
+    # Read only what the builder actually emits. RESULTS.md and METHODS.md
+    # carry trailing working sections that are stripped at build time, so a
+    # citation inside one of them reads as satisfied while never reaching the
+    # document. The Discussion is included because it cites tables too.
+    def built(fn, stop=None):
+        t = open(os.path.join(HERE, fn)).read()
+        return t.split(stop)[0] if stop and stop in t else t
+    body = (built("RESULTS.md", "## Open")
+            + built("METHODS.md", "## Still to write")
+            + built("DISCUSSION.md"))
     # Prose sources are hard-wrapped, so "Supplemental Table" and its number
     # are routinely split across a line. Matching a literal space made the
     # check report a real citation as missing.
-    cited = set(re.findall(r"Supplemental\s+Table\s+(S\d+)", body))
+    # Lettered tables (S3a) exist, so the pattern has to admit a suffix or
+    # "Supplemental Tables S3a to S3c" registers as a citation of S3.
+    # A citation can name several tables at once ("Tables S7 and S8",
+    # "Tables S3a to S3c"), so capture every identifier in the span that
+    # follows the prefix rather than only the first.
+    cited = set()
+    for m in re.finditer(r"Supplemental\s+Tables?\s+((?:S\d+[a-z]?)"
+                         r"(?:\s*(?:,|and|to)\s*S\d+[a-z]?)*)", body):
+        span = m.group(1)
+        cited.update(re.findall(r"S\d+[a-z]?", span))
+        # "S3a to S3c" cites the intervening letters too.
+        for r in re.finditer(r"S(\d+)([a-z])\s*to\s*S?(\d+)?([a-z])", span):
+            if r.group(3) and r.group(3) != r.group(1):
+                continue          # a range across different numbers is not one
+            for o in range(ord(r.group(2)), ord(r.group(4)) + 1):
+                cited.add("S" + r.group(1) + chr(o))
     missing = sorted(cited - set(produced))
     unused = sorted(set(produced) - cited)
     if missing:
@@ -265,14 +392,15 @@ def main():
     r.bold = True
     r.font.size = Pt(14)
     doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
-    for fn in (s1_baseline, s2_ct, s3_crossclass, s4_fitting, s5_discrimination,
-               s6_fev1_decline, s7_continuous_esi, s8_esi_trajectory):
+    for fn in (s1_baseline, s2_ct, s3_risk_by_outcome, s4_sweep,
+               s5_discrimination, s6_fev1_decline, s7_continuous_esi,
+               s8_esi_trajectory, s9_paired_bootstrap, s3_crossclass, s4_fitting):
         fn(doc)
         doc.add_paragraph()
     data_files(doc)
     doc.save(OUT)
     check_citations(SUPP_ORDER)
-    print(f"wrote {OUT}\n  {len(SUPP_ORDER)} supplemental tables, all cited")
+    print(f"wrote {OUT}\n  {len(SUPP_ORDER)} supplemental tables")
 
 
 if __name__ == "__main__":
