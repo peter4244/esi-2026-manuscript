@@ -28,13 +28,18 @@ w("Generated from `ctfree/assets/`. Every value is read from an artifact.\n")
 w("## Table 1. Four classification schemas and how they label the cohort\n")
 w("| | Major criterion | Minor criteria | noCOPD | AFL-only | COPD-minor | COPD-major |")
 w("|---|---|---|---|---|---|---|")
+# Read the fitted ESI threshold rather than typing it. A literal here drifted
+# from the model once already, surviving a refit that changed the value.
+.fit <- read.csv(file.path(ASSETS, "schema_fit.csv"), stringsAsFactors = FALSE)
+.esi_t <- .fit$t_low[.fit$schema == "S4"]
+stopifnot(length(.esi_t) == 1, is.finite(.esi_t))
 defs <- list(
  c("**1** Fixed ratio", "FEV~1~/FVC < 0.70", "none", "S1"),
  c("**2** MD-COPD with CT", "FEV~1~/FVC < 0.70",
    "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)", "S2"),
  c("**3** MD-COPD without CT", "FEV~1~/FVC < 0.70", "dyspnea, SGRQ, chronic bronchitis (≥2)", "S3"),
  c("**4** MD-COPD with ESI", "FEV~1~/FVC < 0.70",
-   "ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2)", "S4"))
+   sprintf("ESI ≥ %.2f, dyspnea, SGRQ, chronic bronchitis (≥2)", .esi_t), "S4"))
 for (x in defs) {
   s <- x[4]
   cells <- if (s == "S1") c(n_of(s,"noCOPD"), "—", "—", n_of(s,"COPD")) else

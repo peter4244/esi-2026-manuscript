@@ -883,7 +883,13 @@ silently.
 ```{r self-check, echo = FALSE}
 csv_path <- file.path(HERE, "replacement_criteria_comparison.csv")
 selfcheck <- function(name, computed, expected, tol = 0.002) {
-  ok <- if (is.numeric(computed) && is.numeric(expected))
+  # Both NA is agreement, not failure: the reference classification has no
+  # free parameters, so it has no held-out score and no reach, and NA is the
+  # correct recorded value. Without this branch abs(NA - NA) < tol is NA and
+  # isTRUE() turns a correct row into a spurious FAIL.
+  ok <- if (is.na(computed) && is.na(expected)) TRUE
+        else if (is.na(computed) || is.na(expected)) FALSE
+        else if (is.numeric(computed) && is.numeric(expected))
           isTRUE(abs(computed - expected) < tol) else identical(computed, expected)
   data.frame(check = name,
              computed = if (is.numeric(computed)) sprintf("%.4f", computed)

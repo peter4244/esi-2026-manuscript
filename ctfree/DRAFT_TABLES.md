@@ -4,12 +4,12 @@ Generated from `ctfree/assets/`. Every value is read from an artifact.
 
 ## Table 1. Four classification schemas and how they label the cohort
 
-| | Major criterion | Minor criteria | noCOPD | AFL-only-noCOPD | COPD-minor | COPD-major |
+| | Major criterion | Minor criteria | noCOPD | AFL-only | COPD-minor | COPD-major |
 |---|---|---|---|---|---|---|
 | **1** Fixed ratio | FEV~1~/FVC < 0.70 | none | 5,156 | — | — | 4,084 |
 | **2** MD-COPD with CT | FEV~1~/FVC < 0.70 | emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3) | 4,357 | 275 | 799 | 3,809 |
 | **3** MD-COPD without CT | FEV~1~/FVC < 0.70 | dyspnea, SGRQ, chronic bronchitis (≥2) | 3,853 | 1,108 | 1,303 | 2,976 |
-| **4** MD-COPD with ESI | FEV~1~/FVC < 0.70 | ESI ≥ 1.25, dyspnea, SGRQ, chronic bronchitis (≥2) | 3,815 | 543 | 1,341 | 3,541 |
+| **4** MD-COPD with ESI | FEV~1~/FVC < 0.70 | ESI ≥ 1.50, dyspnea, SGRQ, chronic bronchitis (≥2) | 3,815 | 543 | 1,341 | 3,541 |
 
 MD-COPD reference counts are 4,357, 275, 799 and 3,809.
 
@@ -77,7 +77,7 @@ covariates account for.
 ## Results sentence, replacing the former Table 5
 
 > MD-COPD improved on the fixed ratio for every outcome. Because fixed-ratio
-> COPD comprises exactly the AFL-only-noCOPD and COPD-major categories, the
+> COPD comprises exactly the AFL-only and COPD-major categories, the
 > two models are nested, and the four-category classification added
 > information beyond the fixed ratio for all-cause mortality
 > (likelihood ratio chi-square 122.1 on 2 df), respiratory mortality (76.1)
@@ -113,7 +113,7 @@ get it.
 | Schema | Count threshold | ESI threshold | In-sample macro-F1 | Held-out macro-F1 |
 |---|---|---|---|---|
 | 3 without CT | ≥ 2 | — | 0.7210 | 0.7212 |
-| 4 with ESI | ≥ 2 | 1.50 | 0.7527 | 0.7518 |
+| 4 with ESI | ≥ 2 | 1.50 | 0.7527 | 0.7519 |
 
 Schema 4 exceeds schema 3 by 0.0307 (0.0144 to 0.0437) across 25 held-out folds.
 
