@@ -474,6 +474,9 @@ ref_row <- data.frame(
   afl_resp_hi = hr_afl(d$ref, "ev_resp")[3],
   c_index = cidx(d$ref), reach_preserved = NA)
 res <- rbind(ref_row, res)
+# rbind of the per-candidate frames leaves non-default row names, which kable
+# then renders as an unlabelled first column in every downstream table.
+rownames(res) <- NULL
 
 # Convenience accessor used by the prose below, so no number is typed.
 R <- function(cn, fld) res[[fld]][res$criterion == cn]
@@ -520,6 +523,11 @@ has a meaningful zero in the plotted range, so both are shown on their
 occupied range rather than from 0.
 
 ```{r fig-3-1, fig.height = 6.0}
+# Subtitles are wrapped programmatically rather than by hand: a hand-broken
+# line survives until the next font or width change and then runs off the
+# canvas, which it did here on the first render.
+wrap <- function(txt, width = 76) paste(strwrap(txt, width), collapse = "\n")
+
 plot_dat <- res %>%
   filter(criterion != "MD-COPD") %>%
   mutate(
@@ -528,7 +536,14 @@ plot_dat <- res %>%
       criterion == "LAA-950"  ~ "CT-based",
       criterion == "none"     ~ "No replacement",
       TRUE                    ~ "Other spirometric"),
-    label = sprintf("%s\n%s", criterion, rule))
+    # Strip the criterion name off the front of its own rule string; repeating
+    # it doubles every label's width for no information. sub() is NOT
+    # vectorized over `pattern` -- it silently uses only the first element --
+    # so this has to go through mapply, not straight into mutate.
+    short = unname(mapply(function(cr, rl) trimws(sub(cr, "", rl, fixed = TRUE)),
+                          criterion, rule)),
+    short = ifelse(criterion == "none", "no replacement", short),
+    label = sprintf("%s\n%s", criterion, short))
 
 # A panel that renders empty errors nowhere, so assert the data is there.
 stopifnot(nrow(plot_dat) == 6, all(is.finite(plot_dat$macroF1_heldout)),
@@ -542,25 +557,25 @@ FAM_PAL <- c("ESI-based"         = unname(PALETTE["ESI-based"]),
              "No replacement"    = "#AAAAAA")
 
 fig3_1 <- ggplot(plot_dat, aes(ct_only_recovered, macroF1_heldout)) +
-  geom_point(aes(color = family, shape = family), size = 4) +
+  geom_point(aes(color = family, shape = family), size = 3.4) +
   geom_text_repel(aes(label = label, color = family), size = BODY_FS_NATIVE / .pt,
-                  lineheight = 0.95, box.padding = 0.7, point.padding = 0.4,
-                  min.segment.length = 0, seed = 1L, show.legend = FALSE) +
-  scale_color_manual(values = FAM_PAL, name = NULL,
-                     breaks = names(FAM_PAL)) +
+                  lineheight = 0.95, box.padding = 1.0, point.padding = 0.5,
+                  min.segment.length = 0, segment.size = 0.4, force = 6,
+                  max.overlaps = Inf, seed = 1L, show.legend = FALSE) +
+  scale_color_manual(values = FAM_PAL, name = NULL, breaks = names(FAM_PAL)) +
   scale_shape_manual(values = c("ESI-based" = 16, "CT-based" = 17,
                                 "Other spirometric" = 15, "No replacement" = 4),
                      name = NULL, breaks = names(FAM_PAL)) +
-  scale_x_continuous(expand = expansion(mult = 0.18)) +
-  scale_y_continuous(expand = expansion(mult = 0.14)) +
+  scale_x_continuous(expand = expansion(mult = 0.22)) +
+  scale_y_continuous(expand = expansion(mult = 0.16)) +
   labs(
     x = sprintf("CT-only COPD-major participants recovered (of %s)", n_fmt(N_CTONLY)),
     y = "Held-out macro-averaged F1",
-    subtitle = sprintf(paste("n = %s participants. Each point is one replacement criterion,",
-                             "fitted by macro-F1 over the same grid.\nUp is better on the",
-                             "objective the paper optimizes; right is better on the objective",
-                             "the paper argues."),
-                       n_fmt(N_COHORT))) +
+    subtitle = wrap(sprintf(paste(
+      "n = %s participants. Each point is one replacement criterion, fitted by",
+      "macro-F1 over the same grid. Up is better on the objective the paper",
+      "optimizes; right is better on the objective the paper argues."),
+      n_fmt(N_COHORT)))) +
   theme_esi()
 
 ggsave(file.path(FIGDIR, "fig3_1_objectives_disagree.png"), fig3_1,
@@ -574,7 +589,8 @@ identically on the same `r n_fmt(N_COHORT)` participants. The reference
 MD-COPD classification is not plotted: it has no free parameters, so it cannot
 be scored out of sample, and it recovers all `r n_fmt(N_CTONLY)` by
 construction. LAA-950 requires CT and is not a CT-free proposal; it marks what
-a genuine structural measurement achieves.
+a genuine structural measurement achieves. The FEV~1~/FVC and FEV~1~/FVC+ESI
+markers very nearly coincide, which is itself a result: see Section 4.
 
 # Section 4 -- Point 1: macro-F1 and recovery are different objectives
 
@@ -613,6 +629,17 @@ candidates that matter.
   of no replacement at all -- while recovering
   **`r n_fmt(R("LAA-950", "ct_only_recovered"))`**, more than any other
   candidate.
+
+- **Adding ESI on top of the FEV~1~/FVC rule changes almost nothing on either
+  yardstick.** The combined rule reaches held-out macro-F1
+  **`r f3(R("FEV1/FVC+ESI", "macroF1_heldout"))`** against FEV~1~/FVC alone at
+  **`r f3(R("FEV1/FVC", "macroF1_heldout"))`**, and recovers
+  **`r n_fmt(R("FEV1/FVC+ESI", "ct_only_recovered"))`** against
+  **`r n_fmt(R("FEV1/FVC", "ct_only_recovered"))`** -- a difference of
+  `r n_fmt(R("FEV1/FVC+ESI", "ct_only_recovered") - R("FEV1/FVC", "ct_only_recovered"))`
+  participants. In Figure 3.1 the two markers very nearly coincide, which is
+  the point: given a fitted second FEV~1~/FVC threshold, ESI adds essentially
+  nothing measurable on either axis.
 
 **A specific example, to anchor it.** Take the LAA-950 row on its own. If
 macro-F1 were the right lens, the honest reading of that row is that measuring
@@ -675,10 +702,10 @@ fig5_1 <- ggplot(fp, aes(est, lab, color = family)) +
   scale_color_manual(values = FP_PAL, name = NULL, breaks = names(FP_PAL)) +
   labs(x = "Adjusted hazard ratio for AFL-only vs that rule's own noCOPD group (log scale)",
        y = NULL,
-       subtitle = sprintf(paste("n = %s participants. Adjusted for age, sex, race, current",
-                                "smoking, pack-years and BMI.\nDashed line at 1: the AFL-only",
-                                "label is true when the interval covers it."),
-                          n_fmt(N_COHORT))) +
+       subtitle = wrap(sprintf(paste("n = %s participants. Adjusted for age, sex, race,",
+                                     "current smoking, pack-years and BMI. Dashed line at 1:",
+                                     "the AFL-only label is true when the interval covers it."),
+                               n_fmt(N_COHORT)))) +
   theme_esi()
 
 ggsave(file.path(FIGDIR, "fig5_1_aflonly_label.png"), fig5_1,
@@ -761,9 +788,9 @@ fig6_1 <- ggplot(sweep, aes(threshold, aflonly)) +
                            n_fmt(sum(d$ref == "AFL-only")))) +
   labs(x = "FEV1/FVC threshold for the replacement minor criterion",
        y = "Participants classified AFL-only",
-       subtitle = sprintf(paste("n = %s participants, count threshold k = 2.",
-                                "Dashed line: the major criterion, FEV1/FVC = 0.70."),
-                          n_fmt(N_COHORT))) +
+       subtitle = wrap(sprintf(paste("n = %s participants, count threshold k = 2.",
+                                     "Dashed line: the major criterion, FEV1/FVC = 0.70."),
+                               n_fmt(N_COHORT)))) +
   theme_esi()
 
 ggsave(file.path(FIGDIR, "fig6_1_fevfvc_circularity.png"), fig6_1,

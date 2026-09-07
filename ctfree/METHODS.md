@@ -68,7 +68,7 @@ reference rate recomputed within each resample.
 Fixed-ratio COPD comprises the AFL-only and COPD-major categories of the
 MD-COPD framework, so the fixed-ratio model is nested within the four-category
 model; the two were compared by likelihood ratio test on 2 degrees of freedom.
-Discrimination was summarized with the C-index for the mortality outcomes (23)
+Discrimination was summarized with the C-index for the mortality outcomes (21)
 and the Akaike information criterion for exacerbations.
 
 Agreement between classifications was assessed across the four diagnostic

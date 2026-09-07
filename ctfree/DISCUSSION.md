@@ -20,7 +20,7 @@ destruction and airway changes (18), whereas ESI reflects the integrated
 physiological consequences of those abnormalities on expiratory flow
 generation. Loss of elastic recoil, small airway dysfunction and heterogeneous
 regional abnormalities may all contribute to alterations in the shape of the
-expiratory flow-volume curve (25–27). The objective of a spirometric
+expiratory flow-volume curve (22–24). The objective of a spirometric
 representation is therefore not to reproduce CT morphology, but to capture the
 functional consequences of structural abnormalities that determine clinical
 expression and prognosis.
@@ -60,10 +60,10 @@ self-normalizing, so it does not depend on ethnic or anthropometric reference
 equations in the way FEV₁ percent predicted does. It is also stable across
 bronchodilation: in this cohort ESI changed by a mean of −0.09 between paired
 pre- and post-bronchodilator measurements, extending previous observations in a
-small COPD population (28). A structural criterion built on a
+small COPD population (25). A structural criterion built on a
 reference-dependent or reversible measure would inherit that dependence.
 Bronchodilator responsiveness in COPD varies over time and introduces
-uncertainty when used to define stable disease characteristics (29).
+uncertainty when used to define stable disease characteristics (26).
 
 *(new)*
 

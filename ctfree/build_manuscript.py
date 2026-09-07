@@ -342,6 +342,43 @@ def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):
     legend(doc, label, text)
 
 
+def check_references():
+    """The reference list and the citations in the prose must agree, in both
+    directions. A dangling citation and an uncited entry are both defects that
+    reach reviewers, and renumbering is exactly when they appear."""
+    body = ""
+    for fn, stop in (("ABSTRACT.md", None), ("INTRODUCTION.md", None),
+                     ("METHODS.md", "## Still to write"),
+                     ("RESULTS.md", "## Open"), ("DISCUSSION.md", None)):
+        t = open(os.path.join(HERE, fn)).read()
+        body += t.split(stop)[0] if stop and stop in t else t
+    cited = set()
+    for m in re.finditer(r"\((\d+(?:\s*[,\u2013-]\s*\d+)*)\)", body):
+        for part in m.group(1).split(","):
+            part = part.strip()
+            if re.fullmatch(r"\d+", part):
+                cited.add(int(part))
+            else:
+                r = re.fullmatch(r"(\d+)\s*[\u2013-]\s*(\d+)", part)
+                if r:
+                    cited.update(range(int(r.group(1)), int(r.group(2)) + 1))
+    listed = set()
+    for line in open(os.path.join(HERE, "REFERENCES.md")):
+        m = re.match(r"^(\d+)\.\s+\S", line)
+        if m:
+            listed.add(int(m.group(1)))
+    dangling = sorted(cited - listed)
+    uncited = sorted(listed - cited)
+    gaps = [n for n in range(1, max(listed) + 1) if n not in listed] if listed else []
+    if dangling:
+        raise SystemExit(f"prose cites {dangling}, absent from REFERENCES.md")
+    if gaps:
+        raise SystemExit(f"REFERENCES.md skips {gaps}; numbering must be contiguous")
+    if uncited:
+        print(f"  note: references {uncited} listed but never cited")
+    return len(listed)
+
+
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
@@ -365,6 +402,12 @@ def main():
 
     doc.add_paragraph("DISCUSSION", style="Heading 1")
     n_d = add_prose(doc, os.path.join(HERE, "DISCUSSION.md"))
+
+    doc.add_paragraph("REFERENCES", style="Heading 1")
+    n_ref = check_references()
+    for line in open(os.path.join(HERE, "REFERENCES.md")):
+        if re.match(r"^\d+\.\s+\S", line):
+            doc.add_paragraph(line.strip())
 
     doc.add_page_break()
     doc.add_paragraph("TABLES", style="Heading 1")
@@ -397,7 +440,7 @@ def main():
 
     doc.save(OUT)
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
-          f"{n_d} Discussion paragraphs")
+          f"{n_d} Discussion paragraphs, {n_ref} references")
     # A floor against a source file failing to render, not a target length.
     # Pete's Introduction is four paragraphs by choice.
     assert n_i >= 4 and n_m > 10 and n_r > 10 and n_d > 5, \
