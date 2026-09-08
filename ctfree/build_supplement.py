@@ -27,8 +27,8 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
-SUPP_ORDER = ["S1", "S2", "S3a", "S3b", "S3c", "S4", "S5", "S6",
-               "S7", "S8", "S9", "S10", "S11", "S12", "S13"]
+SUPP_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6",
+              "S7", "S8", "S9", "S10", "S11", "S12"]
 
 
 def load(path, name):
@@ -83,71 +83,9 @@ def s2_ct(doc):
            "participants with both measures available, so n varies by column.")
 
 
-def s3_risk_by_outcome(doc):
-    """Risk by outcome, every group against the common noCOPD reference. The
-    fixed ratio is not carried: its comparison with the multidimensional
-    framework is the source report's question, not this one."""
-    risk = {(r["schema"], r["category"]): r
-            for r in load(ASSETS, "consensus_ref_risk.csv")}
-    crd = {(r["schema"], r["category"], r["outcome"]): r
-           for r in load(ASSETS, "consensus_ref_crude.csv")}
-    ref = load(ASSETS, "consensus_ref_group.csv")[0]
-    NAME = {"S2": "MD-COPD", "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
-    GRPS = ["AFL-only", "COPD-minor", "COPD-major"]
-    FLAG = "\u2020"
-
-    def few(r, key):
-        return r is not None and r[key].upper() in ("TRUE", "T")
-
-    for suffix, okey, olabel, est_col, n_col, flag_col in (
-            ("a", "all",  "all-cause mortality",   "all_HR",   "n_mort", "all_few_events"),
-            ("b", "resp", "respiratory mortality", "resp_HR",  "n_mort", "resp_few_events"),
-            ("c", "exac", "exacerbations",         "exac_IRR", "n_exac", "all_few_events")):
-        heading(doc, f"Supplemental Table S3{suffix}. Risk of {olabel} "
-                     f"against the common noCOPD reference")
-        rows, seen = [], set()
-        for sc in ("S2", "S3", "S4"):
-            for c in GRPS:
-                r = risk.get((sc, c)); k = crd.get((sc, c, okey))
-                if r is None:
-                    continue
-                stem = "exac" if okey == "exac" else okey
-                lci = "exac_LCI" if okey == "exac" else stem + "_LCI"
-                uci = "exac_UCI" if okey == "exac" else stem + "_UCI"
-                ci = (f"{float(r[est_col]):.2f}{FLAG}" if few(r, flag_col)
-                      else f"{float(r[est_col]):.2f} "
-                           f"({float(r[lci]):.2f}\u2013{float(r[uci]):.2f})")
-                cr = ("not estimable" if k is None else
-                      f"{float(k['rr']):.2f}{FLAG}" if few(k, "few_events")
-                      else f"{float(k['rr']):.2f} "
-                           f"({float(k['lo']):.2f}\u2013{float(k['hi']):.2f})")
-                rows.append([NAME[sc] if sc not in seen else "", c,
-                             f"{int(r[n_col]):,}", cr, ci])
-                seen.add(sc)
-        add_table(doc, ["Classification", "Group", "n",
-                        "Crude rate ratio (95% CI)",
-                        "Adjusted HR or IRR (95% CI)"],
-                  rows, [1.24, 1.10, 0.62, 1.76, 1.78])
-        legend(doc, f"Table S3{suffix}.",
-               f"Crude and adjusted risk of {olabel}, every group estimated "
-               f"against the same reference: the {int(ref['n_cohort']):,} "
-               "participants all three multidimensional classifications assign "
-               "to noCOPD. Because that group is noCOPD under each "
-               "classification, it shares no participant with any group shown, "
-               "and an estimate under one classification is on the same scale as "
-               "an estimate under another. Adjusted models carry age, sex, race, "
-               "current smoking status, pack-years and body mass index, with "
-               "prior exacerbation frequency added for exacerbations. "
-               f"{FLAG} fewer than 10 events in the group: the point estimate is "
-               "given without an interval. AFL-only, airflow limitation without "
-               "other criteria; HR, hazard ratio; IRR, incidence rate ratio; CI, "
-               "confidence interval.")
-        doc.add_paragraph()
-
-
 def s4_sweep(doc):
     """The parameter sweep behind the threshold selection."""
-    heading(doc, "Supplemental Table S4. Threshold selection")
+    heading(doc, "Supplemental Table S3. Threshold selection")
     rows = []
     for r in load(ASSETS, "metric_sweep.csv"):
         sel = r["selected"].upper() == "TRUE"
@@ -159,7 +97,7 @@ def s4_sweep(doc):
     add_table(doc, ["Rule", "noCOPD", "AFL-only", "COPD-minor", "COPD-major",
                     "Macro-F1", "Balanced accuracy", "Cohen's κ"],
               rows, [1.42, 0.68, 0.72, 0.80, 0.80, 0.72, 0.72, 0.64])
-    legend(doc, "Table S11.",
+    legend(doc, "Table S10.",
            "Category sizes and each candidate selection metric across the "
            "thresholds examined, against the MD-COPD reference in the first row. "
            "Macro-averaged F1 weights the four categories equally and penalizes "
@@ -180,7 +118,7 @@ def cell_n(rows, schema, row_cat, col_cat):
 
 
 def s3_crossclass(doc):
-    heading(doc, "Supplemental Table S10. Reclassification against the CT-based framework")
+    heading(doc, "Supplemental Table S9. Reclassification against the CT-based framework")
     x = load(ASSETS, "crossclass.csv")
     nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
     for s in ("S3", "S4"):
@@ -196,7 +134,7 @@ def s3_crossclass(doc):
                   [1.30, 1.02, 1.02, 1.06, 1.06, 1.04])
         doc.add_paragraph()
     lost = {s_: cell_n(x, s_, "AFL-only", "COPD-major") for s_ in ("S3", "S4")}
-    legend(doc, "Table S10.",
+    legend(doc, "Table S9.",
            "Full cross-classification of each CT-free schema against the CT-based "
            "framework. Diagonal cells are participants both schemas place in the "
            "same category. The COPD-major column shows where the two schemas differ: "
@@ -205,7 +143,7 @@ def s3_crossclass(doc):
 
 
 def s4_fitting(doc):
-    heading(doc, "Supplemental Table S11. Fitted rules and cross-validated performance")
+    heading(doc, "Supplemental Table S10. Fitted rules and cross-validated performance")
     fit = load(ASSETS, "schema_fit.csv")
     cvd = load(ASSETS, "schema_fit_cv_diff.csv")[0]
     nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
@@ -220,7 +158,7 @@ def s4_fitting(doc):
     tst = load(ASSETS, "schema_fit_cv_test.csv")[0]
     p_txt = ("< 0.001" if float(tst["p_value"]) < 0.001
              else f"= {float(tst['p_value']):.3f}")
-    legend(doc, "Table S11.",
+    legend(doc, "Table S10.",
            "Thresholds fitted to approximate the CT-based classification, by "
            "macro-averaged F1 across the four groups, over the full parameter "
            "space of each schema. Held-out values are from "
@@ -240,7 +178,7 @@ def s4_fitting(doc):
 
 
 def s5_discrimination(doc):
-    heading(doc, "Supplemental Table S5. Discrimination under each schema")
+    heading(doc, "Supplemental Table S4. Discrimination under each schema")
     d = load(ASSETS, "schema_discrimination.csv")
     add_table(doc, ["Schema", "All-cause C-index", "Respiratory C-index",
                     "Exacerbation AIC"],
@@ -249,7 +187,7 @@ def s5_discrimination(doc):
               [1.70, 1.60, 1.65, 1.55])
     hr = [float(r["resp_HR"]) for r in load(ASSETS, "schema_risk.csv")
           if r["schema"] == "S3" and r["category"] == "AFL-only"][0]
-    legend(doc, "Table S5.",
+    legend(doc, "Table S4.",
            "Discrimination for each schema, every model carrying the same "
            "covariates. The symptoms-only schema has the highest C-index for both "
            "mortality outcomes and the lowest exacerbation AIC. Figures 2 to 4 and "
@@ -279,7 +217,7 @@ def data_files(doc):
 
 
 def s6_fev1_decline(doc):
-    heading(doc, "Supplemental Table S6. Longitudinal FEV\u2081 decline by group")
+    heading(doc, "Supplemental Table S5. Longitudinal FEV\u2081 decline by group")
     rows_in = load(ASSETS, "fev1_decline.csv")
     name = {"S1": "Fixed ratio", "S2": "MD-COPD",
             "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
@@ -295,7 +233,7 @@ def s6_fev1_decline(doc):
     add_table(doc, ["Classification", "Group", "n",
                     "Difference in decline, mL/yr (95% CI)", "P"],
               rows, [1.20, 1.10, 0.66, 2.44, 1.10])
-    legend(doc, "Table S6.",
+    legend(doc, "Table S5.",
            "Difference in annual FEV\u2081 change against each classification's own "
            "noCOPD group, from linear mixed models over visits 1 to 3 with a "
            "random intercept per participant, adjusted for height, sex, race, age, "
@@ -309,7 +247,7 @@ def s6_fev1_decline(doc):
 
 
 def s7_continuous_esi(doc):
-    heading(doc, "Supplemental Table S7. Continuous ESI and FEV₁/FVC")
+    heading(doc, "Supplemental Table S6. Continuous ESI and FEV₁/FVC")
     rows_in = load(ASSETS, "continuous_esi_mortality.csv")
     rows = []
     for r in rows_in:
@@ -326,7 +264,7 @@ def s7_continuous_esi(doc):
     add_table(doc, ["Outcome", "ESI, per 1 unit", "FEV₁/FVC, per 0.1",
                     "Adding ESI to FEV₁/FVC"],
               rows, [1.16, 1.86, 1.78, 1.70])
-    legend(doc, "Table S7.",
+    legend(doc, "Table S6.",
            "Hazard ratios from a single Cox model containing both ESI and "
            "FEV₁/FVC, adjusted for age, sex, race, current smoking status, "
            "pack-years and GOLD stratum. The final column is a likelihood ratio "
@@ -336,7 +274,7 @@ def s7_continuous_esi(doc):
 
 
 def s8_esi_trajectory(doc):
-    heading(doc, "Supplemental Table S8. Change in ESI over follow-up")
+    heading(doc, "Supplemental Table S7. Change in ESI over follow-up")
     rows_in = load(ASSETS, "esi_trajectory.csv")
     rows = [[r["stratum"], r["visitnum"], f"{int(r['n']):,}",
              f"{float(r['mean_dESI']):.3f}", f"{float(r['sd_dESI']):.3f}"]
@@ -344,7 +282,7 @@ def s8_esi_trajectory(doc):
     add_table(doc, ["Baseline stratum", "Visit", "n",
                     "Mean change from baseline", "SD"],
               rows, [1.50, 0.80, 0.80, 1.90, 1.50])
-    legend(doc, "Table S8.",
+    legend(doc, "Table S7.",
            "Within-participant change in post-bronchodilator ESI from the "
            "enrollment visit, among participants whose baseline stratum was GOLD 0 "
            "or PRISm. Positive values indicate a rise in ESI, meaning a "
@@ -354,7 +292,7 @@ def s8_esi_trajectory(doc):
 def s9_paired_bootstrap(doc):
     """Whether the two classifications assign different effect sizes to the
     same category. Adjusted only: the crude comparison is not yet computed."""
-    heading(doc, "Supplemental Table S9. ESI-MD-COPD compared with MD-COPD")
+    heading(doc, "Supplemental Table S8. ESI-MD-COPD compared with MD-COPD")
     rows, seen = [], set()
     label = {"all-cause mortality": "All-cause mortality",
              "respiratory mortality": "Respiratory mortality",
@@ -370,7 +308,7 @@ def s9_paired_bootstrap(doc):
     add_table(doc, ["Outcome", "Category", "Ratio of adjusted estimates (95% CI)",
                     "P", "Resamples"],
               rows, [1.52, 1.14, 2.08, 0.86, 0.90])
-    legend(doc, "Table S9.",
+    legend(doc, "Table S8.",
            "Ratio of the adjusted effect size ESI-MD-COPD assigns to a category "
            "to the one MD-COPD assigns to the same category. Participants were "
            "resampled and both classifications refitted within every resample, so "
@@ -384,7 +322,7 @@ def s9_paired_bootstrap(doc):
 
 def s12_esi_ct_levels(doc):
     """Dose-response of ESI across the two visual CT scales."""
-    heading(doc, "Supplemental Table S12. Mean ESI by visual CT severity")
+    heading(doc, "Supplemental Table S11. Mean ESI by visual CT severity")
     rows, seen = [], set()
     for r in load(ASSETS, "esi_ct_levels.csv"):
         c = r["criterion"]
@@ -393,7 +331,7 @@ def s12_esi_ct_levels(doc):
         seen.add(c)
     add_table(doc, ["CT criterion", "Level", "n", "Mean ESI"],
               rows, [1.70, 1.90, 1.30, 1.60])
-    legend(doc, "Table S12.",
+    legend(doc, "Table S11.",
            "Mean ESI at each level of the two visual CT criteria. ESI rises "
            "monotonically across both scales. The MD-COPD framework treats "
            "emphysema as present at mild or greater and wall thickening as "
@@ -404,7 +342,7 @@ def s12_esi_ct_levels(doc):
 def s13_esi_vs_ffvc(doc):
     """The comparison held out of the main text, with the reason it cannot be
     read as a recommendation."""
-    heading(doc, "Supplemental Table S13. ESI and FEV\u2081/FVC compared as "
+    heading(doc, "Supplemental Table S12. ESI and FEV\u2081/FVC compared as "
                  "detectors of the visual CT criteria")
     au = load(ASSETS, "esi_ct_auc.csv")
     ORDER = ["All participants", "Airflow limitation", "Preserved spirometry"]
@@ -420,7 +358,7 @@ def s13_esi_vs_ffvc(doc):
     add_table(doc, ["CT criterion", "Stratum", "n", "AUC, ESI",
                     "AUC, FEV\u2081/FVC"],
               rows, [1.34, 1.40, 0.74, 1.51, 1.51])
-    legend(doc, "Table S13.",
+    legend(doc, "Table S12.",
            "FEV\u2081/FVC discriminates both visual CT criteria at least as well as "
            "ESI in five of these six comparisons, and equally to two decimal "
            "places in the sixth. This does not make it a candidate replacement "
@@ -452,7 +390,7 @@ def check_citations(produced):
     # check report a real citation as missing.
     # Lettered tables (S3a) exist, so the pattern has to admit a suffix or
     # "Supplemental Tables S3a to S3c" registers as a citation of S3.
-    # A citation can name several tables at once ("Tables S7 and S8",
+    # A citation can name several tables at once ("Tables S6 and S8",
     # "Tables S3a to S3c"), so capture every identifier in the span that
     # follows the prefix rather than only the first.
     cited = set()
@@ -485,7 +423,7 @@ def main():
     r.bold = True
     r.font.size = Pt(14)
     doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
-    for fn in (s1_baseline, s2_ct, s3_risk_by_outcome, s4_sweep,
+    for fn in (s1_baseline, s2_ct, s4_sweep,
                s5_discrimination, s6_fev1_decline, s7_continuous_esi,
                s8_esi_trajectory, s9_paired_bootstrap, s3_crossclass, s4_fitting,
                s12_esi_ct_levels, s13_esi_vs_ffvc):

@@ -1,0 +1,2 @@
+"n","n_mort","n_exac","deaths","resp_deaths","crude_all","crude_all_lo","crude_all_hi","crude_resp","crude_resp_lo","crude_resp_hi","crude_exac","all_HR","all_LCI","all_UCI","resp_HR","resp_LCI","resp_UCI","exac_IRR","exac_LCI","exac_UCI","all_few_events","resp_few_events"
+833,833,761,212,32,1.72168961138556,1.46187593374108,2.02171671037786,12.7812566690852,6.27777946647319,28.1065435897784,1.93564773575512,1.22596724969165,1.03320043797547,1.45469905167827,6.91746056309269,3.32489998423007,14.3917894880749,2.08125425291654,1.72043920903882,2.5177403784602,FALSE,FALSE

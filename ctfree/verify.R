@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 158L
+REGISTRY_N <- 163L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -520,6 +520,26 @@ reg("FEV1-05", "FEV1 decline",
 reg("FEV1-06", "FEV1 decline",
     "every point estimate is negative", 10,
     "fev1_decline.csv", "sum(x$est_mL_yr < 0)", TOL_EXACT)
+
+# The 833 participants NoCT-MD-COPD moves out of COPD-major, estimated as their
+# own group against the common reference. Tests the Results claim that their
+# risk sits between the MD-COPD AFL-only and COPD-major levels.
+LO <- function(fld) sprintf("x$%s", fld)
+reg("LOST-01", "Reclassified group",
+    "the reclassified group is 833 participants", 833,
+    "consensus_ref_lost.csv", LO("n"), TOL_EXACT)
+reg("LOST-02", "Reclassified group",
+    "crude all-cause rate ratio 1.72", 1.72,
+    "consensus_ref_lost.csv", LO("crude_all"), TOL_2DP)
+reg("LOST-03", "Reclassified group",
+    "adjusted all-cause hazard ratio 1.23", 1.23,
+    "consensus_ref_lost.csv", LO("all_HR"), TOL_2DP)
+reg("LOST-04", "Reclassified group",
+    "their adjusted risk sits between MD-COPD AFL-only and COPD-major", TRUE,
+    "consensus_ref_lost.csv", "x$all_HR > 0.94 && x$all_HR < 2.75", TOL_EXACT)
+reg("LOST-05", "Reclassified group",
+    "32 of the 34 AFL-only respiratory deaths without CT are these participants", 32,
+    "consensus_ref_lost.csv", LO("resp_deaths"), TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

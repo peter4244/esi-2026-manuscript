@@ -1090,6 +1090,59 @@ if (cons_ref$resp_deaths < 10)
   cat(sprintf(paste("NOTE: %d respiratory deaths in the reference. Respiratory",
                     "estimates in this section are directional only.\n"),
               cons_ref$resp_deaths))
+# The participants NoCT-MD-COPD moves out of COPD-major, estimated as their own
+# group against the same reference. The Results assert that their risk sits
+# between the MD-COPD AFL-only and COPD-major levels; this is what tests it.
+# They are COPD-major under MD-COPD, so they are disjoint from the reference.
+lost <- d_b$S2 == "COPD-major" & d_b$S3 == "AFL-only"
+stopifnot(sum(lost) > 0, !any(lost & cons))
+mort_c$lost <- lost[match(mort_c$pid, d_b$pid)]
+exa_c$lost  <- lost[match(exa_c$pid,  d_b$pid)]
+
+mm <- mort_c[mort_c$cons | mort_c$lost, ]
+ee <- exa_c[exa_c$cons | exa_c$lost, ]
+mm$g <- factor(ifelse(mm$cons, "REF", "reclassified"), c("REF", "reclassified"))
+ee$g <- factor(ifelse(ee$cons, "REF", "reclassified"), c("REF", "reclassified"))
+stopifnot(!any(mm$cons & mm$lost), !anyNA(mm$g), !anyNA(ee$g))
+
+.m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
+.m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+.n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
+        "+ prior_exac + offset(log(Years_Followed))")), data = ee)
+.cm <- summary(.m1)$conf.int; .cr <- summary(.m2)$conf.int; .ce <- summary(.n1)$coef
+.r <- "greclassified"
+.crude <- function(ev, py, dat) {
+  a <- sum(dat[[ev]][dat$lost]) / sum(dat[[py]][dat$lost])
+  b <- sum(dat[[ev]][dat$cons]) / sum(dat[[py]][dat$cons]); a / b
+}
+.ex <- function(e1, t1, e0, t0)
+  if (e1 == 0) c(NA_real_, NA_real_) else poisson.test(c(e1, e0), c(t1, t0))$conf.int[1:2]
+.ci_all  <- .ex(sum(mm$vital_status[mm$lost]), sum(mm$py[mm$lost]),
+                sum(mm$vital_status[mm$cons]), sum(mm$py[mm$cons]))
+.ci_resp <- .ex(sum(mm$ev_resp[mm$lost]), sum(mm$py[mm$lost]),
+                sum(mm$ev_resp[mm$cons]), sum(mm$py[mm$cons]))
+
+cons_lost <- data.frame(
+  n = sum(lost), n_mort = sum(mm$lost), n_exac = sum(ee$lost),
+  deaths = sum(mm$vital_status[mm$lost]), resp_deaths = sum(mm$ev_resp[mm$lost]),
+  crude_all = .crude("vital_status", "py", mm),
+  crude_all_lo = .ci_all[1], crude_all_hi = .ci_all[2],
+  crude_resp = .crude("ev_resp", "py", mm),
+  crude_resp_lo = .ci_resp[1], crude_resp_hi = .ci_resp[2],
+  crude_exac = .crude("Total_Exacerbations", "Years_Followed", ee),
+  all_HR = .cm[.r, 1], all_LCI = .cm[.r, 3], all_UCI = .cm[.r, 4],
+  resp_HR = .cr[.r, 1], resp_LCI = .cr[.r, 3], resp_UCI = .cr[.r, 4],
+  exac_IRR = exp(.ce[.r, 1]),
+  exac_LCI = exp(.ce[.r, 1] - 1.96 * .ce[.r, 2]),
+  exac_UCI = exp(.ce[.r, 1] + 1.96 * .ce[.r, 2]),
+  all_few_events  = sum(mm$vital_status[mm$lost]) < MIN_EVENTS,
+  resp_few_events = sum(mm$ev_resp[mm$lost]) < MIN_EVENTS)
+stopifnot(nrow(cons_lost) == 1, is.finite(cons_lost$all_HR))
+write.csv(cons_lost, file.path(OUT_DIR, "consensus_ref_lost.csv"), row.names = FALSE)
+cat(sprintf("Reclassified group (n=%d): all-cause crude %.2f, adjusted %.2f; respiratory %d deaths, adjusted %.2f\n",
+            cons_lost$n, cons_lost$crude_all, cons_lost$all_HR,
+            cons_lost$resp_deaths, cons_lost$resp_HR))
+
 sup <- cons_risk[cons_risk$resp_few_events, c("schema","category","resp_deaths")]
 if (nrow(sup)) {
   cat(sprintf("Cells below the %d-event floor; ratio reported, interval not:\n",
@@ -1700,7 +1753,8 @@ required_csvs <- c(
   "schema_diff_bootstrap.csv", "fev1_decline.csv",
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
-  "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv"
+  "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
+  "consensus_ref_lost.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing))

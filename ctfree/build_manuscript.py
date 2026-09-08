@@ -419,8 +419,8 @@ def table5(doc):
            "preserved spirometry, where the COPD-minor pathway operates. The "
            "pooled values reflect the mixture of the two strata rather than "
            "detection within either. Mean ESI at each level of the two scales is "
-           "given in Supplemental Table S12 and the corresponding values for "
-           "FEV\u2081/FVC in Supplemental Table S13. "
+           "given in Supplemental Table S11 and the corresponding values for "
+           "FEV\u2081/FVC in Supplemental Table S12. "
            "AUC, area under the receiver operating characteristic curve.")
 
 

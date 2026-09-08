@@ -54,7 +54,7 @@ positive or false negative classifications, but as examples of the different
 biological information provided by structural imaging and spirometric
 assessment. Discrimination alone would not have identified the better
 classification: the symptoms-only classification had the highest C-index of the
-four (Supplemental Table S5), which it earned by making COPD-major smaller and
+four (Supplemental Table S4), which it earned by making COPD-major smaller and
 more severe while moving 833 participants into a group named as not having COPD.
 A C-index measures how well groups rank risk, not whether they mean what they
 say.
@@ -87,7 +87,7 @@ dimensions of COPD.
 
 This raises the question of why FEV₁/FVC is not itself used as the replacement
 criterion, given that it discriminates the CT findings at least as well as ESI
-in almost every stratum (Supplemental Table S13). It cannot be, because it is
+in almost every stratum (Supplemental Table S12). It cannot be, because it is
 already the major criterion, and a second threshold on it fails on whichever
 side of 0.70 it is placed. Above 0.70 it is met by every participant with
 airflow limitation, so the AFL-only group empties entirely and the correction

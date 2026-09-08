@@ -24,22 +24,25 @@ Outcomes were all-cause mortality, respiratory mortality, prospective
 exacerbations and FEV₁ decline.
 
 **Results.** Removing the CT criteria without replacement moved 833 of 3,809
-participants out of COPD-major into AFL-only, the category that withholds a
-COPD diagnosis from participants with airflow limitation. These participants
-had structural disease identified only by CT, and the category that received
-them was no longer low risk, carrying 10.00 times the respiratory mortality of
-a reference group common to all three classifications (95% CI: 4.95 to 21.87)
-against 2.23 under
-MD-COPD. Replacing the CT criteria with an ESI criterion reduced that loss to
-350 and returned the estimate to 2.34. Respiratory deaths in that group
-numbered 34 without CT, against 2 under MD-COPD and 4 with ESI. ESI-MD-COPD reproduced
-the MD-COPD categories better than NoCT-MD-COPD (held-out macro-averaged F1
-0.752 against 0.721), and it gained all of that ground in the two groups
+participants out of COPD-major into AFL-only, the group that withholds a COPD
+diagnosis from participants with airflow limitation. All estimates below are
+against a reference common to the three multidimensional classifications, the
+3,745 participants every classification assigns to noCOPD. The AFL-only group
+was at reference level after adjustment under MD-COPD and ESI-MD-COPD for both
+mortality outcomes, but not under NoCT-MD-COPD, where respiratory mortality was
+raised (crude rate ratio 10.00, 95% CI: 4.95 to 21.87; adjusted hazard ratio
+6.80, 3.44 to 13.46, against 2.23 and 2.34 crude under MD-COPD and
+ESI-MD-COPD). Respiratory deaths in that group numbered 34 without CT against 2
+under MD-COPD and 4 with ESI, and 32 of the 34 were the reclassified
+participants themselves, whose own risk fell between the MD-COPD AFL-only and
+COPD-major levels (adjusted hazard ratio 1.23, 1.03 to 1.45). ESI-MD-COPD
+reproduced the MD-COPD groups better than NoCT-MD-COPD (held-out macro-averaged
+F1 0.752 against 0.721, P < 0.001), and gained that ground in the two groups
 defined by airflow limitation. At the COPD-minor boundary the three
-multidimensional classifications were indistinguishable. ESI discriminated the
-visual CT criteria among participants with airflow limitation (area under the
-curve 0.75) but not among those with preserved spirometry (0.56), which
-accounts for both findings.
+classifications were indistinguishable. ESI discriminated the visual CT criteria
+among participants with airflow limitation (area under the curve 0.75) but not
+among those with preserved spirometry (0.56 and 0.61), which accounts for both
+findings.
 
 **Conclusions.** The advantage of a multidimensional framework over the fixed
 ratio can be preserved without chest CT, but not by symptom criteria alone. A
