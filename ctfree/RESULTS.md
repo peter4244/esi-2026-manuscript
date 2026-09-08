@@ -150,15 +150,19 @@ showed no excess all-cause mortality and recorded no respiratory deaths
 asymmetric: participants ESI-MD-COPD adds carry risk approaching that of
 established COPD-minor, and those it misses are few and at low risk.
 
-Finally, we estimated annualized change in FEV₁ for every group under all four
-classifications, this being the fourth outcome against which the MD-COPD
+Finally, we estimated annualized change in FEV₁ for every group against the same
+common reference, this being the fourth outcome against which the MD-COPD
 framework was validated, adjusting for baseline post-bronchodilator FEV₁ as the
-source report did. Every point estimate was negative and seven of the ten
-reached significance {FEV1-05, FEV1-06}. COPD-major declined faster than its
-reference under all three multidimensional classifications, by 5.6, 5.1 and 4.9
-mL/yr under MD-COPD, NoCT-MD-COPD and ESI-MD-COPD {FEV1-01, FEV1-02, FEV1-03},
-and fixed-ratio COPD by 4.3 mL/yr {FEV1-04} (Supplemental Table S5). The three
-multidimensional classifications did not separate from each other on this
-outcome.
+source report did. Every point estimate was negative and six of the nine reached
+significance {FEV1-05, FEV1-06}. COPD-major declined faster than the reference
+under all three classifications, by 5.5, 5.1 and 5.3 mL/yr under MD-COPD,
+ESI-MD-COPD and NoCT-MD-COPD {FEV1-01, FEV1-02, FEV1-03} (Supplemental Table
+S5). The AFL-only group declined faster than the reference under both CT-free
+classifications (-4.5 mL/yr, P = 0.010, under ESI-MD-COPD and -5.0, P < 0.001,
+under NoCT-MD-COPD) but not under MD-COPD (-2.8, P = 0.201) {FEV1-08}, so on
+this outcome an ESI criterion did not restore the group in the way it did for
+mortality and exacerbations. No group differed between classifications, however,
+with overlapping intervals in all nine comparisons {FEV1-07}, and FEV₁ decline
+does not separate the three.
 
 ## Open

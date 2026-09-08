@@ -235,8 +235,8 @@ def s6_fev1_decline(doc):
                     "Difference in decline, mL/yr (95% CI)", "P"],
               rows, [1.20, 1.10, 0.66, 2.44, 1.10])
     legend(doc, "Table S5.",
-           "Difference in annual FEV\u2081 change against each classification's own "
-           "noCOPD group, from linear mixed models over visits 1 to 3 with a "
+           "Difference in annual FEV\u2081 change against the common noCOPD "
+           "reference, from linear mixed models over visits 1 to 3 with a "
            "random intercept per participant, adjusted for height, sex, race, age, "
            "smoking status, pack-years and baseline post-bronchodilator "
            "FEV\u2081, as the source MD-COPD report was. Baseline FEV\u2081 enters "

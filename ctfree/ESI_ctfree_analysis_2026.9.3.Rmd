@@ -1233,7 +1233,7 @@ fev1_long <- phe_raw %>%
             SmokCigNow    = factor(SmokCigNow))
 
 base_cols <- d_b %>% transmute(
-  pid, S1, S2, S3, S4,
+  pid, S1, S2, S3, S4, cons,
   Height_CM       = as.numeric(Height_CM),
   gender_baseline = factor(gender),
   race_baseline   = factor(race))
@@ -1267,31 +1267,39 @@ lmm_row <- function(fit, term) {
 # starting from the same FEV1. Baseline FEV1 enters through its interaction
 # with time only. A main effect would have visit 1 predicting itself, since the
 # outcome at time zero IS the baseline value.
+# Against the same common noCOPD reference as every other outcome. Each
+# classification's own noCOPD group differs in composition, so estimates made
+# against them are not comparable between classifications, which is the
+# comparison this outcome is here to support.
 dec_rows <- list()
-for (sname in c("S1", "S2", "S3", "S4")) {
+for (sname in SCHEMAS) {
+  dd <- decline[decline$cons | decline[[sname]] %in% OTHER[[sname]], ]
+  dd$g <- factor(ifelse(dd$cons, "REF", as.character(dd[[sname]])),
+                 c("REF", OTHER[[sname]]))
+  stopifnot(!any(dd$cons & dd[[sname]] %in% OTHER[[sname]]), !anyNA(dd$g))
   f <- as.formula(paste0(
-    "FEV1_post_mL ~ years_from_baseline * ", sname,
+    "FEV1_post_mL ~ years_from_baseline * g",
     " + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow",
     " + ATS_PackYears + years_from_baseline:FEV1_base_mL + (1 | pid)"))
-  fit <- lmer(f, data = decline)
-  for (g in levels(decline[[sname]])[-1]) {
-    r <- lmm_row(fit, paste0("years_from_baseline:", sname, g))
+  fit <- lmer(f, data = dd)
+  for (g in OTHER[[sname]]) {
+    r <- lmm_row(fit, paste0("years_from_baseline:g", g))
     dec_rows[[length(dec_rows) + 1]] <- data.frame(
       schema = sname, category = g,
       est_mL_yr = unname(r["est"]), se = unname(r["se"]), p = unname(r["p"]),
       lo = unname(r["est"] - 1.96 * r["se"]),
       hi = unname(r["est"] + 1.96 * r["se"]),
-      n_subj = length(unique(decline$pid[decline[[sname]] == g])),
+      n_subj = length(unique(dd$pid[dd$g == g])),
       stringsAsFactors = FALSE)
   }
 }
 fev1_decline <- do.call(rbind, dec_rows)
 # Both models must cover every group, or a comparison between them is silently
 # comparing different sets of rows.
-stopifnot(nrow(fev1_decline) == 10, all(is.finite(fev1_decline$est_mL_yr)))
+stopifnot(nrow(fev1_decline) == 9, all(is.finite(fev1_decline$est_mL_yr)))
 write.csv(fev1_decline, file.path(OUT_DIR, "fev1_decline.csv"), row.names = FALSE)
 kable(fev1_decline, digits = 2,
-      caption = "FEV1 decline (mL/yr), adjusted for baseline FEV1.")
+      caption = "FEV1 decline (mL/yr) against the common noCOPD reference.")
 ```
 
 # Section 8c -- Continuous ESI

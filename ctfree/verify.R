@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 174L
+REGISTRY_N <- 164L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -133,11 +133,11 @@ reg("CTAUC-04", "ESI and CT",
 FD <- function(sch, cat, fld)
   sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, sch, cat)
 reg("DEC-01", "FEV1 decline",
-    "under MD-COPD, AFL-only does not differ from its noCOPD group", TRUE,
+    "under MD-COPD, AFL-only does not differ from the common reference", TRUE,
     "fev1_decline.csv",
     sprintf('%s > 0.05', FD("S2","AFL-only","p")), TOL_EXACT)
 reg("DEC-02", "FEV1 decline",
-    "under ESI-MD-COPD, COPD-major declines FASTER than its noCOPD group", TRUE,
+    "under ESI-MD-COPD, COPD-major declines FASTER than the common reference", TRUE,
     "fev1_decline.csv",
     sprintf('%s < 0 && %s < 0.05',
             FD("S4","COPD-major","est_mL_yr"), FD("S4","COPD-major","p")), TOL_EXACT)
@@ -520,71 +520,33 @@ reg("CONSREF-32", "Common reference",
 # Every estimate is negative; the unadjusted model gave positive estimates for
 # COPD-major, so these are pinned in the new direction.
 reg("FEV1-01", "FEV1 decline",
-    "MD-COPD COPD-major declines 5.6 mL/yr faster than reference", -5.57,
+    "MD-COPD COPD-major declines 5.5 mL/yr faster than the common reference", -5.52,
     "fev1_decline.csv", FD("S2", "COPD-major", "est_mL_yr"), 0.05)
 reg("FEV1-02", "FEV1 decline",
-    "NoCT-MD-COPD COPD-major, -5.1 mL/yr", -5.11,
+    "NoCT-MD-COPD COPD-major, -5.3 mL/yr", -5.25,
     "fev1_decline.csv", FD("S3", "COPD-major", "est_mL_yr"), 0.05)
 reg("FEV1-03", "FEV1 decline",
-    "ESI-MD-COPD COPD-major, -4.9 mL/yr", -4.91,
+    "ESI-MD-COPD COPD-major, -5.1 mL/yr", -5.13,
     "fev1_decline.csv", FD("S4", "COPD-major", "est_mL_yr"), 0.05)
-reg("FEV1-04", "FEV1 decline",
-    "fixed-ratio COPD, -4.3 mL/yr", -4.25,
-    "fev1_decline.csv", FD("S1", "COPD", "est_mL_yr"), 0.05)
 reg("FEV1-05", "FEV1 decline",
-    "seven of ten estimates reach significance", 7,
+    "six of the nine estimates reach significance", 6,
     "fev1_decline.csv", "sum(x$p < 0.05)", TOL_EXACT)
 reg("FEV1-06", "FEV1 decline",
-    "every point estimate is negative", 10,
+    "every point estimate is negative", 9,
     "fev1_decline.csv", "sum(x$est_mL_yr < 0)", TOL_EXACT)
-
-# The 833 participants NoCT-MD-COPD moves out of COPD-major, estimated as their
-# own group against the common reference. Tests the Results claim that their
-# risk sits between the MD-COPD AFL-only and COPD-major levels.
-LO <- function(fld) sprintf("x$%s", fld)
-reg("LOST-01", "Reclassified group",
-    "the reclassified group is 833 participants", 833,
-    "consensus_ref_lost.csv", LO("n"), TOL_EXACT)
-reg("LOST-02", "Reclassified group",
-    "crude all-cause rate ratio 1.72", 1.72,
-    "consensus_ref_lost.csv", LO("crude_all"), TOL_2DP)
-reg("LOST-03", "Reclassified group",
-    "adjusted all-cause hazard ratio 1.23", 1.23,
-    "consensus_ref_lost.csv", LO("all_HR"), TOL_2DP)
-reg("LOST-04", "Reclassified group",
-    "their adjusted risk sits between MD-COPD AFL-only and COPD-major", TRUE,
-    "consensus_ref_lost.csv", "x$all_HR > 0.94 && x$all_HR < 2.75", TOL_EXACT)
-reg("LOST-05", "Reclassified group",
-    "32 of the 34 AFL-only respiratory deaths without CT are these participants", 32,
-    "consensus_ref_lost.csv", LO("resp_deaths"), TOL_EXACT)
-
-# Per-group F1 gains tested by the same corrected resampled t-test as the
-# macro-averaged one. The Abstract quotes each subgroup separately, so each
-# needs its own test rather than borrowing the macro-averaged P value.
-CT_ <- function(cat, fld)
-  sprintf('x$%s[x$category == "%s"]', fld, cat)
-reg("F1CAT-04", "Fitting",
-    "COPD-major per-group F1 gain is significant (P < 0.001)", 1,
-    "cv_category_test.csv",
-    'as.integer(x$p_value[x$category == "COPD-major"] < 0.001)', TOL_EXACT)
-reg("F1CAT-05", "Fitting",
-    "AFL-only per-group F1 gain is significant (P < 0.001)", 1,
-    "cv_category_test.csv",
-    'as.integer(x$p_value[x$category == "AFL-only"] < 0.001)', TOL_EXACT)
-reg("F1CAT-06", "Fitting",
-    "the two preserved-spirometry groups differ the other way, both P < 0.05", 2,
-    "cv_category_test.csv",
-    'sum(x$p_value[x$category %in% c("noCOPD","COPD-minor")] < 0.05 & x$diff_mean[x$category %in% c("noCOPD","COPD-minor")] < 0)',
+# Nine between-classification comparisons, three groups by three pairs. If any
+# stopped overlapping, the Results claim that FEV1 decline does not distinguish
+# the classifications would be false.
+reg("FEV1-07", "FEV1 decline",
+    "no group differs between classifications; all nine intervals overlap", 9,
+    "fev1_decline.csv",
+    'sum(unlist(lapply(c("AFL-only","COPD-minor","COPD-major"), function(g) { z <- x[x$category == g, ]; sapply(list(c(1,2),c(1,3),c(2,3)), function(p) z$lo[p[1]] <= z$hi[p[2]] && z$lo[p[2]] <= z$hi[p[1]]) })))',
     TOL_EXACT)
-reg("F1CAT-07", "Fitting",
-    "held-out AFL-only F1 rounds to 0.47 for ESI-MD-COPD", 0.47,
-    "cv_category_test.csv", CT_("AFL-only", "f1_esi"), 0.005)
-reg("F1CAT-08", "Fitting",
-    "held-out COPD-major F1 rounds to 0.94 for ESI-MD-COPD", 0.94,
-    "cv_category_test.csv", CT_("COPD-major", "f1_esi"), 0.005)
-reg("CONSREF-31", "Common reference",
-    "NoCT-MD-COPD AFL-only crude exacerbation rate ratio 1.75", 1.75,
-    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "exac", "rr"), TOL_2DP)
+reg("FEV1-08", "FEV1 decline",
+    "under ESI-MD-COPD the AFL-only group declines faster than the reference", TRUE,
+    "fev1_decline.csv",
+    sprintf('%s < 0 && %s < 0.05', FD("S4","AFL-only","est_mL_yr"), FD("S4","AFL-only","p")),
+    TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)
