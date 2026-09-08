@@ -40,11 +40,14 @@ gather_outcome <- function(o_key) {
     a <- risk[risk$schema %in% schemas & risk$category %in% want & !is.na(risk[[est]]), ]
     k <- crd[crd$schema %in% schemas & crd$outcome == o_key &
              crd$category %in% want & !is.na(crd$rr), ]
+    few <- if (o_key == "exac") a$all_few_events else a[[paste0(o_key, "_few_events")]]
     rbind(
       data.frame(schema = SCH[k$schema], est = k$rr, lo = k$lo, hi = k$hi,
+                 few = k$few_events,
                  cat = cat_wanted, type = "Crude", stringsAsFactors = FALSE),
       data.frame(schema = SCH[a$schema], est = a[[est]],
                  lo = a[[paste0(o_key, "_LCI")]], hi = a[[paste0(o_key, "_UCI")]],
+                 few = few,
                  cat = cat_wanted, type = "Adjusted", stringsAsFactors = FALSE))
   }))
 }
@@ -54,19 +57,17 @@ make_fig <- function(o_key, o_label, file) {
   d$cat    <- factor(d$cat, levels = vapply(CATS, `[`, "", 1))
   d$schema <- factor(d$schema, levels = rev(unname(SCH)))
   d$type   <- factor(d$type, levels = c("Crude", "Adjusted"))
-  # A lower bound of exactly zero is a real result, a category in which a
-  # resample can contain no events. It cannot sit on a log axis, so it is
-  # drawn as an open-ended interval rather than dropped.
-  d$open_lo <- !is.na(d$lo) & d$lo <= 0
-  d$lo[d$open_lo] <- NA_real_
-  # One x scale across the facets, so the arrow target is computed once and
-  # reads as a convention rather than a data value.
-  d$arrow_to <- min(c(d$lo, d$est), na.rm = TRUE) * 0.75
-  # Both layers must carry every row: position_dodge assigns offsets from the
-  # group levels present in a layer, so a subsetted layer dodges to a different
-  # place than the full ones and the cap lands on the wrong row.
-  d$draw_lo <- ifelse(d$open_lo, d$arrow_to, d$lo)
-  d$cap_x   <- ifelse(d$open_lo, d$arrow_to, NA_real_)
+  # A cell with fewer than 10 events carries a point estimate but no interval.
+  # It is drawn as a hollow point with no bar, so the eye does not read an
+  # interval that was deliberately not computed.
+  d$few <- !is.na(d$few) & d$few
+  # The adjusted model still returns an interval for a sparse cell; it is
+  # dropped here for the same reason the crude one was not computed, so the
+  # two estimate types are held to one rule.
+  d$lo[d$few] <- NA_real_; d$hi[d$few] <- NA_real_
+  stopifnot(!any(is.na(d$lo[!d$few])), !any(is.na(d$est)))
+  d$draw_lo <- d$lo
+  d$cap_x   <- NA_real_
   # An empty facet renders without error and says nothing. Assert instead.
   stopifnot(all(vapply(levels(d$cat), function(l) sum(d$cat == l) > 0, logical(1))))
   pd <- position_dodge(width = 0.55)

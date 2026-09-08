@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 116L
+REGISTRY_N <- 132L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -370,6 +370,67 @@ reg("RECL-05", "Reclassification",
     'x$ct_only_major[1] == x$major_to_aflonly[x$schema == "S3"]', TOL_EXACT)
 reg("RECL-06", "Reclassification", "schema 3 keeps all 275 true AFL-only", 275,
     "reclassification.csv", RC("S3", "aflonly_kept"), TOL_EXACT)
+
+
+# --- common noCOPD reference across the three classifications -------------
+# Every estimate against the same 3,745 participants, so the three
+# classifications sit on one scale. The AFL-only respiratory contrast is the
+# section's claim and it rests on raw counts, which are registered too.
+CN <- function(sch, cat, fld)
+  sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, sch, cat)
+CNC <- function(sch, cat, out, fld)
+  sprintf('x$%s[x$schema == "%s" & x$category == "%s" & x$outcome == "%s"]',
+          fld, sch, cat, out)
+
+reg("CONSREF-00", "Common reference",
+    "common reference holds 3,745 participants", 3745,
+    "consensus_ref_group.csv", "x$n_cohort", TOL_EXACT)
+reg("CONSREF-01", "Common reference",
+    "MD-COPD AFL-only all-cause HR 0.94 against the common reference", 0.94,
+    "consensus_ref_risk.csv", CN("S2", "AFL-only", "all_HR"), TOL_2DP)
+reg("CONSREF-02", "Common reference",
+    "ESI-MD-COPD AFL-only all-cause HR 0.96", 0.96,
+    "consensus_ref_risk.csv", CN("S4", "AFL-only", "all_HR"), TOL_2DP)
+reg("CONSREF-03", "Common reference",
+    "NoCT-MD-COPD AFL-only all-cause HR 1.14", 1.14,
+    "consensus_ref_risk.csv", CN("S3", "AFL-only", "all_HR"), TOL_2DP)
+reg("CONSREF-04", "Common reference",
+    "NoCT-MD-COPD AFL-only crude respiratory rate ratio 10.00", 10.00,
+    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "rr"), TOL_2DP)
+reg("CONSREF-05", "Common reference",
+    "MD-COPD AFL-only crude respiratory rate ratio 2.23", 2.23,
+    "consensus_ref_crude.csv", CNC("S2", "AFL-only", "resp", "rr"), TOL_2DP)
+reg("CONSREF-06", "Common reference",
+    "ESI-MD-COPD AFL-only crude respiratory rate ratio 2.34", 2.34,
+    "consensus_ref_crude.csv", CNC("S4", "AFL-only", "resp", "rr"), TOL_2DP)
+# The three raw counts the argument actually rests on.
+reg("CONSREF-07", "Common reference",
+    "MD-COPD AFL-only had 2 respiratory deaths", 2,
+    "consensus_ref_risk.csv", CN("S2", "AFL-only", "resp_deaths"), TOL_EXACT)
+reg("CONSREF-08", "Common reference",
+    "NoCT-MD-COPD AFL-only had 34 respiratory deaths", 34,
+    "consensus_ref_risk.csv", CN("S3", "AFL-only", "resp_deaths"), TOL_EXACT)
+reg("CONSREF-09", "Common reference",
+    "ESI-MD-COPD AFL-only had 4 respiratory deaths", 4,
+    "consensus_ref_risk.csv", CN("S4", "AFL-only", "resp_deaths"), TOL_EXACT)
+reg("CONSREF-10", "Common reference",
+    "MD-COPD COPD-minor all-cause HR 2.02", 2.02,
+    "consensus_ref_risk.csv", CN("S2", "COPD-minor", "all_HR"), TOL_2DP)
+reg("CONSREF-11", "Common reference",
+    "NoCT-MD-COPD COPD-minor all-cause HR 2.01", 2.01,
+    "consensus_ref_risk.csv", CN("S3", "COPD-minor", "all_HR"), TOL_2DP)
+reg("CONSREF-12", "Common reference",
+    "ESI-MD-COPD COPD-minor all-cause HR 1.97", 1.97,
+    "consensus_ref_risk.csv", CN("S4", "COPD-minor", "all_HR"), TOL_2DP)
+reg("CONSREF-13", "Common reference",
+    "MD-COPD COPD-major all-cause HR 2.75", 2.75,
+    "consensus_ref_risk.csv", CN("S2", "COPD-major", "all_HR"), TOL_2DP)
+reg("CONSREF-14", "Common reference",
+    "NoCT-MD-COPD COPD-major all-cause HR 3.38", 3.38,
+    "consensus_ref_risk.csv", CN("S3", "COPD-major", "all_HR"), TOL_2DP)
+reg("CONSREF-15", "Common reference",
+    "ESI-MD-COPD COPD-major all-cause HR 2.94", 2.94,
+    "consensus_ref_risk.csv", CN("S4", "COPD-major", "all_HR"), TOL_2DP)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

@@ -258,6 +258,83 @@ def table2(doc):
 
 
 def table3(doc):
+    """Every group of every multidimensional classification against one common
+    reference: the participants all three agree are noCOPD. The own-noCOPD
+    references used elsewhere differ in composition between classifications,
+    so estimates under one are not on the same scale as estimates under
+    another. Crude ratios lead; adjusted estimates follow. A cell with fewer
+    events than the analysis floor keeps its point estimate and loses its
+    interval, because the interval would convey precision the data lack."""
+    adj = {(r["schema"], r["category"]): r for r in load("consensus_ref_risk.csv")}
+    cru = {(r["schema"], r["category"], r["outcome"]): r
+           for r in load("consensus_ref_crude.csv")}
+    ref = load("consensus_ref_group.csv")[0]
+    NM = {"S2": "MD-COPD", "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    ORDER = ["AFL-only", "COPD-minor", "COPD-major"]
+    FLAG = "\u2020"
+
+    def crude(s_, g, outcome):
+        r = cru[(s_, g, outcome)]
+        if r["few_events"].upper() in ("TRUE", "T"):
+            return f"{float(r['rr']):.2f}{FLAG}"
+        return (f"{float(r['rr']):.2f} "
+                f"({float(r['lo']):.2f}\u2013{float(r['hi']):.2f})")
+
+    def adjusted(s_, g, est, lo, hi, flag):
+        r = adj[(s_, g)]
+        if r[flag].upper() in ("TRUE", "T"):
+            return f"{float(r[est]):.2f}{FLAG}"
+        return (f"{float(r[est]):.2f} "
+                f"({float(r[lo]):.2f}\u2013{float(r[hi]):.2f})")
+
+    rows = [["Common reference", f"{int(ref['deaths']):,}", "1.00", "reference",
+             f"{int(ref['resp_deaths']):,}", "1.00", "reference",
+             "1.00", "reference"]]
+    n_flagged = 0
+    for s_ in ("S2", "S3", "S4"):
+        for i, g in enumerate(ORDER):
+            r = adj[(s_, g)]
+            n_flagged += sum(
+                cru[(s_, g, o)]["few_events"].upper() in ("TRUE", "T")
+                for o in ("all", "resp", "exac"))
+            rows.append([
+                f"{NM[s_]} {g}" if i == 0 else g,
+                f"{int(r['deaths']):,}",
+                crude(s_, g, "all"),
+                adjusted(s_, g, "all_HR", "all_LCI", "all_UCI", "all_few_events"),
+                f"{int(r['resp_deaths']):,}",
+                crude(s_, g, "resp"),
+                adjusted(s_, g, "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
+                crude(s_, g, "exac"),
+                adjusted(s_, g, "exac_IRR", "exac_LCI", "exac_UCI", "all_few_events")])
+    add_table(doc, ["Classification and group", "Deaths",
+                    "All-cause RR", "All-cause HR (95% CI)",
+                    "Resp. deaths", "Resp. RR", "Resp. HR (95% CI)",
+                    "Exac. RR", "Exac. IRR (95% CI)"],
+              rows, [1.24, 0.42, 0.62, 0.86, 0.48, 0.62, 0.86, 0.58, 0.82])
+    afl = {s_: adj[(s_, "AFL-only")] for s_ in ("S2", "S3", "S4")}
+    legend(doc, "Table 3.",
+           "Every group of the three multidimensional classifications estimated "
+           "against one common reference: the "
+           f"{int(ref['n_cohort']):,} participants all three classifications agree "
+           "are noCOPD. Because every member of that group is noCOPD under each "
+           "classification, it is disjoint from all the groups shown, and estimates "
+           "under one classification are on the same scale as estimates under "
+           "another. Crude rate ratios (RR) are the observed event rate in the group "
+           "divided by the rate in the reference. Adjusted models carry age, sex, "
+           "race, current smoking status, pack-years and body mass index, with prior "
+           "exacerbation frequency added for exacerbations. Respiratory deaths in "
+           f"the AFL-only group were {int(afl['S2']['resp_deaths'])} under MD-COPD, "
+           f"{int(afl['S3']['resp_deaths'])} under NoCT-MD-COPD and "
+           f"{int(afl['S4']['resp_deaths'])} under ESI-MD-COPD. "
+           f"{FLAG} fewer than 10 events in the cell: the point estimate is given "
+           "without an interval, which would convey precision the data do not "
+           "carry. AFL-only, airflow limitation without other criteria; RR, rate "
+           "ratio; HR, hazard ratio; IRR, incidence rate ratio; CI, confidence "
+           "interval.")
+
+
+def table4(doc):
     """Cross-classification of MD-COPD against ESI-MD-COPD, preserved
     spirometry. Rates and adjusted estimates in one table so the effect of
     adjustment is readable."""
@@ -290,11 +367,14 @@ def table3(doc):
     # Nine columns split the group names and the counts across lines. Prior
     # exacerbation burden is one number per group and is already given in the
     # text, so it moves to the legend rather than squeezing the rest.
+    prior_means = ", ".join(f"{float(rates[g]['prior_exac_mean']):.2f}"
+                            for g in order[:-1]) + \
+        f" and {float(rates[order[-1]]['prior_exac_mean']):.2f}"
     add_table(doc, ["Group", "n", "All-cause rate", "All-cause HR (95% CI)",
                     "Respiratory rate", "Respiratory HR (95% CI)",
                     "Exacerbation rate", "Exacerbation IRR (95% CI)"],
               rows, [1.30, 0.46, 0.58, 1.02, 0.58, 1.02, 0.58, 0.96])
-    legend(doc, "Table 3.",
+    legend(doc, "Table 4.",
            "Participants cross-classified by MD-COPD and ESI-MD-COPD within the "
            "preserved-spirometry subgroup, where the two can disagree about a "
            "diagnosis. CT-only-COPD is what ESI-MD-COPD misses; ESI-only-COPD is "
@@ -302,7 +382,7 @@ def table3(doc):
            "estimates are against the Both-noCOPD group and carry age, sex, race, "
            "current smoking status, pack-years and body mass index, with prior "
            "exacerbation frequency added for exacerbations. Mean exacerbation count "
-           "in the year before enrollment was 0.09, 0.44, 0.16 and 0.50 across the "
+           f"in the year before enrollment was {prior_means} across the "
            "four groups in the order shown. The respiratory estimate for "
            "CT-only-COPD is not estimable because that group had no respiratory "
            "deaths during follow-up. "
@@ -310,7 +390,7 @@ def table3(doc):
            "IRR, incidence rate ratio; CI, confidence interval.")
 
 
-def table4(doc):
+def table5(doc):
     """ESI's discrimination of the two visual CT criteria, by stratum. This is
     the claim that explains where an ESI criterion helps. The comparison with
     FEV1/FVC belongs in the Supplement: FEV1/FVC cannot serve as the
@@ -329,7 +409,7 @@ def table4(doc):
     add_table(doc, ["CT criterion", "Stratum", "n", "Prevalence (%)",
                     "AUC for ESI"],
               rows, [1.40, 1.46, 0.76, 1.10, 1.78])
-    legend(doc, "Table 4.",
+    legend(doc, "Table 5.",
            "How well ESI discriminates each of the two visual CT criteria it "
            "replaces, overall and within stratum of airflow limitation. ESI "
            "discriminates both criteria among participants with airflow "
@@ -463,6 +543,7 @@ def main():
     table2(doc)
     table3(doc)
     table4(doc)
+    table5(doc)
 
     doc.add_page_break()
     doc.add_paragraph("FIGURES", style="Heading 1")
@@ -481,8 +562,8 @@ def main():
                    f"Panels share the same rows and scale across Figures 2 to 4, so "
                    f"the three outcomes are directly comparable. The fixed ratio has "
                    f"a single COPD category and so appears only in the COPD-major "
-                   f"panel. An interval drawn open at its lower end denotes a "
-                   f"category in which a bootstrap resample can contain no events. "
+                   f"panel. A point drawn without an interval had fewer than 10 "
+                   f"events in that category, so no interval was estimated. "
                    f"AFL-only, airflow limitation without other criteria.")
 
     doc.save(OUT)

@@ -156,6 +156,15 @@ def s4_sweep(doc):
            "AFL-only, airflow limitation without other criteria.")
 
 
+def cell_n(rows, schema, row_cat, col_cat):
+    """One cell of the cross-classification, read from the artifact."""
+    for r in rows:
+        if (r["schema"] == schema and r["row_cat"] == row_cat
+                and r["col_cat"] == col_cat):
+            return int(r["n"])
+    raise SystemExit(f"crossclass.csv has no {schema} {row_cat}/{col_cat} cell")
+
+
 def s3_crossclass(doc):
     heading(doc, "Supplemental Table S10. Reclassification against the CT-based framework")
     x = load(ASSETS, "crossclass.csv")
@@ -172,12 +181,13 @@ def s3_crossclass(doc):
         add_table(doc, ["", *CATS, "Total"], rows,
                   [1.30, 1.02, 1.02, 1.06, 1.06, 1.04])
         doc.add_paragraph()
+    lost = {s_: cell_n(x, s_, "AFL-only", "COPD-major") for s_ in ("S3", "S4")}
     legend(doc, "Table S10.",
            "Full cross-classification of each CT-free schema against the CT-based "
            "framework. Diagonal cells are participants both schemas place in the "
            "same category. The COPD-major column shows where the two schemas differ: "
-           "949 of those participants fall into AFL-only without CT, against "
-           "233 with ESI.")
+           f"{lost['S3']:,} of those participants fall into AFL-only without CT, "
+           f"against {lost['S4']:,} with ESI.")
 
 
 def s4_fitting(doc):
@@ -212,12 +222,15 @@ def s5_discrimination(doc):
               [[SCHEMA_NAME[r["schema"]], f"{float(r['c_allcause']):.4f}",
                 f"{float(r['c_resp']):.4f}", f"{float(r['exac_AIC']):.0f}"] for r in d],
               [1.70, 1.60, 1.65, 1.55])
+    hr = [float(r["resp_HR"]) for r in load(ASSETS, "schema_risk.csv")
+          if r["schema"] == "S3" and r["category"] == "AFL-only"][0]
     legend(doc, "Table S5.",
            "Discrimination for each schema, every model carrying the same "
            "covariates. The symptoms-only schema has the highest C-index for both "
-           "mortality outcomes and the lowest exacerbation AIC. Table 3 of the main "
-           "text shows what that costs: its AFL-only category carries 6.6 "
-           "times the respiratory mortality of its own reference.")
+           "mortality outcomes and the lowest exacerbation AIC. Figures 2 to 4 and "
+           "Supplemental Tables S3a to S3c show what that costs: its AFL-only "
+           f"category carries {hr:.1f} times the respiratory mortality of its own "
+           "reference after adjustment.")
 
 
 def data_files(doc):

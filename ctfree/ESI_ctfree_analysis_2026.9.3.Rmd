@@ -107,6 +107,12 @@ CV_REPEATS      <- 5L
 CV_FOLDS        <- 5L
 CV_SEED         <- 20260901L
 CRUDE_B         <- 1000L
+
+# Minimum events in a cell for an interval to be reported. Below this the
+# interval is driven by a handful of deaths and conveys precision the data do
+# not carry. The point estimate is still reported, without an interval and
+# flagged, alongside the raw event count. Applied to crude and adjusted alike.
+MIN_EVENTS <- 10L
 BHATT_MDCOPD_N  <- c(noCOPD = 4439L, `AFL-only` = 282L,
                      `COPD-minor` = 811L, `COPD-major` = 3884L)
 ```
@@ -780,6 +786,9 @@ for (s in c("S1", "S2", "S3", "S4")) {
       schema = s, category = g,
       n_mort = sum(ix), n_exac = sum(exa[[s]] == g),
       n_cohort = sum(d_b[[s]] == g), deaths = sum(mort$vital_status[ix]),
+      resp_deaths = sum(mort$ev_resp[ix]),
+      all_few_events  = sum(mort$vital_status[ix]) < MIN_EVENTS,
+      resp_few_events = sum(mort$ev_resp[ix]) < MIN_EVENTS,
       all_HR  = gv(cm, 1), all_LCI  = gv(cm, 3), all_UCI  = gv(cm, 4),
       resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
       exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
@@ -824,6 +833,21 @@ REFERENCE contributes no events leave the ratio undefined and are cut.
 ```{r crude-rr}
 set.seed(CV_SEED)
 
+# Interval method by outcome. Deaths are counts over person-time, so the
+# exact conditional (binomial) interval for a ratio of Poisson rates
+# applies and returns a strictly positive lower bound whenever the group
+# has at least one event. The subject-resample percentile bootstrap used
+# previously returned exactly 0 whenever any resample of a small group
+# contained no deaths, which is an artifact of the resampling rather than a
+# statement about the rate. Exacerbation counts are overdispersed and
+# clustered within participant, so the Poisson assumption does not hold and
+# those intervals stay on the bootstrap.
+exact_rate_ratio <- function(e1, t1, e0, t0) {
+  if (e1 == 0) return(c(NA_real_, NA_real_))   # ratio is 0; reported as such
+  ci <- poisson.test(c(e1, e0), c(t1, t0))$conf.int
+  c(ci[1], ci[2])
+}
+
 crude_ratio <- function(sch, ev, py, dat) {
   g   <- dat[[sch]]
   num <- rowsum(dat[[ev]], g, reorder = FALSE)
@@ -855,11 +879,21 @@ for (spec in list(list("all",  "vital_status",        "py",             mort),
         z <- bb[[si]]; if (g %in% names(z)) z[[g]] else NA_real_
       }, numeric(1))
       v <- v[is.finite(v)]
+      ix <- dat[[s]] == g; rx <- dat[[s]] == "noCOPD"
+      if (key == "exac") {
+        lo <- if (length(v) > 1) unname(quantile(v, .025)) else NA_real_
+        hi <- if (length(v) > 1) unname(quantile(v, .975)) else NA_real_
+      } else {
+        b <- exact_rate_ratio(sum(dat[[ev]][ix]), sum(dat[[py]][ix]),
+                              sum(dat[[ev]][rx]), sum(dat[[py]][rx]))
+        lo <- b[1]; hi <- b[2]
+      }
       crude_rows[[length(crude_rows) + 1]] <- data.frame(
         schema = s, category = g, outcome = key,
-        rr = unname(est[[g]]),
-        lo = if (length(v) > 1) unname(quantile(v, .025)) else NA_real_,
-        hi = if (length(v) > 1) unname(quantile(v, .975)) else NA_real_,
+        events = sum(dat[[ev]][ix]),
+        rr = unname(est[[g]]), lo = lo, hi = hi,
+        method = if (key == "exac") "bootstrap" else "exact Poisson",
+        few_events = sum(dat[[ev]][ix]) < MIN_EVENTS,
         B_eff = sum(v > 0), stringsAsFactors = FALSE)
     }
   }
@@ -868,7 +902,176 @@ crude <- do.call(rbind, crude_rows)
 # The reference category's crude ratio is 1 by construction. Drift means
 # the numerator and denominator were computed off different rows.
 stopifnot(all(abs(crude$rr[crude$category == "noCOPD"] - 1) < 1e-12))
+# A zero lower bound now means the group genuinely had no events, not that a
+# resample happened to miss them.
+stopifnot(all(is.na(crude$lo[crude$method == "exact Poisson"]) |
+              crude$lo[crude$method == "exact Poisson"] > 0 |
+              crude$events[crude$method == "exact Poisson"] == 0))
 write.csv(crude, file.path(OUT_DIR, "schema_crude.csv"), row.names = FALSE)
+```
+
+# Section 8a -- A common reference group across the three classifications
+
+Section 7 estimates every category against its own classification's noCOPD
+group. Those references differ in composition (4,357, 3,853 and 3,815
+participants), so an estimate under one classification is not on the same
+scale as an estimate under another, and part of any difference between them
+is the moving denominator.
+
+This section fixes one reference for all three: the participants all three
+multidimensional classifications agree are noCOPD. Because every member of
+that group is noCOPD under each classification, it is disjoint from the
+AFL-only, COPD-minor and COPD-major categories of all three, so each of those
+categories can be estimated against it without overlap. Participants the three
+classifications disagree about are not in the reference; they still appear in
+whichever category their own classification assigns.
+
+AFL-only is a reported row here rather than the baseline. That is what the
+argument needs: the claim is that AFL-only should sit at the noCOPD level, and
+making it the reference would assume what is to be shown.
+
+```{r consensus-reference}
+cons <- with(d_b, S2 == "noCOPD" & S3 == "noCOPD" & S4 == "noCOPD")
+
+# The construction rests on the reference being noCOPD under every
+# classification. If it is not, the contrasts below compare overlapping
+# groups and the estimates are meaningless.
+for (s in c("S2", "S3", "S4"))
+  stopifnot(all(d_b[[s]][cons] == "noCOPD"))
+stopifnot(sum(cons) > 0)
+
+OTHER <- c("AFL-only", "COPD-minor", "COPD-major")
+d_b$cons <- cons
+mort_c <- merge(mort, d_b[, c("pid", "cons")], by = "pid")
+exa_c  <- merge(exa,  d_b[, c("pid", "cons")], by = "pid")
+
+cons_rows <- list()
+for (s in c("S2", "S3", "S4")) {
+  keep_m <- mort_c$cons | mort_c[[s]] %in% OTHER
+  keep_e <- exa_c$cons  | exa_c[[s]]  %in% OTHER
+  mm <- mort_c[keep_m, ]; ee <- exa_c[keep_e, ]
+  mm$g <- factor(ifelse(mm$cons, "REF", as.character(mm[[s]])), c("REF", OTHER))
+  ee$g <- factor(ifelse(ee$cons, "REF", as.character(ee[[s]])), c("REF", OTHER))
+  # Reference and comparison groups must not share participants.
+  stopifnot(!any(mm$cons & mm[[s]] %in% OTHER), !anyNA(mm$g), !anyNA(ee$g))
+
+  m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
+  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+  n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
+         "+ prior_exac + offset(log(Years_Followed))")), data = ee)
+  cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
+
+  for (g in OTHER) {
+    r <- paste0("g", g)                       # exact name; "^g" also matches gender
+    stopifnot(r %in% rownames(cm), r %in% rownames(ce))
+    cons_rows[[length(cons_rows) + 1]] <- data.frame(
+      schema = s, category = g,
+      n_mort = sum(mm$g == g), n_exac = sum(ee$g == g),
+      deaths = sum(mm$vital_status[mm$g == g]),
+      resp_deaths = sum(mm$ev_resp[mm$g == g]),
+      all_few_events  = sum(mm$vital_status[mm$g == g]) < MIN_EVENTS,
+      resp_few_events = sum(mm$ev_resp[mm$g == g]) < MIN_EVENTS,
+      all_HR = cm[r, 1], all_LCI = cm[r, 3], all_UCI = cm[r, 4],
+      resp_HR = cr[r, 1], resp_LCI = cr[r, 3], resp_UCI = cr[r, 4],
+      exac_IRR = exp(ce[r, 1]),
+      exac_LCI = exp(ce[r, 1] - 1.96 * ce[r, 2]),
+      exac_UCI = exp(ce[r, 1] + 1.96 * ce[r, 2]),
+      stringsAsFactors = FALSE)
+  }
+}
+cons_risk <- do.call(rbind, cons_rows)
+
+# Crude rates and rate ratios against the same common reference, by the same
+# subject-resample bootstrap used in Section 8. The reference rate is
+# recomputed inside every resample, as there.
+set.seed(CV_SEED)
+cons_rate <- function(sch, ev, py, dat) {
+  g <- ifelse(dat$cons, "REF", as.character(dat[[sch]]))
+  k <- g == "REF" | g %in% OTHER
+  num <- tapply(dat[[ev]][k], g[k], sum); den <- tapply(dat[[py]][k], g[k], sum)
+  r <- num / den
+  if (!("REF" %in% names(r)) || !is.finite(r[["REF"]]) || r[["REF"]] <= 0)
+    return(setNames(rep(NA_real_, length(r)), names(r)))
+  r / r[["REF"]]
+}
+
+crude_c_rows <- list()
+for (spec in list(list("all",  "vital_status",        "py",             mort_c),
+                  list("resp", "ev_resp",             "py",             mort_c),
+                  list("exac", "Total_Exacerbations", "Years_Followed", exa_c))) {
+  key <- spec[[1]]; ev <- spec[[2]]; py <- spec[[3]]; dat <- spec[[4]]
+  boot <- vector("list", CRUDE_B)
+  for (b in seq_len(CRUDE_B)) {
+    dd <- dat[sample.int(nrow(dat), nrow(dat), replace = TRUE), , drop = FALSE]
+    boot[[b]] <- lapply(c("S2","S3","S4"), function(s) cons_rate(s, ev, py, dd))
+  }
+  for (si in seq_along(c("S2","S3","S4"))) {
+    s <- c("S2","S3","S4")[si]
+    est <- cons_rate(s, ev, py, dat)
+    for (g in OTHER) {
+      v <- vapply(boot, function(bb) {
+        z <- bb[[si]]; if (g %in% names(z)) z[[g]] else NA_real_ }, numeric(1))
+      v <- v[is.finite(v)]
+      ix <- dat[[s]] == g & !dat$cons; rx <- dat$cons
+      if (key == "exac") {
+        lo <- if (length(v) > 1) unname(quantile(v, .025)) else NA_real_
+        hi <- if (length(v) > 1) unname(quantile(v, .975)) else NA_real_
+      } else {
+        b <- exact_rate_ratio(sum(dat[[ev]][ix]), sum(dat[[py]][ix]),
+                              sum(dat[[ev]][rx]), sum(dat[[py]][rx]))
+        lo <- b[1]; hi <- b[2]
+      }
+      crude_c_rows[[length(crude_c_rows) + 1]] <- data.frame(
+        schema = s, category = g, outcome = key,
+        events = sum(dat[[ev]][ix]),
+        rate_100py = 100 * sum(dat[[ev]][ix]) / sum(dat[[py]][ix]),
+        rr = unname(est[[g]]), lo = lo, hi = hi,
+        method = if (key == "exac") "bootstrap" else "exact Poisson",
+        few_events = sum(dat[[ev]][ix]) < MIN_EVENTS,
+        B_eff = sum(v > 0), stringsAsFactors = FALSE)
+    }
+  }
+}
+cons_crude <- do.call(rbind, crude_c_rows)
+stopifnot(nrow(cons_crude) == 27, all(is.finite(cons_crude$rr)))
+write.csv(cons_crude, file.path(OUT_DIR, "consensus_ref_crude.csv"), row.names = FALSE)
+
+# Reference composition is identical for all three classifications by
+# construction; record it once so the prose cannot quote a drifting n.
+cons_ref <- data.frame(
+  n_cohort    = sum(cons),
+  n_mort      = sum(mort_c$cons),
+  n_exac      = sum(exa_c$cons),
+  deaths      = sum(mort_c$vital_status[mort_c$cons]),
+  resp_deaths = sum(mort_c$ev_resp[mort_c$cons]),
+  exac_events = sum(exa_c$Total_Exacerbations[exa_c$cons]),
+  person_yrs  = sum(mort_c$py[mort_c$cons]),
+  fu_yrs      = sum(exa_c$Years_Followed[exa_c$cons]))
+
+stopifnot(nrow(cons_risk) == 9, all(is.finite(cons_risk$all_HR)))
+write.csv(cons_risk, file.path(OUT_DIR, "consensus_ref_risk.csv"), row.names = FALSE)
+write.csv(cons_ref,  file.path(OUT_DIR, "consensus_ref_group.csv"), row.names = FALSE)
+
+cat(sprintf(paste("Common reference: %d participants, %d deaths (%d respiratory)",
+                  "over %.0f person-years, %d exacerbations over %.0f years.\n"),
+            cons_ref$n_cohort, cons_ref$deaths, cons_ref$resp_deaths,
+            cons_ref$person_yrs, cons_ref$exac_events, cons_ref$fu_yrs))
+if (cons_ref$resp_deaths < 10)
+  cat(sprintf(paste("NOTE: %d respiratory deaths in the reference. Respiratory",
+                    "estimates in this section are directional only.\n"),
+              cons_ref$resp_deaths))
+sup <- cons_risk[cons_risk$resp_few_events, c("schema","category","resp_deaths")]
+if (nrow(sup)) {
+  cat(sprintf("Cells below the %d-event floor; ratio reported, interval not:\n",
+              MIN_EVENTS))
+  print(sup, row.names = FALSE)
+} else cat("No cell falls below the", MIN_EVENTS, "event floor.\n")
+
+kable(merge(cons_crude[cons_crude$outcome == "all",
+                       c("schema","category","rate_100py","rr","lo","hi")],
+            cons_risk[, c("schema","category","deaths","all_HR")],
+            by = c("schema","category")),
+      caption = "All-cause risk against the common noCOPD reference.", digits = 2)
 ```
 
 # Section 8b -- Longitudinal FEV~1~ decline by category

@@ -61,9 +61,22 @@ own noCOPD category.
 
 Crude rate ratios are also reported, calculated as the observed event rate in
 each category divided by the observed rate in that classification's noCOPD
-category. Confidence intervals for the crude ratios are 95% percentile
+category. Intervals for the crude mortality ratios are exact conditional
+intervals for a ratio of Poisson rates. Exacerbation counts are overdispersed
+and clustered within participant, so their intervals are 95% percentile
 intervals from a subject resample bootstrap with B = 1,000 resamples, with the
-reference rate recomputed within each resample.
+reference rate recomputed within each resample. No interval is reported for a
+group with fewer than 10 events; the rate ratio is given alone and flagged,
+since an interval built on a handful of deaths conveys precision the data do
+not carry.
+
+Because each classification's estimates are made against its own noCOPD
+category, and those categories differ in composition, estimates under one
+classification are not on the same scale as estimates under another. We
+therefore repeated the analysis against a single reference common to all
+three: the participants every multidimensional classification assigns to
+noCOPD. Every member of that group is noCOPD under each classification, so it
+shares no participant with any category it is compared against.
 
 Fixed-ratio COPD comprises the AFL-only and COPD-major categories of the
 MD-COPD framework, so the fixed-ratio model is nested within the four-category

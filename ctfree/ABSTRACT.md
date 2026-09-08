@@ -28,9 +28,10 @@ participants out of COPD-major into AFL-only, the category that withholds a
 COPD diagnosis from participants with airflow limitation. These participants
 had structural disease identified only by CT, and the category that received
 them was no longer low risk, carrying 9.38 times the respiratory mortality of
-its own noCOPD group (95% CI: 5.00 to 21.95) against 1.76 (0 to 5.75) under
+its own noCOPD group (95% CI: 4.74 to 19.89) against 1.76 under
 MD-COPD. Replacing the CT criteria with an ESI criterion reduced that loss to
-350 and returned the estimate to 2.37 (0.44 to 6.99). ESI-MD-COPD reproduced
+350 and returned the estimate to 2.37. Respiratory deaths in that group
+numbered 34 without CT, against 2 under MD-COPD and 4 with ESI. ESI-MD-COPD reproduced
 the MD-COPD categories better than NoCT-MD-COPD (held-out macro-averaged F1
 0.752 against 0.721), and the advantage was confined to the two categories
 defined by airflow limitation. At the COPD-minor boundary the three
