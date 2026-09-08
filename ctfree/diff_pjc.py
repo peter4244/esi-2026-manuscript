@@ -9,9 +9,10 @@ Run this every time he hands over a PJC version, before touching anything:
 
     python3 diff_pjc.py
 
-Every paragraph reported is either an edit of his to adopt or a deliberate
-change of mine that supersedes it. There is no third case, and deciding which
-is the point of the review; the script does not guess.
+His docx is the starting point, not a variant to reconcile against mine. Every
+paragraph reported is his text to adopt. Where mine differs, mine is the one
+that goes, unless it is a factual correction, and then it is raised with him
+rather than applied over his wording.
 """
 import difflib
 import os
@@ -97,8 +98,9 @@ def main():
                     continue
                 print(f"  source: {' '.join(best.split()[i1:i2])[:200]!r}")
                 print(f"  PJC   : {' '.join(t.split()[j1:j2])[:200]!r}")
-    print(f"\n{n_diff} paragraph(s) differ. Each is his edit to adopt or a "
-          f"deliberate change that supersedes it; decide one at a time.")
+    print(f"\n{n_diff} paragraph(s) differ. His version is the starting point: "
+          f"adopt each one.\nRaise factual problems with him instead of editing "
+          f"over his wording.")
     if adopt:
         import pjc_guard
         pjc_guard.record()
