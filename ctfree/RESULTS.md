@@ -52,7 +52,7 @@ MD-COPD subgroups was ≥ 1.50.
 We compared the two CT-free classifications to MD-COPD (Table 2), and
 ESI-MD-COPD reproduced the MD-COPD categories more closely, with a held-out
 macro-averaged F1 of 0.752 against 0.721 (p<0.001, Supplemental Table S10)
-{FIT-04a, FIT-04b, FIT-07a, FIT-07b}. Because all four classifications share
+{FIT-04a, FIT-04b, FIT-07a, FIT-07b}. Overall, the ESI-MD-COPD classification correctly classified 87.9% of subjects compared to 83.9% for the NoCT-MD-COPD classification {RECL-09, RECL-10}. Because all four classifications share
 the same major criterion, reclassification occurred due only to differences in
 minor criteria and was limited to shifts between the airflow-limitation groups (COPD-major and
 AFL-only) and the preserved-spirometry groups (COPD-minor and noCOPD).
