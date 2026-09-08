@@ -512,15 +512,24 @@ def add_front_matter(doc):
     r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
 
+def heading_on_new_page(doc, text):
+    """Start a section on its own page. page_break_before travels with the
+    heading, so reflow above it cannot leave the break stranded mid-page the
+    way a separately inserted break can."""
+    p = doc.add_paragraph(text, style="Heading 1")
+    p.paragraph_format.page_break_before = True
+    return p
+
+
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
 
     add_front_matter(doc)
 
-    doc.add_paragraph("ABSTRACT", style="Heading 1")
+    heading_on_new_page(doc, "ABSTRACT")
     add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
-    doc.add_paragraph("INTRODUCTION", style="Heading 1")
+    heading_on_new_page(doc, "INTRODUCTION")
     n_i = add_prose(doc, os.path.join(HERE, "INTRODUCTION.md"))
     doc.add_paragraph("METHODS", style="Heading 1")
     n_m = add_prose(doc, os.path.join(HERE, "METHODS.md"), skip_after="Still to write")

@@ -45,11 +45,6 @@ Table S4). The selected rules assigned COPD-minor at ≥ 2 minor criteria for bo
 ESI-MD-COPD and NoCT-MD-COPD, and the optimal ESI threshold for recovery of
 MD-COPD subgroups was ≥ 1.50.
 
-For NoCT-MD-COPD, no choice of threshold could recover the participants with airflow limitation whose only minor
-criterion was a CT finding, and who were therefore classified as COPD-major by
-MD-COPD; once the CT criteria are removed these participants meet no minor
-criteria at all {RECL-03}.
-
 ## Reclassification of MD-COPD categories by the CT-free classifications
 
 *(Pete's text)*
@@ -68,7 +63,7 @@ classification in the airflow-limitation groups (F1 score for AFL-only 0.47 vs
 the preserved-spirometry groups {F1CAT-01, F1CAT-02, F1CAT-03}. NoCT-MD-COPD
 misclassified 833 of 3,809 COPD-major participants (21.9%) as AFL-only, whereas
 ESI-MD-COPD only misclassified 350 {RECL-01, RECL-02} (Figure 1, Supplemental
-Table S10).
+Table S10). For NoCT-MD-COPD, no choice of threshold could recover the participants with airflow limitation whose only minor criterion was a CT finding, and who were therefore classified as COPD-major by MD-COPD; once the CT criteria are removed these participants meet no minor criteria at all {RECL-03}.
 
 ## Clinical outcomes within each classification's groups
 
