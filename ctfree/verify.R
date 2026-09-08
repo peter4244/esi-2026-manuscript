@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 136L
+REGISTRY_N <- 140L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -444,6 +444,23 @@ reg("CONSREF-18", "Common reference",
 reg("CONSREF-19", "Common reference",
     "ESI-MD-COPD AFL-only crude all-cause lower bound 1.04 excludes 1", 1.04,
     "consensus_ref_crude.csv", CNC("S4", "AFL-only", "all", "lo"), TOL_2DP)
+
+reg("CONSREF-20", "Common reference",
+    "NoCT-MD-COPD AFL-only crude respiratory lower bound 4.95", 4.95,
+    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "lo"), TOL_2DP)
+reg("CONSREF-21", "Common reference",
+    "NoCT-MD-COPD AFL-only crude respiratory upper bound 21.87", 21.87,
+    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "hi"), TOL_2DP)
+reg("CONSREF-22", "Common reference",
+    "MD-COPD AFL-only respiratory estimate is below the event floor", 1,
+    "consensus_ref_crude.csv",
+    'as.integer(x$few_events[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "resp"])',
+    TOL_EXACT)
+reg("CONSREF-23", "Common reference",
+    "ESI-MD-COPD AFL-only respiratory estimate is below the event floor", 1,
+    "consensus_ref_crude.csv",
+    'as.integer(x$few_events[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "resp"])',
+    TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

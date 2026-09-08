@@ -73,37 +73,27 @@ The AFL-only group withholds a COPD diagnosis from participants that would
 otherwise receive a COPD diagnosis based on the fixed ratio, so some of the
 benefit of MD-COPD rests upon the AFL-only subjects being at low risk for
 adverse COPD-related outcomes, such as mortality and respiratory exacerbations.
-In the original report, the AFL-only MD-COPD group showed no excess on any
-outcome, crude or adjusted. Under
-NoCT-MD-COPD however, this group carried substantially elevated risk, most
-markedly for respiratory mortality, where the crude rate ratio against its own
-no COPD group was 9.38 (95% CI: 4.74 to 19.89) compared with 1.76 under MD-COPD,
-an estimate resting on 2 respiratory deaths and reported without an interval
-{CRUDE-03, CRUDE-08}. Risk of all-cause mortality and
-exacerbations were also elevated in this group in the same direction (Figures 2
-to 4, Supplemental Tables S3a to S3c). Under the ESI-MD-COPD classification, the
-relative risk of respiratory mortality was nominally but not significantly
-elevated (RR 2.37, on 4 respiratory deaths and likewise without an interval)
-{CRUDE-04}. This demonstrates that removing
-the CT criteria without replacement makes it impossible in this framework to
-identify individuals with spirometric obstruction but no structural lung disease
-(as defined by visual emphysema and airway thickening), therefore producing an
-AFL-only group that is substantially contaminated by individuals at elevated
-risk of COPD-related outcomes.
-
-The estimates above are each made against their own classification's noCOPD
-group, and those groups differ in composition, so they cannot be compared
-between classifications. We therefore repeated the analysis against a single
-reference common to all three: the 3,745 participants every multidimensional
-classification assigns to noCOPD, a group that is by construction disjoint from
-every group it is compared against (Table 3). On this common scale the AFL-only
-group sat at the reference level under MD-COPD and under ESI-MD-COPD, with
-adjusted all-cause hazard ratios of 0.94 (95% CI: 0.70 to 1.26) and 0.96 (0.78
-to 1.19), but not under NoCT-MD-COPD, where the adjusted respiratory hazard
-ratio was 6.80 (3.44 to 13.46) {CONSREF-01, CONSREF-02, CONSREF-03, CONSREF-16}.
-The raw counts make the same point without a model: the AFL-only group contained
-2 respiratory deaths under MD-COPD and 4 under ESI-MD-COPD, against 34 under
-NoCT-MD-COPD {CONSREF-07, CONSREF-08, CONSREF-09}.
+To systematically compare the risk of the AFL-only, COPD-minor and COPD-major
+groups across the three multidimensional classifications, we defined a noCOPD
+group consisting of subjects assigned as noCOPD by all three methods in order to
+have a consistent reference group, and all estimates below are made against it
+(Table 3) {CONSREF-00}. In the original report, the AFL-only MD-COPD group
+showed no excess risk on any outcome, crude or adjusted. Against the common
+reference the AFL-only group sat at the reference level under MD-COPD and under
+ESI-MD-COPD, with adjusted all-cause hazard ratios of 0.94 (95% CI: 0.70 to
+1.26) and 0.96 (0.78 to 1.19) {CONSREF-01, CONSREF-02}. Under NoCT-MD-COPD
+however, this group carried substantially elevated risk, most markedly for
+respiratory mortality, where the crude rate ratio was 10.00 (95% CI: 4.95 to
+21.87) compared with 2.23 under MD-COPD and 2.34 under ESI-MD-COPD (no CI
+provided for either, since only 2 and 4 respiratory deaths were observed in
+those groups) {CONSREF-04, CONSREF-05, CONSREF-06}. Risk of all-cause mortality
+and exacerbations were also elevated in this group in the same direction
+(Figures 2 to 4, Supplemental Tables S3a to S3c). The raw counts make the same
+point without a model: the AFL-only group contained 2 respiratory deaths under
+MD-COPD and 4 under ESI-MD-COPD, against 34 under NoCT-MD-COPD {CONSREF-07,
+CONSREF-08, CONSREF-09}. This demonstrates that removing the CT criteria results
+in an AFL-only group that is contaminated by individuals at elevated risk of
+COPD-related outcomes.
 
 We next examined the COPD-minor group, where a replacement criterion must be met
 by participants with preserved spirometry. The three multidimensional

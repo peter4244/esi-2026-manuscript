@@ -11,9 +11,12 @@
 # different x scales within a figure, which invited comparisons across panels
 # that the scales did not support.
 #
-# Reference is that classification's own noCOPD group throughout. The fixed
-# ratio has a single COPD category, so it appears only in the COPD-major
-# facet, the category it corresponds to.
+# Reference is the common noCOPD group throughout: the participants all three
+# multidimensional classifications assign to noCOPD. Per-classification
+# references differ in composition, so estimates made against them are not
+# comparable between classifications, which is the comparison these figures
+# exist to support. The fixed ratio is not shown; its comparison with the
+# multidimensional framework is the source report's question, not this one.
 suppressPackageStartupMessages({ library(dplyr); library(ggplot2) })
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 HERE <- if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1]))) else "ctfree/figures"
@@ -21,25 +24,25 @@ source(file.path(dirname(dirname(HERE)), "figures", "style.R"))
 source(file.path(dirname(dirname(HERE)), "figures", "validate_layout.R"))
 ASSETS <- file.path(dirname(HERE), "assets")
 
-risk <- read.csv(file.path(ASSETS, "schema_risk.csv"),  stringsAsFactors = FALSE)
-crd  <- read.csv(file.path(ASSETS, "schema_crude.csv"), stringsAsFactors = FALSE)
-SCH  <- c(S1 = "Fixed ratio", S2 = "MD-COPD",
-          S3 = "NoCT-MD-COPD", S4 = "ESI-MD-COPD")
+risk <- read.csv(file.path(ASSETS, "consensus_ref_risk.csv"),  stringsAsFactors = FALSE)
+crd  <- read.csv(file.path(ASSETS, "consensus_ref_crude.csv"), stringsAsFactors = FALSE)
+SCH  <- c(S2 = "MD-COPD", S3 = "NoCT-MD-COPD", S4 = "ESI-MD-COPD")
 OUTC <- list(c("all", "All-cause mortality"), c("resp", "Respiratory mortality"),
              c("exac", "Exacerbations"))
 # Facets are the categories; the fixed ratio contributes only to COPD-major.
 CATS <- list(c("AFL-only", "S2,S3,S4"), c("COPD-minor", "S2,S3,S4"),
-             c("COPD-major", "S1,S2,S3,S4"))
+             c("COPD-major", "S2,S3,S4"))
 PAL  <- c("AFL-only" = "#9467BD", "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
 
 gather_outcome <- function(o_key) {
   est <- if (o_key == "exac") "exac_IRR" else paste0(o_key, "_HR")
   do.call(rbind, lapply(CATS, function(cc) {
     cat_wanted <- cc[1]; schemas <- strsplit(cc[2], ",")[[1]]
-    want <- if (cat_wanted == "COPD-major") c("COPD-major", "COPD") else cat_wanted
+    want <- cat_wanted
     a <- risk[risk$schema %in% schemas & risk$category %in% want & !is.na(risk[[est]]), ]
     k <- crd[crd$schema %in% schemas & crd$outcome == o_key &
              crd$category %in% want & !is.na(crd$rr), ]
+    stopifnot(nrow(a) == length(schemas), nrow(k) == length(schemas))
     few <- if (o_key == "exac") a$all_few_events else a[[paste0(o_key, "_few_events")]]
     rbind(
       data.frame(schema = SCH[k$schema], est = k$rr, lo = k$lo, hi = k$hi,

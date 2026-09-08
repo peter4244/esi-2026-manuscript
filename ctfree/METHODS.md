@@ -56,12 +56,10 @@ negative binomial regression models with a follow-up-year offset
 current smoking status, pack-years and body mass index; exacerbation models
 additionally adjusted for prior exacerbation frequency at baseline, consistent
 with the original MD-COPD report. Models were fitted separately for each
-classification, and estimates are expressed relative to that classification's
-own noCOPD category.
+classification.
 
 Crude rate ratios are also reported, calculated as the observed event rate in
-each category divided by the observed rate in that classification's noCOPD
-category. Intervals for the crude mortality ratios are exact conditional
+each group divided by the observed rate in the common reference group. Intervals for the crude mortality ratios are exact conditional
 intervals for a ratio of Poisson rates. Exacerbation counts are overdispersed
 and clustered within participant, so their intervals are 95% percentile
 intervals from a subject resample bootstrap with B = 1,000 resamples, with the
@@ -70,13 +68,13 @@ group with fewer than 10 events; the rate ratio is given alone and flagged,
 since an interval built on a handful of deaths conveys precision the data do
 not carry.
 
-Because each classification's estimates are made against its own noCOPD
-category, and those categories differ in composition, estimates under one
-classification are not on the same scale as estimates under another. We
-therefore repeated the analysis against a single reference common to all
-three: the participants every multidimensional classification assigns to
-noCOPD. Every member of that group is noCOPD under each classification, so it
-shares no participant with any category it is compared against.
+All comparisons between the multidimensional classifications are made against
+a single common reference: the participants every multidimensional
+classification assigns to noCOPD. Every member of that group is noCOPD under
+each classification, so it shares no participant with any group it is compared
+against. A per-classification reference would differ in composition between
+classifications and estimates made against it would not be comparable, which is
+the comparison this study requires.
 
 Fixed-ratio COPD comprises the AFL-only and COPD-major categories of the
 MD-COPD framework, so the fixed-ratio model is nested within the four-category

@@ -566,14 +566,16 @@ def main():
              ("figure4_exacerbations.png", "exacerbations")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
                    f"Crude (open circles) and adjusted (filled circles) risk of "
-                   f"{outcome} for each diagnostic category, under each "
-                   f"classification, against that classification's own noCOPD group. "
-                   f"Panels share the same rows and scale across Figures 2 to 4, so "
-                   f"the three outcomes are directly comparable. The fixed ratio has "
-                   f"a single COPD category and so appears only in the COPD-major "
-                   f"panel. A point drawn without an interval had fewer than 10 "
-                   f"events in that category, so no interval was estimated. "
-                   f"AFL-only, airflow limitation without other criteria.")
+                   f"{outcome} for each group, under each multidimensional "
+                   f"classification, against a reference common to all three: the "
+                   f"participants every classification assigns to noCOPD. Panels "
+                   f"share the same rows and scale across Figures 2 to 4, so the "
+                   f"three outcomes are directly comparable, and the common "
+                   f"reference makes an estimate under one classification "
+                   f"comparable with an estimate under another. A point drawn "
+                   f"without an interval had fewer than 10 events in that group, "
+                   f"so no interval was estimated. AFL-only, airflow limitation "
+                   f"without other criteria.")
 
     doc.save(OUT)
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "

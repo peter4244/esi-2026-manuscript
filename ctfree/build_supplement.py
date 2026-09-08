@@ -83,52 +83,65 @@ def s2_ct(doc):
 
 
 def s3_risk_by_outcome(doc):
-    """The main-text risk table, split by outcome. One table per outcome keeps
-    each on a single scale; the main text shows these as Figures 2 to 4."""
-    risk = {(r["schema"], r["category"]): r for r in load(ASSETS, "schema_risk.csv")}
+    """Risk by outcome, every group against the common noCOPD reference. The
+    fixed ratio is not carried: its comparison with the multidimensional
+    framework is the source report's question, not this one."""
+    risk = {(r["schema"], r["category"]): r
+            for r in load(ASSETS, "consensus_ref_risk.csv")}
     crd = {(r["schema"], r["category"], r["outcome"]): r
-           for r in load(ASSETS, "schema_crude.csv")}
-    NAME = {"S1": "Fixed ratio", "S2": "MD-COPD",
-            "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
-    CATS = {"S1": ["noCOPD", "COPD"],
-            "S2": ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]}
-    for suffix, okey, olabel, est_col, n_col in (
-            ("a", "all",  "all-cause mortality",   "all_HR",   "n_mort"),
-            ("b", "resp", "respiratory mortality", "resp_HR",  "n_mort"),
-            ("c", "exac", "exacerbations",         "exac_IRR", "n_exac")):
+           for r in load(ASSETS, "consensus_ref_crude.csv")}
+    ref = load(ASSETS, "consensus_ref_group.csv")[0]
+    NAME = {"S2": "MD-COPD", "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    GRPS = ["AFL-only", "COPD-minor", "COPD-major"]
+    FLAG = "\u2020"
+
+    def few(r, key):
+        return r is not None and r[key].upper() in ("TRUE", "T")
+
+    for suffix, okey, olabel, est_col, n_col, flag_col in (
+            ("a", "all",  "all-cause mortality",   "all_HR",   "n_mort", "all_few_events"),
+            ("b", "resp", "respiratory mortality", "resp_HR",  "n_mort", "resp_few_events"),
+            ("c", "exac", "exacerbations",         "exac_IRR", "n_exac", "all_few_events")):
         heading(doc, f"Supplemental Table S3{suffix}. Risk of {olabel} "
-                     f"under each classification")
+                     f"against the common noCOPD reference")
         rows, seen = [], set()
-        for sc in ("S1", "S2", "S3", "S4"):
-            for c in CATS.get(sc, CATS["S2"]):
+        for sc in ("S2", "S3", "S4"):
+            for c in GRPS:
                 r = risk.get((sc, c)); k = crd.get((sc, c, okey))
                 if r is None:
                     continue
-                if c == "noCOPD":
-                    ci = cr = "reference"
-                else:
-                    stem = "exac" if okey == "exac" else okey
-                    ci = ("not estimable" if r[est_col] in ("", "NA")
-                          else f"{float(r[est_col]):.2f} "
-                               f"({float(r[stem+'_LCI']):.2f}–{float(r[stem+'_UCI']):.2f})")
-                    cr = ("not estimable" if k is None or k["rr"] in ("", "NA")
-                          else f"{float(k['rr']):.2f} "
-                               f"({float(k['lo']):.2f}–{float(k['hi']):.2f})")
+                stem = "exac" if okey == "exac" else okey
+                lci = "exac_LCI" if okey == "exac" else stem + "_LCI"
+                uci = "exac_UCI" if okey == "exac" else stem + "_UCI"
+                ci = (f"{float(r[est_col]):.2f}{FLAG}" if few(r, flag_col)
+                      else f"{float(r[est_col]):.2f} "
+                           f"({float(r[lci]):.2f}\u2013{float(r[uci]):.2f})")
+                cr = ("not estimable" if k is None else
+                      f"{float(k['rr']):.2f}{FLAG}" if few(k, "few_events")
+                      else f"{float(k['rr']):.2f} "
+                           f"({float(k['lo']):.2f}\u2013{float(k['hi']):.2f})")
                 rows.append([NAME[sc] if sc not in seen else "", c,
                              f"{int(r[n_col]):,}", cr, ci])
                 seen.add(sc)
-        add_table(doc, ["Classification", "Category", "n",
+        add_table(doc, ["Classification", "Group", "n",
                         "Crude rate ratio (95% CI)",
                         "Adjusted HR or IRR (95% CI)"],
                   rows, [1.24, 1.10, 0.62, 1.76, 1.78])
         legend(doc, f"Table S3{suffix}.",
-               f"Crude and adjusted risk of {olabel} within each classification's "
-               "own categories, against that classification's own noCOPD group. "
-               "Adjusted estimates carry age, sex, race, current smoking status, "
-               "pack-years and body mass index, with prior exacerbation frequency "
-               "added for exacerbations. Shown in the main text as Figures 2 to 4. "
-               "AFL-only, airflow limitation without other criteria; HR, hazard "
-               "ratio; IRR, incidence rate ratio; CI, confidence interval.")
+               f"Crude and adjusted risk of {olabel}, every group estimated "
+               f"against the same reference: the {int(ref['n_cohort']):,} "
+               "participants all three multidimensional classifications assign "
+               "to noCOPD. Because that group is noCOPD under each "
+               "classification, it shares no participant with any group shown, "
+               "and an estimate under one classification is on the same scale as "
+               "an estimate under another. Adjusted models carry age, sex, race, "
+               "current smoking status, pack-years and body mass index, with "
+               "prior exacerbation frequency added for exacerbations. "
+               f"{FLAG} fewer than 10 events in the group: the point estimate is "
+               "given without an interval. AFL-only, airflow limitation without "
+               "other criteria; HR, hazard ratio; IRR, incidence rate ratio; CI, "
+               "confidence interval.")
+        doc.add_paragraph()
 
 
 def s4_sweep(doc):

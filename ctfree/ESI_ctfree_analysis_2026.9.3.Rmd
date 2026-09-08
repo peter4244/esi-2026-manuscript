@@ -940,20 +940,25 @@ for (s in c("S2", "S3", "S4"))
   stopifnot(all(d_b[[s]][cons] == "noCOPD"))
 stopifnot(sum(cons) > 0)
 
-OTHER <- c("AFL-only", "COPD-minor", "COPD-major")
+# The fixed ratio is not carried here. Its advantage over the multidimensional
+# framework is established in the source report and is not what this study asks.
+GRPS <- c("AFL-only", "COPD-minor", "COPD-major")
+OTHER <- list(S2 = GRPS, S3 = GRPS, S4 = GRPS)
+SCHEMAS <- names(OTHER)
 d_b$cons <- cons
 mort_c <- merge(mort, d_b[, c("pid", "cons")], by = "pid")
 exa_c  <- merge(exa,  d_b[, c("pid", "cons")], by = "pid")
 
 cons_rows <- list()
-for (s in c("S2", "S3", "S4")) {
-  keep_m <- mort_c$cons | mort_c[[s]] %in% OTHER
-  keep_e <- exa_c$cons  | exa_c[[s]]  %in% OTHER
+for (s in SCHEMAS) {
+  oth <- OTHER[[s]]
+  keep_m <- mort_c$cons | mort_c[[s]] %in% oth
+  keep_e <- exa_c$cons  | exa_c[[s]]  %in% oth
   mm <- mort_c[keep_m, ]; ee <- exa_c[keep_e, ]
-  mm$g <- factor(ifelse(mm$cons, "REF", as.character(mm[[s]])), c("REF", OTHER))
-  ee$g <- factor(ifelse(ee$cons, "REF", as.character(ee[[s]])), c("REF", OTHER))
+  mm$g <- factor(ifelse(mm$cons, "REF", as.character(mm[[s]])), c("REF", oth))
+  ee$g <- factor(ifelse(ee$cons, "REF", as.character(ee[[s]])), c("REF", oth))
   # Reference and comparison groups must not share participants.
-  stopifnot(!any(mm$cons & mm[[s]] %in% OTHER), !anyNA(mm$g), !anyNA(ee$g))
+  stopifnot(!any(mm$cons & mm[[s]] %in% oth), !anyNA(mm$g), !anyNA(ee$g))
 
   m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
   m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
@@ -961,7 +966,7 @@ for (s in c("S2", "S3", "S4")) {
          "+ prior_exac + offset(log(Years_Followed))")), data = ee)
   cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
 
-  for (g in OTHER) {
+  for (g in oth) {
     r <- paste0("g", g)                       # exact name; "^g" also matches gender
     stopifnot(r %in% rownames(cm), r %in% rownames(ce))
     cons_rows[[length(cons_rows) + 1]] <- data.frame(
@@ -987,7 +992,7 @@ cons_risk <- do.call(rbind, cons_rows)
 set.seed(CV_SEED)
 cons_rate <- function(sch, ev, py, dat) {
   g <- ifelse(dat$cons, "REF", as.character(dat[[sch]]))
-  k <- g == "REF" | g %in% OTHER
+  k <- g == "REF" | g %in% OTHER[[sch]]
   num <- tapply(dat[[ev]][k], g[k], sum); den <- tapply(dat[[py]][k], g[k], sum)
   r <- num / den
   if (!("REF" %in% names(r)) || !is.finite(r[["REF"]]) || r[["REF"]] <= 0)
@@ -1003,12 +1008,12 @@ for (spec in list(list("all",  "vital_status",        "py",             mort_c),
   boot <- vector("list", CRUDE_B)
   for (b in seq_len(CRUDE_B)) {
     dd <- dat[sample.int(nrow(dat), nrow(dat), replace = TRUE), , drop = FALSE]
-    boot[[b]] <- lapply(c("S2","S3","S4"), function(s) cons_rate(s, ev, py, dd))
+    boot[[b]] <- lapply(SCHEMAS, function(s) cons_rate(s, ev, py, dd))
   }
-  for (si in seq_along(c("S2","S3","S4"))) {
-    s <- c("S2","S3","S4")[si]
+  for (si in seq_along(SCHEMAS)) {
+    s <- SCHEMAS[si]
     est <- cons_rate(s, ev, py, dat)
-    for (g in OTHER) {
+    for (g in OTHER[[s]]) {
       v <- vapply(boot, function(bb) {
         z <- bb[[si]]; if (g %in% names(z)) z[[g]] else NA_real_ }, numeric(1))
       v <- v[is.finite(v)]

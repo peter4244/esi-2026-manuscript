@@ -27,10 +27,11 @@ exacerbations and FEV₁ decline.
 participants out of COPD-major into AFL-only, the category that withholds a
 COPD diagnosis from participants with airflow limitation. These participants
 had structural disease identified only by CT, and the category that received
-them was no longer low risk, carrying 9.38 times the respiratory mortality of
-its own noCOPD group (95% CI: 4.74 to 19.89) against 1.76 under
+them was no longer low risk, carrying 10.00 times the respiratory mortality of
+a reference group common to all three classifications (95% CI: 4.95 to 21.87)
+against 2.23 under
 MD-COPD. Replacing the CT criteria with an ESI criterion reduced that loss to
-350 and returned the estimate to 2.37. Respiratory deaths in that group
+350 and returned the estimate to 2.34. Respiratory deaths in that group
 numbered 34 without CT, against 2 under MD-COPD and 4 with ESI. ESI-MD-COPD reproduced
 the MD-COPD categories better than NoCT-MD-COPD (held-out macro-averaged F1
 0.752 against 0.721), and the advantage was confined to the two categories
