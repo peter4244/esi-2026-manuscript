@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 132L
+REGISTRY_N <- 136L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -431,6 +431,19 @@ reg("CONSREF-14", "Common reference",
 reg("CONSREF-15", "Common reference",
     "ESI-MD-COPD COPD-major all-cause HR 2.94", 2.94,
     "consensus_ref_risk.csv", CN("S4", "COPD-major", "all_HR"), TOL_2DP)
+
+reg("CONSREF-16", "Common reference",
+    "NoCT-MD-COPD AFL-only adjusted respiratory HR 6.80", 6.80,
+    "consensus_ref_risk.csv", CN("S3", "AFL-only", "resp_HR"), TOL_2DP)
+reg("CONSREF-17", "Common reference",
+    "NoCT-MD-COPD AFL-only adjusted all-cause upper bound 1.33 covers 1", 1.33,
+    "consensus_ref_risk.csv", CN("S3", "AFL-only", "all_UCI"), TOL_2DP)
+reg("CONSREF-18", "Common reference",
+    "ESI-MD-COPD AFL-only crude all-cause rate ratio 1.29", 1.29,
+    "consensus_ref_crude.csv", CNC("S4", "AFL-only", "all", "rr"), TOL_2DP)
+reg("CONSREF-19", "Common reference",
+    "ESI-MD-COPD AFL-only crude all-cause lower bound 1.04 excludes 1", 1.04,
+    "consensus_ref_crude.csv", CNC("S4", "AFL-only", "all", "lo"), TOL_2DP)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

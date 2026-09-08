@@ -45,12 +45,15 @@ are indistinguishable.
 This raises the question of why FEV₁/FVC is not itself used as the replacement
 criterion, given that it discriminates the CT findings at least as well as ESI
 in almost every stratum. It cannot be, because it is already the major
-criterion. A minor criterion defined by an FEV₁/FVC threshold above 0.70 is met
-by every participant with airflow limitation, so the AFL-only category empties
-entirely and the correction the framework exists to make is destroyed. A
-replacement criterion has to carry information that is not already spent on the
-major criterion, which is what a measure of flow-volume curve shape provides
-and a second threshold on the diagnostic variable does not.
+criterion, and a second threshold on it fails on whichever side of 0.70 it is
+placed. Above 0.70 it is met by every participant with airflow limitation, so
+the AFL-only category empties entirely and the correction the framework exists
+to make is destroyed. Below 0.70 it is met, by definition, by no participant
+with preserved spirometry, so it cannot contribute to the COPD-minor pathway at
+all, which is the other correction the framework makes. A replacement criterion
+has to carry information that is not already spent on the major criterion, and
+has to reach participants on both sides of it. A measure of flow-volume curve
+shape does; a second threshold on the diagnostic variable does neither.
 
 **[v15 ¶85, kept: the bronchodilator-independence argument]**
 
@@ -70,23 +73,32 @@ uncertainty when used to define stable disease characteristics (26).
 The AFL-only category is where a CT-free classification succeeds or fails. It
 exists to withhold a diagnosis from participants the fixed ratio would call
 COPD, so it is defensible only while the participants in it are genuinely at
-low risk. Under MD-COPD they are. Under NoCT-MD-COPD they are not: that
-category carries 6.4 times the respiratory mortality of its own reference, and
-unadjusted its members died at 1.54 times the reference rate. Under ESI-MD-COPD
-the category largely holds, with no excess in either mortality outcome and an
-exacerbation estimate matching MD-COPD's own. Examined at the level of
-individual participants, the disagreements between MD-COPD and ESI-MD-COPD are
-asymmetric in the direction that matters: the 612 participants ESI-MD-COPD adds
-carry risk approaching that of established COPD-minor, while the 70 it misses
-are few and show no excess mortality.
+low risk. Against a reference common to all three classifications, it is under
+MD-COPD and under ESI-MD-COPD, with adjusted all-cause hazard ratios of 0.94
+and 0.96, and it is not under NoCT-MD-COPD, where the adjusted respiratory
+hazard ratio is 6.80 (95% CI: 3.44 to 13.46). The plainest form of the result
+is the raw count: the AFL-only category contained 2 respiratory deaths under
+MD-COPD and 4 under ESI-MD-COPD, against 34 without CT. ESI-MD-COPD does not
+restore the category exactly, and it carries a crude all-cause excess of 1.29
+(1.04 to 1.59) that does not survive adjustment; NoCT-MD-COPD is elevated on
+all three outcomes crude, and after adjustment on respiratory mortality and
+exacerbations though not on all-cause mortality. Examined at the level of individual
+participants, the disagreements between MD-COPD and ESI-MD-COPD are asymmetric
+in the direction that matters: the 612 participants ESI-MD-COPD adds carry risk
+approaching that of established COPD-minor, while the 70 it misses are few and
+show no excess mortality.
 
 *(new)*
 
 Discrimination did not identify the better classification. NoCT-MD-COPD had the
 highest C-index of the four (Supplemental Table S5), and it earned that by
 making COPD-major smaller and more severe while moving 833 participants into a
-category named as not having COPD. A C-index measures how well categories rank risk, not whether they mean
-what they say. Where a classification carries a diagnostic label, ranking is not
+category named as not having COPD. Against the common reference its COPD-major
+category carried the highest risk of any classification on all three outcomes,
+with an adjusted all-cause hazard ratio of 3.38 against 2.75 under MD-COPD, and
+the risk it shed reappeared in the category labeled as not having COPD. A
+C-index measures how well categories rank risk, not whether they mean what they
+say. Where a classification carries a diagnostic label, ranking is not
 sufficient, and a comparison resting on discrimination alone would have selected
 the classification we reject.
 
@@ -108,11 +120,16 @@ rather than high, and is weakest at the COPD-minor boundary, where ESI is flat
 across the range of the visual emphysema scale at which that criterion is set.
 ESI was developed to reflect the physiological consequences of emphysema, so
 airway-predominant structural abnormality is less completely represented. The
-count threshold of two departs from the three of the original framework; it was
-applied identically to both CT-free classifications so the comparison between
-them is fair, but it is a modification of the framework rather than a
-reparameterization of ESI. Longitudinal FEV₁ decline did not distinguish
-between the classifications and we draw no conclusion from it. Thresholds were
+count threshold of two was selected by the same fitting that set the ESI
+threshold, and departs from the three of the original framework; it was applied
+identically to both CT-free classifications so the comparison between them is
+fair, but it is a modification of the framework rather than a reparameterization
+of ESI, and a different fitting objective would have selected a different count.
+Respiratory deaths are few in the low-risk categories, so several respiratory
+estimates rest on single-figure event counts and are reported without intervals;
+the contrast that carries the argument is between 34 such deaths and 2.
+Longitudinal FEV₁ decline did not distinguish between the classifications and we
+draw no conclusion from it. Thresholds were
 derived within COPDGene and require external validation. Finally, all
 comparisons treat the CT-based classification as the reference, which is
 appropriate for asking whether it can be reproduced without CT but does not
