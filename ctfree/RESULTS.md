@@ -45,11 +45,7 @@ Table S4). The selected rules assigned COPD-minor at ≥ 2 minor criteria for bo
 ESI-MD-COPD and NoCT-MD-COPD, and the optimal ESI threshold for recovery of
 MD-COPD subgroups was ≥ 1.50.
 
-ESI-MD-COPD reproduced the MD-COPD categories more closely than NoCT-MD-COPD,
-with a held-out macro-averaged F1 of 0.752 against 0.721 (difference 0.031; 95%
-across folds: 0.014 to 0.044) {FIT-04a, FIT-04b, FIT-05a} (Supplemental Table
-S11). For NoCT-MD-COPD, the major limitation was that no choice of threshold
-could recover the participants with airflow limitation whose only minor
+For NoCT-MD-COPD, no choice of threshold could recover the participants with airflow limitation whose only minor
 criterion was a CT finding, and who were therefore classified as COPD-major by
 MD-COPD; once the CT criteria are removed these participants meet no minor
 criteria at all {RECL-03}.
@@ -100,23 +96,21 @@ identify individuals with spirometric obstruction but no structural lung disease
 AFL-only group that is substantially contaminated by individuals at elevated
 risk of COPD-related outcomes.
 
-Because each classification's estimates above are made against its own noCOPD
-group, and those groups differ in composition, they are not directly comparable
+The estimates above are each made against their own classification's noCOPD
+group, and those groups differ in composition, so they cannot be compared
 between classifications. We therefore repeated the analysis against a single
-reference common to all three: the 3,745 participants every classification
-agrees are noCOPD, a group that is by construction disjoint from every category
-shown (Table 3). On this common scale the AFL-only group sat at the reference
-level under MD-COPD (all-cause hazard ratio 0.94, 95% CI: 0.70 to 1.26) and
-under ESI-MD-COPD (0.96, 0.78 to 1.19), but not under NoCT-MD-COPD (1.14, 0.98
-to 1.33), where it also carried the only respiratory estimate of the three
-precise enough to report an interval (crude rate ratio 10.0, 4.95 to 21.87,
-on 34 respiratory deaths, against 2.2 on 2 deaths and 2.3 on 4) {CONSREF-01, CONSREF-02,
-CONSREF-03, CONSREF-04, CONSREF-05, CONSREF-06}. The raw counts make the same
-point without a model: the AFL-only group contained 2 respiratory deaths under
-MD-COPD and 4 under ESI-MD-COPD, against 34 under NoCT-MD-COPD {CONSREF-07,
-CONSREF-08, CONSREF-09}.
+reference common to all three: the 3,745 participants every multidimensional
+classification assigns to noCOPD, a group that is by construction disjoint from
+every group it is compared against (Table 3). On this common scale the AFL-only
+group sat at the reference level under MD-COPD and under ESI-MD-COPD, with
+adjusted all-cause hazard ratios of 0.94 (95% CI: 0.70 to 1.26) and 0.96 (0.78
+to 1.19), but not under NoCT-MD-COPD, where the adjusted respiratory hazard
+ratio was 6.80 (3.44 to 13.46) {CONSREF-01, CONSREF-02, CONSREF-03, CONSREF-16}.
+The raw counts make the same point without a model: the AFL-only group contained
+2 respiratory deaths under MD-COPD and 4 under ESI-MD-COPD, against 34 under
+NoCT-MD-COPD {CONSREF-07, CONSREF-08, CONSREF-09}.
 
-The COPD-minor group behaved identically under all three classifications, with
+The COPD-minor group was indistinguishable under all three classifications, with
 all-cause hazard ratios of 2.02, 2.01 and 1.97 against the common reference and
 overlapping intervals on all three outcomes {CONSREF-10, CONSREF-11,
 CONSREF-12} (Table 3). Resampling participants while refitting both
@@ -131,8 +125,7 @@ hazard ratio 3.38 against 2.75 under MD-COPD, with ESI-MD-COPD at 2.94)
 {CONSREF-13, CONSREF-14, CONSREF-15} (Table 3). This does not mean that
 NoCT-MD-COPD defines a better COPD-major group. It follows from the same
 reclassification: having moved 833 of its members into AFL-only, what remains is
-a smaller and more severe group, and the risk it sheds reappears in the category
-that is labeled as not having COPD.
+a smaller and more severe group, and the risk it sheds reappears in the AFL-only group.
 
 ## Outcomes of concordant and discordant classification by MD-COPD and ESI-MD-COPD
 
@@ -180,6 +173,8 @@ minor one (Supplemental Table S13). This distribution corresponds to where an
 ESI criterion changed the classification: it retained COPD-major participants
 who would otherwise have been reclassified, and left the COPD-minor group
 unaffected.
+
+## ESI as a continuous measure
 
 Analyzed as a continuous measure, ESI was associated with all-cause mortality in
 a model also containing FEV₁/FVC (hazard ratio 1.07 per unit, 95% CI: 1.03 to

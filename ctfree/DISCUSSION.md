@@ -38,7 +38,10 @@ finding, who account for 21.9% of COPD-major and who are the entire group lost
 when CT is removed. At the COPD-minor boundary, where a criterion must be met
 by participants with preserved spirometry, ESI adds nothing that the symptom
 criteria do not already provide, and the three multidimensional classifications
-are indistinguishable.
+are indistinguishable. What it does change there is small and asymmetric in the
+direction that matters: the 612 participants ESI-MD-COPD adds carry risk
+approaching that of established COPD-minor, while the 70 it misses are few and
+show no excess mortality.
 
 *(new)*
 
@@ -70,37 +73,30 @@ uncertainty when used to define stable disease characteristics (26).
 
 *(new)*
 
-The AFL-only category is where a CT-free classification succeeds or fails. It
+The AFL-only group is where a CT-free classification succeeds or fails. It
 exists to withhold a diagnosis from participants the fixed ratio would call
 COPD, so it is defensible only while the participants in it are genuinely at
-low risk. Against a reference common to all three classifications, it is under
-MD-COPD and under ESI-MD-COPD, with adjusted all-cause hazard ratios of 0.94
-and 0.96, and it is not under NoCT-MD-COPD, where the adjusted respiratory
-hazard ratio is 6.80 (95% CI: 3.44 to 13.46). The plainest form of the result
-is the raw count: the AFL-only category contained 2 respiratory deaths under
-MD-COPD and 4 under ESI-MD-COPD, against 34 without CT. ESI-MD-COPD does not
-restore the category exactly, and it carries a crude all-cause excess of 1.29
-(1.04 to 1.59) that does not survive adjustment; NoCT-MD-COPD is elevated on
-all three outcomes crude, and after adjustment on respiratory mortality and
-exacerbations though not on all-cause mortality. Examined at the level of individual
-participants, the disagreements between MD-COPD and ESI-MD-COPD are asymmetric
-in the direction that matters: the 612 participants ESI-MD-COPD adds carry risk
-approaching that of established COPD-minor, while the 70 it misses are few and
-show no excess mortality.
+low risk. Against a reference common to all three classifications they are
+under MD-COPD and under ESI-MD-COPD, with adjusted all-cause hazard ratios of
+0.94 and 0.96, and they are not under NoCT-MD-COPD, where the adjusted
+respiratory hazard ratio is 6.80 (95% CI: 3.44 to 13.46). The result is
+plainest as a raw count: 2 respiratory deaths under MD-COPD and 4 with ESI,
+against 34 without CT. ESI-MD-COPD does not restore the group exactly, carrying
+a crude all-cause excess that does not survive adjustment, but it is
+NoCT-MD-COPD alone that remains elevated once the models are adjusted.
 
 *(new)*
 
 Discrimination did not identify the better classification. NoCT-MD-COPD had the
 highest C-index of the four (Supplemental Table S5), and it earned that by
-making COPD-major smaller and more severe while moving 833 participants into a
-category named as not having COPD. Against the common reference its COPD-major
-category carried the highest risk of any classification on all three outcomes,
-with an adjusted all-cause hazard ratio of 3.38 against 2.75 under MD-COPD, and
-the risk it shed reappeared in the category labeled as not having COPD. A
-C-index measures how well categories rank risk, not whether they mean what they
-say. Where a classification carries a diagnostic label, ranking is not
-sufficient, and a comparison resting on discrimination alone would have selected
-the classification we reject.
+making COPD-major smaller and more severe: against the common reference its
+COPD-major group carried the highest risk of any classification on all three
+outcomes, with an adjusted all-cause hazard ratio of 3.38 against 2.75 under
+MD-COPD. The risk it shed did not disappear, it moved into the group named as
+not having COPD. A C-index measures how well groups rank risk, not whether they
+mean what they say. Where a classification carries a diagnostic label, ranking
+is not sufficient, and a comparison resting on discrimination alone would have
+selected the classification we reject.
 
 **[v15 ¶90, near-verbatim]**
 
@@ -138,8 +134,8 @@ establish that it is correct.
 *(new)*
 
 In conclusion, the advantage of a multidimensional framework over the fixed
-ratio can be preserved without chest CT, but not by symptom criteria alone. A
-spirometric representation of the structural domain is what keeps the
-classification's categories carrying the risk their labels imply, and its
-contribution is concentrated among participants with airflow limitation, where
-the CT criteria do work that no symptom criterion can do.
+ratio can be preserved without chest CT, but not by symptom criteria alone.
+Something has to stand in for the structural domain, and a spirometric measure
+of expiratory flow-volume curve shape can, in the one place the CT criteria do
+work that no symptom criterion can do: among participants with airflow
+limitation, where the decision is whether a COPD diagnosis is warranted.
