@@ -32,6 +32,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH                # noqa: E402
 from docx.enum.table import WD_ALIGN_VERTICAL                # noqa: E402
 
 from tables.docx_helpers import FONT_NAME, CONTENT_WIDTH_IN  # noqa: E402
+import pjc_guard                                             # noqa: E402
 
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
@@ -522,6 +523,7 @@ def heading_on_new_page(doc, text):
 
 
 def main():
+    pjc_guard.check("The manuscript build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
 

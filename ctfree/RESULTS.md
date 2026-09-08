@@ -71,10 +71,7 @@ To systematically compare the risk of the AFL-only, COPD-minor and COPD-major
 groups across the three multidimensional classifications, we defined a noCOPD
 group consisting of subjects assigned as noCOPD by all three methods in order to
 have a consistent reference group, and all estimates below are made against it
-{CONSREF-00} (Table 3). This reference is smaller and at lower risk than any
-single classification's own noCOPD group, since it excludes the participants the
-three disagree about, so estimates against it are larger than the corresponding
-per-classification estimates.
+{CONSREF-00} (Table 3).
 
 For the AFL-only group, which withholds a COPD diagnosis from participants who
 would otherwise receive one on the fixed ratio, risk was at reference level in

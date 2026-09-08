@@ -72,6 +72,7 @@ def norm(t):
 
 
 def main():
+    adopt = "--adopt" in sys.argv
     if not os.path.exists(PJC):
         raise SystemExit(f"no PJC version at {PJC}")
     pjc = pjc_paragraphs(PJC)
@@ -98,6 +99,14 @@ def main():
                 print(f"  PJC   : {' '.join(t.split()[j1:j2])[:200]!r}")
     print(f"\n{n_diff} paragraph(s) differ. Each is his edit to adopt or a "
           f"deliberate change that supersedes it; decide one at a time.")
+    if adopt:
+        import pjc_guard
+        pjc_guard.record()
+        print("\nRecorded as reviewed. The builders will run again.\n"
+              "Port his edits into the .md sources before building.")
+    elif n_diff:
+        print("\nThe builders will refuse to run until this is reviewed with:\n"
+              "    python3 diff_pjc.py --adopt")
     return 0
 
 
