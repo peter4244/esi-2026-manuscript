@@ -85,9 +85,7 @@ Discrimination was summarized with the C-index for the mortality outcomes (21)
 and the Akaike information criterion for exacerbations.
 
 Agreement between classifications was assessed across the four diagnostic
-categories rather than as COPD versus no COPD.
-
-All analyses were performed in R (version 4.5.2).
+categories. All analyses were performed in R (version 4.5.2).
 
 ---
 

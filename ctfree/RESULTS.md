@@ -78,11 +78,11 @@ The AFL-only group withholds a COPD diagnosis from participants that would
 otherwise receive a COPD diagnosis based on the fixed ratio, so some of the
 benefit of MD-COPD rests upon the AFL-only subjects being at low risk for
 adverse COPD-related outcomes, such as mortality and respiratory exacerbations.
-Under MD-COPD in this cohort, the AFL-only group showed no excess on any
-outcome, crude or adjusted, consistent with the original report. Under
+In the original report, the AFL-only MD-COPD group showed no excess on any
+outcome, crude or adjusted. Under
 NoCT-MD-COPD however, this group carried substantially elevated risk, most
 markedly for respiratory mortality, where the crude rate ratio against its own
-noCOPD group was 9.38 (95% CI: 4.74 to 19.89) compared with 1.76 under MD-COPD,
+no COPD group was 9.38 (95% CI: 4.74 to 19.89) compared with 1.76 under MD-COPD,
 an estimate resting on 2 respiratory deaths and reported without an interval
 {CRUDE-03, CRUDE-08}. Risk of all-cause mortality and
 exacerbations were also elevated in this group in the same direction (Figures 2
@@ -110,14 +110,15 @@ The raw counts make the same point without a model: the AFL-only group contained
 2 respiratory deaths under MD-COPD and 4 under ESI-MD-COPD, against 34 under
 NoCT-MD-COPD {CONSREF-07, CONSREF-08, CONSREF-09}.
 
-The COPD-minor group was indistinguishable under all three classifications, with
-all-cause hazard ratios of 2.02, 2.01 and 1.97 against the common reference and
-overlapping intervals on all three outcomes {CONSREF-10, CONSREF-11,
-CONSREF-12} (Table 3). Resampling participants while refitting both
-classifications within each resample likewise gave no detectable difference
-between MD-COPD and ESI-MD-COPD for this group, although the two differed for
-COPD-major (Supplemental Table S9). An ESI criterion adds little where the
-symptom criteria already identify the group.
+We next examined the COPD-minor group, where a replacement criterion must be met
+by participants with preserved spirometry. The three multidimensional
+classifications were indistinguishable, with all-cause hazard ratios of 2.02,
+2.01 and 1.97 against the common reference and overlapping intervals on all
+three outcomes {CONSREF-10, CONSREF-11, CONSREF-12} (Table 3). Resampling
+participants while refitting both classifications within each resample likewise
+gave no detectable difference between MD-COPD and ESI-MD-COPD for this group,
+although the two differed for COPD-major (Supplemental Table S9). An ESI
+criterion adds little where the symptom criteria already identify the group.
 
 The COPD-major group carried the highest risk under every classification, and
 its estimates were largest under NoCT-MD-COPD on all three outcomes (all-cause
