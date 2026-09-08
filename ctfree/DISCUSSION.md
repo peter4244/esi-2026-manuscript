@@ -26,7 +26,7 @@ COPD, so it is defensible only while the participants in it are genuinely at low
 risk. Removing the CT criteria without replacing them moves 833 participants
 into it, and the group that receives them is no longer low risk: against a
 reference common to all three classifications its adjusted respiratory hazard
-ratio is 6.80 (95% CI: 3.44 to 13.46), where under MD-COPD and ESI-MD-COPD the
+ratio is 6.80 (95% CI: 3.44 - 13.46), where under MD-COPD and ESI-MD-COPD the
 adjusted all-cause hazard ratios are 0.94 and 0.96. The raw counts say it more
 plainly: 2 respiratory deaths under MD-COPD and 4 with ESI, against 34 without
 CT. The participants who make the difference are those whose only minor
@@ -46,8 +46,8 @@ clinically relevant information rather than representing simple error. Within
 the preserved-spirometry subgroup, participants classified as COPD by both
 approaches experienced the highest observed event rates, whereas the discordant
 groups showed intermediate rates. The 612 participants ESI-MD-COPD adds carry an
-adjusted all-cause hazard ratio of 1.59 (1.30 to 1.95) against participants both
-classifications call noCOPD, approaching the 1.94 (1.62 to 2.32) of participants
+adjusted all-cause hazard ratio of 1.59 (1.30 - 1.95) against participants both
+classifications call noCOPD, approaching the 1.94 (1.62 - 2.32) of participants
 both call COPD, while the 70 it misses are few and show no excess mortality.
 These discordant patterns should therefore not simply be viewed as false
 positive or false negative classifications, but as examples of the different

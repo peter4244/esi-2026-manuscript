@@ -39,9 +39,9 @@ P < 0.001), and marginally worse in the two preserved-spirometry pathways
 set of subjects without COPD, the ESI-based classification closely mirrored the
 risk profile of the MD-COPD diagnostic pathway groups, but the NoCT-MD-COPD
 classification produced an AFL-only subset with markedly increased risk of
-COPD-related outcomes (crude rate ratio 1.57, 95% CI: 1.35 to 1.82 for all-cause
-mortality; 10.00, 4.95 to 21.87 for respiratory mortality; and 1.75, 1.46 to
-2.03 for exacerbations).
+COPD-related outcomes for all-cause mortality (crude rate ratio 1.57, 95% CI:
+1.35 - 1.82); for respiratory mortality (crude RR 10.00, CI 4.95 - 21.87); and
+for respiratory exacerbations (crude RR 1.75, CI 1.46 - 2.03).
 
 **Conclusions.** The advantage of a multidimensional framework over the fixed
 ratio can be preserved without chest CT, but not by symptom criteria alone. A
