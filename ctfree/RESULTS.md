@@ -90,9 +90,7 @@ group consisting of subjects assigned as noCOPD by all three methods in order to
 have a consistent reference group that is used for these analyses (Table 3)
 {CONSREF-00}.
 
-For the AFL-only group, which withholds a COPD diagnosis from participants who
-would otherwise receive one with the fixed ratio, risk was at reference level
-after adjustment in both the MD-COPD and ESI-MD-COPD classifications for
+For the AFL-only group, risk was at reference level after adjustment in both the MD-COPD and ESI-MD-COPD classifications for
 all-cause mortality (crude rate ratio 1.13, 95% CI: 0.83 - 1.51, and 1.29, 1.04
 - 1.59; adjusted hazard ratio 0.94, CI 0.70 - 1.26, and 0.96, 0.78 - 1.19); for
 respiratory mortality (crude RR 2.23 and 2.34; adjusted HR 1.84 and 1.75, all
