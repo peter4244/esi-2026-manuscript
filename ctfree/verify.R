@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 163L
+REGISTRY_N <- 169L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -540,6 +540,34 @@ reg("LOST-04", "Reclassified group",
 reg("LOST-05", "Reclassified group",
     "32 of the 34 AFL-only respiratory deaths without CT are these participants", 32,
     "consensus_ref_lost.csv", LO("resp_deaths"), TOL_EXACT)
+
+# Per-group F1 gains tested by the same corrected resampled t-test as the
+# macro-averaged one. The Abstract quotes each subgroup separately, so each
+# needs its own test rather than borrowing the macro-averaged P value.
+CT_ <- function(cat, fld)
+  sprintf('x$%s[x$category == "%s"]', fld, cat)
+reg("F1CAT-04", "Fitting",
+    "COPD-major per-group F1 gain is significant (P < 0.001)", 1,
+    "cv_category_test.csv",
+    'as.integer(x$p_value[x$category == "COPD-major"] < 0.001)', TOL_EXACT)
+reg("F1CAT-05", "Fitting",
+    "AFL-only per-group F1 gain is significant (P < 0.001)", 1,
+    "cv_category_test.csv",
+    'as.integer(x$p_value[x$category == "AFL-only"] < 0.001)', TOL_EXACT)
+reg("F1CAT-06", "Fitting",
+    "the two preserved-spirometry groups differ the other way, both P < 0.05", 2,
+    "cv_category_test.csv",
+    'sum(x$p_value[x$category %in% c("noCOPD","COPD-minor")] < 0.05 & x$diff_mean[x$category %in% c("noCOPD","COPD-minor")] < 0)',
+    TOL_EXACT)
+reg("F1CAT-07", "Fitting",
+    "held-out AFL-only F1 rounds to 0.47 for ESI-MD-COPD", 0.47,
+    "cv_category_test.csv", CT_("AFL-only", "f1_esi"), 0.005)
+reg("F1CAT-08", "Fitting",
+    "held-out COPD-major F1 rounds to 0.94 for ESI-MD-COPD", 0.94,
+    "cv_category_test.csv", CT_("COPD-major", "f1_esi"), 0.005)
+reg("CONSREF-31", "Common reference",
+    "NoCT-MD-COPD AFL-only crude exacerbation rate ratio 1.75", 1.75,
+    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "exac", "rr"), TOL_2DP)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

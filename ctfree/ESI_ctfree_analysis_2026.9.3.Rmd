@@ -414,6 +414,10 @@ mean sensitivity encourages the reverse by ignoring false positives.
 Macro-F1 penalises both.
 
 ```{r fitting}
+catF1 <- function(ref, est, g) {
+  tp <- sum(ref == g & est == g); if (tp == 0) return(0)
+  2 * tp / (sum(est == g) + sum(ref == g))
+}
 macroF1 <- function(ref, est) mean(vapply(O, function(g) {
   tp <- sum(ref == g & est == g); if (tp == 0) return(0)
   2 * tp / (sum(est == g) + sum(ref == g))
@@ -576,6 +580,11 @@ for (rep_i in seq_len(CV_REPEATS)) {
       f4 = macroF1(rt, s4(te, b$k, b$t_low)),
       f_draft = macroF1(rt, s4_two(te, 3, 1.00, 2.50)),
       stringsAsFactors = FALSE)
+    .e3 <- s3(te, a); .e4 <- s4(te, b$k, b$t_low)
+    for (g in O) {
+      cv_rows[[length(cv_rows)]][[paste0("f3_", g)]] <- catF1(rt, .e3, g)
+      cv_rows[[length(cv_rows)]][[paste0("f4_", g)]] <- catF1(rt, .e4, g)
+    }
   }
 }
 cv <- do.call(rbind, cv_rows)
@@ -625,6 +634,28 @@ cv_test <- data.frame(
 # the factor has been applied the wrong way round.
 stopifnot(.corr > 1 / .n, .se > sqrt(var(dd) / .n), cv_test$p_value < 1)
 write.csv(cv_test, file.path(OUT_DIR, "schema_fit_cv_test.csv"), row.names = FALSE)
+
+# The same corrected resampled t-test, per diagnostic group. The Results quote
+# per-group F1 gains, so each needs its own test rather than borrowing the
+# macro-averaged one, which is their mean.
+cat_rows <- list()
+for (g in O) {
+  dg <- cv[[paste0("f4_", g)]] - cv[[paste0("f3_", g)]]
+  se <- sqrt(.corr * var(dg)); tg <- mean(dg) / se
+  cat_rows[[length(cat_rows) + 1]] <- data.frame(
+    category = g,
+    f1_noct = mean(cv[[paste0("f3_", g)]]),
+    f1_esi  = mean(cv[[paste0("f4_", g)]]),
+    diff_mean = mean(dg),
+    ci_lo = mean(dg) - qt(.975, .n - 1) * se,
+    ci_hi = mean(dg) + qt(.975, .n - 1) * se,
+    t_stat = tg, df = .n - 1, p_value = 2 * pt(-abs(tg), .n - 1),
+    folds_favoring_S4 = sum(dg > 0), stringsAsFactors = FALSE)
+}
+cv_cat_test <- do.call(rbind, cat_rows)
+stopifnot(nrow(cv_cat_test) == length(O), all(is.finite(cv_cat_test$p_value)))
+write.csv(cv_cat_test, file.path(OUT_DIR, "cv_category_test.csv"), row.names = FALSE)
+print(cv_cat_test[, c("category","f1_noct","f1_esi","diff_mean","p_value")])
 cat(sprintf("Corrected resampled t-test: diff %+.4f (%.4f to %.4f), t = %.2f, P = %.2e; ESI higher in %d of %d folds\n",
             cv_test$diff_mean, cv_test$ci_lo, cv_test$ci_hi, cv_test$t_stat,
             cv_test$p_value, cv_test$folds_favoring_S4, .n))
@@ -1754,7 +1785,7 @@ required_csvs <- c(
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
-  "consensus_ref_lost.csv"
+  "consensus_ref_lost.csv", "cv_category_test.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing))
