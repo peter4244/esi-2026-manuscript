@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 143L
+REGISTRY_N <- 152L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -471,6 +471,35 @@ reg("CONSREF-23", "Common reference",
     "consensus_ref_crude.csv",
     'as.integer(x$few_events[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "resp"])',
     TOL_EXACT)
+
+# Numbers the group-by-group paragraphs quote that were not yet registered.
+reg("CONSREF-24", "Common reference",
+    "MD-COPD AFL-only adjusted exacerbation IRR 1.36", 1.36,
+    "consensus_ref_risk.csv", CN("S2", "AFL-only", "exac_IRR"), TOL_2DP)
+reg("CONSREF-25", "Common reference",
+    "MD-COPD AFL-only exacerbation lower bound 1.08 excludes 1", 1.08,
+    "consensus_ref_risk.csv", CN("S2", "AFL-only", "exac_LCI"), TOL_2DP)
+reg("CONSREF-26", "Common reference",
+    "ESI-MD-COPD AFL-only adjusted exacerbation IRR 1.25", 1.25,
+    "consensus_ref_risk.csv", CN("S4", "AFL-only", "exac_IRR"), TOL_2DP)
+reg("CONSREF-27", "Common reference",
+    "ESI-MD-COPD AFL-only exacerbation lower bound 1.05 excludes 1", 1.05,
+    "consensus_ref_risk.csv", CN("S4", "AFL-only", "exac_LCI"), TOL_2DP)
+reg("CONSREF-28", "Common reference",
+    "MD-COPD AFL-only crude all-cause rate ratio 1.13", 1.13,
+    "consensus_ref_crude.csv", CNC("S2", "AFL-only", "all", "rr"), TOL_2DP)
+reg("CONSREF-29", "Common reference",
+    "NoCT-MD-COPD AFL-only crude all-cause rate ratio 1.57", 1.57,
+    "consensus_ref_crude.csv", CNC("S3", "AFL-only", "all", "rr"), TOL_2DP)
+reg("CONSREF-30", "Common reference",
+    "NoCT-MD-COPD AFL-only adjusted exacerbation IRR 1.81", 1.81,
+    "consensus_ref_risk.csv", CN("S3", "AFL-only", "exac_IRR"), TOL_2DP)
+reg("CONSREF-31", "Common reference",
+    "MD-COPD AFL-only adjusted respiratory HR 1.84", 1.84,
+    "consensus_ref_risk.csv", CN("S2", "AFL-only", "resp_HR"), TOL_2DP)
+reg("CONSREF-32", "Common reference",
+    "ESI-MD-COPD AFL-only adjusted respiratory HR 1.75", 1.75,
+    "consensus_ref_risk.csv", CN("S4", "AFL-only", "resp_HR"), TOL_2DP)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

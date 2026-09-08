@@ -560,22 +560,33 @@ def main():
         fig1 = [l for l in f.read().split("\n") if l.strip()]
     add_figure(doc, os.path.join(FIGS, "figure1_flow.png"), "Figure 1.",
                CLAIM_ID.sub("", fig1[-1]))
-    for i, (png, outcome) in enumerate(
-            [("figure2_allcause.png", "all-cause mortality"),
-             ("figure3_respiratory.png", "respiratory mortality"),
-             ("figure4_exacerbations.png", "exacerbations")], start=2):
+    ref = load("consensus_ref_group.csv")[0]
+    for i, (png, grp, note) in enumerate([
+            ("figure2_aflonly.png", "AFL-only",
+             "This is the group that withholds a COPD diagnosis from "
+             "participants with airflow limitation, so it is the group a "
+             "CT-free classification has to keep at low risk."),
+            ("figure3_copdminor.png", "COPD-minor",
+             "This is the group a replacement criterion must reach among "
+             "participants with preserved spirometry."),
+            ("figure4_copdmajor.png", "COPD-major",
+             "Estimates are largest under NoCT-MD-COPD because that "
+             "classification moved 833 of this group's members into AFL-only, "
+             "leaving a smaller and more severe group behind.")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
-                   f"Crude (open circles) and adjusted (filled circles) risk of "
-                   f"{outcome} for each group, under each multidimensional "
-                   f"classification, against a reference common to all three: the "
-                   f"participants every classification assigns to noCOPD. Panels "
-                   f"share the same rows and scale across Figures 2 to 4, so the "
-                   f"three outcomes are directly comparable, and the common "
-                   f"reference makes an estimate under one classification "
-                   f"comparable with an estimate under another. A point drawn "
-                   f"without an interval had fewer than 10 events in that group, "
-                   f"so no interval was estimated. AFL-only, airflow limitation "
-                   f"without other criteria.")
+                   f"Crude (open circles) and adjusted (filled circles) risk "
+                   f"for the {grp} group under each multidimensional "
+                   f"classification, against a reference common to all three: "
+                   f"the {int(ref['n_cohort']):,} participants every "
+                   f"classification assigns to noCOPD. A common reference makes "
+                   f"an estimate under one classification comparable with an "
+                   f"estimate under another. Panels carry separate x scales "
+                   f"because the three outcomes differ in magnitude; the "
+                   f"comparison the figure supports is between classifications "
+                   f"within a panel. A point drawn without an interval had "
+                   f"fewer than 10 events in that group, so no interval was "
+                   f"estimated. {note} AFL-only, airflow limitation without "
+                   f"other criteria.")
 
     doc.save(OUT)
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "

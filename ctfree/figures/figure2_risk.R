@@ -1,15 +1,16 @@
 #!/usr/bin/env Rscript
 # Figures 2 to 4 — one per outcome, faceted by diagnostic category.
 #
-# A single figure holding every classification, every category and both
-# estimate types was unreadable: 32 intervals per panel. These split it.
+# One figure per diagnostic group, matching how the Results paragraphs are
+# organized: each paragraph takes one group through all three outcomes across
+# the three classifications, and each figure shows exactly that.
 #
-# Cut by OUTCOME rather than by category so that each figure answers one
-# clinical question across all four categories at once, and so the three
-# figures are directly comparable to each other: same panels, same rows, only
-# the outcome changes. Cutting by category instead put the three outcomes on
-# different x scales within a figure, which invited comparisons across panels
-# that the scales did not support.
+# The three outcomes sit on very different scales (respiratory rate ratios
+# reach 80 where all-cause reaches 4), so the panels carry free x scales. The
+# comparison the figure exists to support is between classifications within a
+# panel, which a free scale preserves; comparing across panels was never
+# meaningful for these outcomes and a shared scale would only have made the
+# all-cause panel unreadable.
 #
 # Reference is the common noCOPD group throughout: the participants all three
 # multidimensional classifications assign to noCOPD. Per-classification
@@ -29,84 +30,75 @@ crd  <- read.csv(file.path(ASSETS, "consensus_ref_crude.csv"), stringsAsFactors 
 SCH  <- c(S2 = "MD-COPD", S3 = "NoCT-MD-COPD", S4 = "ESI-MD-COPD")
 OUTC <- list(c("all", "All-cause mortality"), c("resp", "Respiratory mortality"),
              c("exac", "Exacerbations"))
-# Facets are the categories; the fixed ratio contributes only to COPD-major.
-CATS <- list(c("AFL-only", "S2,S3,S4"), c("COPD-minor", "S2,S3,S4"),
-             c("COPD-major", "S2,S3,S4"))
+GRPS <- c("AFL-only", "COPD-minor", "COPD-major")
 PAL  <- c("AFL-only" = "#9467BD", "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
 
-gather_outcome <- function(o_key) {
-  est <- if (o_key == "exac") "exac_IRR" else paste0(o_key, "_HR")
-  do.call(rbind, lapply(CATS, function(cc) {
-    cat_wanted <- cc[1]; schemas <- strsplit(cc[2], ",")[[1]]
-    want <- cat_wanted
-    a <- risk[risk$schema %in% schemas & risk$category %in% want & !is.na(risk[[est]]), ]
-    k <- crd[crd$schema %in% schemas & crd$outcome == o_key &
-             crd$category %in% want & !is.na(crd$rr), ]
-    stopifnot(nrow(a) == length(schemas), nrow(k) == length(schemas))
-    few <- if (o_key == "exac") a$all_few_events else a[[paste0(o_key, "_few_events")]]
+gather_group <- function(grp) {
+  do.call(rbind, lapply(OUTC, function(oo) {
+    o_key <- oo[1]; o_label <- oo[2]
+    est <- if (o_key == "exac") "exac_IRR" else paste0(o_key, "_HR")
+    lci <- if (o_key == "exac") "exac_LCI" else paste0(o_key, "_LCI")
+    uci <- if (o_key == "exac") "exac_UCI" else paste0(o_key, "_UCI")
+    flg <- if (o_key == "exac") "all_few_events" else paste0(o_key, "_few_events")
+    a <- risk[risk$category == grp, ]
+    k <- crd[crd$category == grp & crd$outcome == o_key, ]
+    stopifnot(nrow(a) == length(SCH), nrow(k) == length(SCH))
     rbind(
+      data.frame(schema = SCH[a$schema], est = a[[est]], lo = a[[lci]],
+                 hi = a[[uci]], few = a[[flg]], outcome = o_label,
+                 type = "Adjusted", stringsAsFactors = FALSE),
       data.frame(schema = SCH[k$schema], est = k$rr, lo = k$lo, hi = k$hi,
-                 few = k$few_events,
-                 cat = cat_wanted, type = "Crude", stringsAsFactors = FALSE),
-      data.frame(schema = SCH[a$schema], est = a[[est]],
-                 lo = a[[paste0(o_key, "_LCI")]], hi = a[[paste0(o_key, "_UCI")]],
-                 few = few,
-                 cat = cat_wanted, type = "Adjusted", stringsAsFactors = FALSE))
+                 few = k$few_events, outcome = o_label,
+                 type = "Crude", stringsAsFactors = FALSE))
   }))
 }
 
-make_fig <- function(o_key, o_label, file) {
-  d <- gather_outcome(o_key)
-  d$cat    <- factor(d$cat, levels = vapply(CATS, `[`, "", 1))
-  d$schema <- factor(d$schema, levels = rev(unname(SCH)))
-  d$type   <- factor(d$type, levels = c("Crude", "Adjusted"))
-  # A cell with fewer than 10 events carries a point estimate but no interval.
-  # It is drawn as a hollow point with no bar, so the eye does not read an
-  # interval that was deliberately not computed.
+make_fig <- function(grp, file) {
+  d <- gather_group(grp)
+  d$outcome <- factor(d$outcome, levels = vapply(OUTC, `[`, "", 2))
+  # MD-COPD and ESI-MD-COPD sit adjacent because the Results paragraphs pair
+  # them and contrast NoCT-MD-COPD against the pair. Reversed because ggplot
+  # draws the first factor level at the bottom.
+  d$schema  <- factor(d$schema, levels = rev(unname(SCH[c("S2", "S4", "S3")])))
+  d$type    <- factor(d$type, levels = c("Crude", "Adjusted"))
+  # A group with fewer than 10 events carries a point estimate but no
+  # interval, drawn as a bare point so the eye does not read an interval that
+  # was deliberately not computed. The adjusted model still returns one; it is
+  # dropped for the same reason, so both estimate types follow one rule.
   d$few <- !is.na(d$few) & d$few
-  # The adjusted model still returns an interval for a sparse cell; it is
-  # dropped here for the same reason the crude one was not computed, so the
-  # two estimate types are held to one rule.
   d$lo[d$few] <- NA_real_; d$hi[d$few] <- NA_real_
   stopifnot(!any(is.na(d$lo[!d$few])), !any(is.na(d$est)))
-  d$draw_lo <- d$lo
-  d$cap_x   <- NA_real_
   # An empty facet renders without error and says nothing. Assert instead.
-  stopifnot(all(vapply(levels(d$cat), function(l) sum(d$cat == l) > 0, logical(1))))
+  stopifnot(all(vapply(levels(d$outcome), function(l) sum(d$outcome == l) > 0,
+                       logical(1))))
   pd <- position_dodge(width = 0.55)
   p <- ggplot(d, aes(x = est, y = schema, shape = type, group = type)) +
     geom_vline(xintercept = 1, linetype = 2, color = "grey45", linewidth = 0.4) +
-    geom_linerange(aes(xmin = draw_lo, xmax = hi, color = cat), linewidth = 0.6,
-                   position = pd, na.rm = TRUE) +
-    geom_point(aes(x = cap_x, color = cat), shape = 60, size = 2.4, stroke = 0.9,
-               position = pd, na.rm = TRUE) +
-    geom_point(aes(color = cat), size = 2.6, position = pd,
+    geom_linerange(aes(xmin = lo, xmax = hi), color = PAL[[grp]],
+                   linewidth = 0.6, position = pd, na.rm = TRUE) +
+    geom_point(color = PAL[[grp]], size = 2.6, position = pd,
                fill = "white", stroke = 0.9) +
     scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL) +
-    scale_color_manual(values = PAL, guide = "none") +
-    facet_wrap(~ cat, ncol = 3) +
-    labs(x = sprintf("%s: ratio versus that classification's own noCOPD group (log scale)",
-                     o_label), y = NULL) +
+    facet_wrap(~ outcome, ncol = 3, scales = "free_x") +
+    labs(x = sprintf("%s: ratio versus the common noCOPD reference (log scale)",
+                     grp), y = NULL) +
     theme_esi() +
     theme(legend.position = "bottom",
           legend.margin = margin(t = -2, b = 0),
           panel.grid.minor = element_blank(),
           panel.grid.major.y = element_blank(),
           plot.margin = margin(4, 20, 2, 4)) +
-    # Respiratory intervals reach ~90, so the upper end of the log scale runs
-    # into the border unless the panel is given explicit headroom. Expanding
-    # the scale rather than the margin keeps the three figures the same size.
-    scale_x_log10(breaks = scales::breaks_log(n = 5),
+    scale_x_log10(breaks = scales::breaks_log(n = 4),
                   labels = scales::label_number(drop0trailing = TRUE),
-                  expand = expansion(mult = c(0.06, 0.12)))
+                  expand = expansion(mult = c(0.10, 0.14)))
   out <- file.path(HERE, file)
   # Every text element must still clear the docx readability floor once the
   # figure is scaled to the 6.5 inch content width. Errors rather than warns.
   validate_layout(p, out)
-  ggsave(out, p, width = NATIVE_W, height = 2.9, dpi = 300, bg = "white")
+  ggsave(out, p, width = NATIVE_W, height = 2.6, dpi = 300, bg = "white")
   cat("wrote", out, "\n")
 }
 
-make_fig("all",  "All-cause mortality",   "figure2_allcause.png")
-make_fig("resp", "Respiratory mortality", "figure3_respiratory.png")
-make_fig("exac", "Exacerbations",         "figure4_exacerbations.png")
+make_fig("AFL-only",   "figure2_aflonly.png")
+make_fig("COPD-minor", "figure3_copdminor.png")
+make_fig("COPD-major", "figure4_copdmajor.png")
