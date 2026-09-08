@@ -603,6 +603,31 @@ write.csv(data.frame(diff_mean = mean(dd),
                      diff_hi = unname(quantile(dd, .975)),
                      n_folds = nrow(cv)),
           file.path(OUT_DIR, "schema_fit_cv_diff.csv"), row.names = FALSE)
+
+# Is the difference larger than the fitting noise? The folds are not
+# independent: within a repeat they partition the same participants, and
+# across repeats the training sets overlap. A paired t-test on them treats
+# that shared data as new information and is anticonservative, so the
+# variance is inflated by the Nadeau-Bengio correction for the resampled
+# t-test, 1/n + n_test/n_train, with n_test/n_train = 1/(k - 1) for k-fold.
+.n <- length(dd); .k <- length(unique(cv$fold))
+.corr <- 1 / .n + 1 / (.k - 1)
+.se <- sqrt(.corr * var(dd))
+.t  <- mean(dd) / .se
+cv_test <- data.frame(
+  n_folds = .n, k = .k, n_repeats = length(unique(cv$rep)),
+  diff_mean = mean(dd),
+  ci_lo = mean(dd) - qt(.975, .n - 1) * .se,
+  ci_hi = mean(dd) + qt(.975, .n - 1) * .se,
+  t_stat = .t, df = .n - 1, p_value = 2 * pt(-abs(.t), .n - 1),
+  folds_favoring_S4 = sum(dd > 0))
+# The correction must widen the interval, never narrow it; if it does not,
+# the factor has been applied the wrong way round.
+stopifnot(.corr > 1 / .n, .se > sqrt(var(dd) / .n), cv_test$p_value < 1)
+write.csv(cv_test, file.path(OUT_DIR, "schema_fit_cv_test.csv"), row.names = FALSE)
+cat(sprintf("Corrected resampled t-test: diff %+.4f (%.4f to %.4f), t = %.2f, P = %.2e; ESI higher in %d of %d folds\n",
+            cv_test$diff_mean, cv_test$ci_lo, cv_test$ci_hi, cv_test$t_stat,
+            cv_test$p_value, cv_test$folds_favoring_S4, .n))
 writeLines(c(sprintf("n_cohort=%d", nrow(d_b)),
              sprintf("n_afl=%d",    sum(d_b$afl)),
              sprintf("n_noafl=%d",  sum(!d_b$afl))),
@@ -1648,7 +1673,8 @@ required_csvs <- c(
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
   "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
   "schema_crude.csv", "schema_discrimination.csv",
-  "schema_fit.csv", "schema_fit_cv_diff.csv", "cv_schema_fits.csv",
+  "schema_fit.csv", "schema_fit_cv_diff.csv", "schema_fit_cv_test.csv",
+  "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
   "supp_baseline.csv", "supp_esi_ct.csv", "metric_sweep.csv",
   "f1_by_category.csv", "esi_ct_levels.csv", "esi_ct_auc.csv",

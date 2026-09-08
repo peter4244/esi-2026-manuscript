@@ -49,21 +49,19 @@ MD-COPD subgroups was ≥ 1.50.
 
 *(Pete's text)*
 
-We compared the categories each CT-free classification assigned against those
-assigned by MD-COPD (Table 2). ESI-MD-COPD reproduced the MD-COPD categories
-more closely than NoCT-MD-COPD, with a held-out macro-averaged F1 of 0.752
-against 0.721 (difference 0.031; 95% across folds: 0.014 to 0.044) {FIT-05,
-FIT-06, FIT-07} (Supplemental Table S11). Because all four classifications share
+We compared the two CT-free classifications to MD-COPD (Table 2), and
+ESI-MD-COPD reproduced the MD-COPD categories more closely, with a held-out
+macro-averaged F1 of 0.752 against 0.721 (p<0.001, Supplemental Table S11)
+{FIT-04a, FIT-04b, FIT-07a, FIT-07b}. Because all four classifications share
 the same major criterion, reclassification occurred due only to differences in
-minor criteria and was limited to the airflow-limitation groups (COPD-major and
+minor criteria and was limited to shifts between the airflow-limitation groups (COPD-major and
 AFL-only) and the preserved-spirometry groups (COPD-minor and noCOPD).
 Per-category agreement shows that ESI-MD-COPD outperformed the NoCT-MD-COPD
 classification in the airflow-limitation groups (F1 score for AFL-only 0.47 vs
 0.40 and COPD-major 0.94 vs 0.88) while maintaining comparable performance in
 the preserved-spirometry groups {F1CAT-01, F1CAT-02, F1CAT-03}. NoCT-MD-COPD
 misclassified 833 of 3,809 COPD-major participants (21.9%) as AFL-only, whereas
-ESI-MD-COPD only misclassified 350 {RECL-01, RECL-02} (Figure 1, Supplemental
-Table S10). For NoCT-MD-COPD, no choice of threshold could recover the participants with airflow limitation whose only minor criterion was a CT finding, and who were therefore classified as COPD-major by MD-COPD; once the CT criteria are removed these participants meet no minor criteria at all {RECL-03}.
+ESI-MD-COPD only misclassified 350 {RECL-01, RECL-02} (Figure 1). For NoCT-MD-COPD, no choice of threshold could recover the participants with airflow limitation whose only minor criterion was a CT finding; once the CT criteria are removed these participants meet no minor criteria at all {RECL-03}.
 
 ## Clinical outcomes within each classification's groups
 

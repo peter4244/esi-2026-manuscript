@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 140L
+REGISTRY_N <- 143L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -333,6 +333,16 @@ reg("FIT-05a", "Fitting", "S4 beats S3 by +0.031 held out", 0.031,
     "schema_fit_cv_diff.csv", 'x$diff_mean', TOL_3DP)
 reg("FIT-05b", "Fitting", "the S4 advantage excludes zero across folds",
     TRUE, "schema_fit_cv_diff.csv", 'x$diff_lo > 0', TOL_EXACT)
+reg("FIT-07a", "Fitting",
+    "corrected resampled t-test on the held-out difference gives P < 0.001", 1,
+    "schema_fit_cv_test.csv", "as.integer(x$p_value < 0.001)", TOL_EXACT)
+reg("FIT-07b", "Fitting",
+    "ESI-MD-COPD had the higher macro-F1 in all 25 held-out folds", 25,
+    "schema_fit_cv_test.csv", "x$folds_favoring_S4", TOL_EXACT)
+reg("FIT-07c", "Fitting",
+    "corrected 95% CI for the difference runs 0.0207 to 0.0407", 0.0207,
+    "schema_fit_cv_test.csv", "x$ci_lo", TOL_3DP)
+
 reg("FIT-06", "Fitting", "the v15 draft rule scores 0.682 on the same folds",
     0.682, "schema_fit.csv", f("S4_v15draft", "macroF1_heldout"), TOL_3DP)
 

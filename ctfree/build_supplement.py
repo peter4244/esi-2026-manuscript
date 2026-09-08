@@ -216,15 +216,26 @@ def s4_fitting(doc):
     add_table(doc, ["Schema", "Count threshold", "ESI threshold",
                     "In-sample macro-F1", "Held-out macro-F1"], rows,
               [1.55, 1.20, 1.05, 1.32, 1.38])
+    tst = load(ASSETS, "schema_fit_cv_test.csv")[0]
+    p_txt = ("< 0.001" if float(tst["p_value"]) < 0.001
+             else f"= {float(tst['p_value']):.3f}")
     legend(doc, "Table S11.",
            "Thresholds fitted to approximate the CT-based classification, by "
-           "macro-averaged F1 across the four categories, over the full parameter "
-           "space of each schema. Held-out values are from five repeats of "
-           "five-fold cross-validation stratified on the CT-based categories, with "
+           "macro-averaged F1 across the four groups, over the full parameter "
+           "space of each schema. Held-out values are from "
+           f"{int(tst['n_repeats'])} repeats of {int(tst['k'])}-fold "
+           "cross-validation stratified on the CT-based categories, with "
            "thresholds refitted inside every training fold. The ESI-based schema "
-           f"exceeds the symptoms-only schema by {float(cvd['diff_mean']):.4f} "
-           f"({float(cvd['diff_lo']):.4f} to {float(cvd['diff_hi']):.4f}) across "
-           f"{int(cvd['n_folds'])} held-out folds.")
+           f"exceeds the symptoms-only schema by {float(tst['diff_mean']):.4f} "
+           f"(95% CI: {float(tst['ci_lo']):.4f} to {float(tst['ci_hi']):.4f}; "
+           f"P {p_txt}), and did so in {int(tst['folds_favoring_S4'])} of "
+           f"{int(tst['n_folds'])} held-out folds. The interval and P value are "
+           "from the corrected resampled t-test: cross-validation folds share "
+           "training data, so a paired t-test on the per-fold differences treats "
+           "that shared data as new information; the correction inflates the "
+           "variance accordingly. The range of the per-fold differences "
+           f"themselves was {float(cvd['diff_lo']):.4f} to "
+           f"{float(cvd['diff_hi']):.4f}.")
 
 
 def s5_discrimination(doc):
