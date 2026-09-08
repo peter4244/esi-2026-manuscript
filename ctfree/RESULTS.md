@@ -150,8 +150,8 @@ how closely ESI tracks them. Mean ESI increased monotonically across both
 scales, from 1.04 in participants with no visual emphysema to 6.62 in those with
 advanced destructive emphysema {CTLEV-01, CTLEV-02} (Supplemental Table S12).
 
-The discrimination of these criteria by ESI depended on airflow limitation.
-Among participants with airflow limitation ESI discriminated both visual
+ESI separated participants who met these criteria from those who did not only
+when they had airflow limitation. In that stratum it discriminated both visual
 emphysema and definite wall thickening with an area under the curve of 0.75,
 whereas among those with preserved spirometry the values fell to 0.56 and 0.61
 {CTAUC-03, CTAUC-04} (Table 5). Pooled values across the whole cohort were
@@ -160,10 +160,9 @@ detection within either, as does the correlation between ESI and low attenuation
 area, which was 0.78 across the cohort but 0.08 within GOLD 0 {CORR-01,
 CORR-03}. FEV₁/FVC discriminated both criteria at least as well as ESI
 {CTAUC-02, CTAUC-02b} but is already the major criterion and cannot serve as a
-minor one (Supplemental Table S13). This distribution corresponds to where an
-ESI criterion changed the classification: it retained COPD-major participants
-who would otherwise have been reclassified, and left the COPD-minor group
-unaffected.
+minor one (Supplemental Table S13). An ESI criterion changed the classification in the
+same place: it retained COPD-major participants who would otherwise have been
+reclassified, and left the COPD-minor group unchanged.
 
 ## ESI as a continuous measure
 

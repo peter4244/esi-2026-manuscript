@@ -34,7 +34,7 @@ MD-COPD. Replacing the CT criteria with an ESI criterion reduced that loss to
 350 and returned the estimate to 2.34. Respiratory deaths in that group
 numbered 34 without CT, against 2 under MD-COPD and 4 with ESI. ESI-MD-COPD reproduced
 the MD-COPD categories better than NoCT-MD-COPD (held-out macro-averaged F1
-0.752 against 0.721), and the advantage was confined to the two categories
+0.752 against 0.721), and it gained all of that ground in the two groups
 defined by airflow limitation. At the COPD-minor boundary the three
 multidimensional classifications were indistinguishable. ESI discriminated the
 visual CT criteria among participants with airflow limitation (area under the
@@ -43,7 +43,6 @@ accounts for both findings.
 
 **Conclusions.** The advantage of a multidimensional framework over the fixed
 ratio can be preserved without chest CT, but not by symptom criteria alone. A
-spirometric representation of the structural domain is what keeps the
-classification's categories carrying the risk their labels imply, and its
-contribution is concentrated among participants with airflow limitation, where
-the CT criteria carry diagnostic weight.
+spirometric measure of the structural domain keeps each group carrying the risk
+its label implies, and it does so among participants with airflow limitation,
+where the CT criteria carry diagnostic weight.

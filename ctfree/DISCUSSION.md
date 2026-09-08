@@ -27,13 +27,12 @@ expression and prognosis.
 
 *(new)*
 
-The benefit of an ESI criterion is not uniform across the framework, and the
-reason is visible in how ESI relates to the criteria it replaces. ESI
+An ESI criterion does not help everywhere in the framework, and how ESI
+relates to the criteria it replaces shows why. ESI
 discriminates visual emphysema and airway wall thickening among participants
 with airflow limitation but not among those with preserved spirometry, where
-its area under the curve falls to 0.56 and 0.61. Its contribution is therefore
-concentrated exactly where the CT criteria carry diagnostic weight: among
-participants with airflow limitation whose only minor criterion is a CT
+its area under the curve falls to 0.56 and 0.61. ESI therefore contributes exactly where the CT criteria
+carry diagnostic weight: among participants with airflow limitation whose only minor criterion is a CT
 finding, who account for 21.9% of COPD-major and who are the entire group lost
 when CT is removed. At the COPD-minor boundary, where a criterion must be met
 by participants with preserved spirometry, ESI adds nothing that the symptom
@@ -79,9 +78,8 @@ COPD, so it is defensible only while the participants in it are genuinely at
 low risk. Against a reference common to all three classifications they are
 under MD-COPD and under ESI-MD-COPD, with adjusted all-cause hazard ratios of
 0.94 and 0.96, and they are not under NoCT-MD-COPD, where the adjusted
-respiratory hazard ratio is 6.80 (95% CI: 3.44 to 13.46). The result is
-plainest as a raw count: 2 respiratory deaths under MD-COPD and 4 with ESI,
-against 34 without CT. ESI-MD-COPD does not restore the group exactly, carrying
+respiratory hazard ratio is 6.80 (95% CI: 3.44 to 13.46). The raw counts say it more plainly:
+2 respiratory deaths under MD-COPD and 4 with ESI, against 34 without CT. ESI-MD-COPD does not restore the group exactly, carrying
 a crude all-cause excess that does not survive adjustment, but it is
 NoCT-MD-COPD alone that remains elevated once the models are adjusted.
 
