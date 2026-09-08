@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 152L
+REGISTRY_N <- 158L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -133,15 +133,13 @@ reg("CTAUC-04", "ESI and CT",
 FD <- function(sch, cat, fld)
   sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, sch, cat)
 reg("DEC-01", "FEV1 decline",
-    "no MD-COPD category differs from its noCOPD group in FEV1 decline", TRUE,
+    "under MD-COPD, AFL-only does not differ from its noCOPD group", TRUE,
     "fev1_decline.csv",
-    sprintf('all(c(%s, %s, %s) > 0.05)',
-            FD("S2","AFL-only","p"), FD("S2","COPD-minor","p"),
-            FD("S2","COPD-major","p")), TOL_EXACT)
+    sprintf('%s > 0.05', FD("S2","AFL-only","p")), TOL_EXACT)
 reg("DEC-02", "FEV1 decline",
-    "under ESI-MD-COPD, COPD-major declines LESS than its noCOPD group", TRUE,
+    "under ESI-MD-COPD, COPD-major declines FASTER than its noCOPD group", TRUE,
     "fev1_decline.csv",
-    sprintf('%s > 0 && %s < 0.05',
+    sprintf('%s < 0 && %s < 0.05',
             FD("S4","COPD-major","est_mL_yr"), FD("S4","COPD-major","p")), TOL_EXACT)
 
 CE <- function(o, fld) sprintf('x$%s[x$outcome == "%s"]', fld, o)
@@ -500,6 +498,28 @@ reg("CONSREF-31", "Common reference",
 reg("CONSREF-32", "Common reference",
     "ESI-MD-COPD AFL-only adjusted respiratory HR 1.75", 1.75,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "resp_HR"), TOL_2DP)
+
+# FEV1 decline is now adjusted for baseline FEV1, as the source report did.
+# Every estimate is negative; the unadjusted model gave positive estimates for
+# COPD-major, so these are pinned in the new direction.
+reg("FEV1-01", "FEV1 decline",
+    "MD-COPD COPD-major declines 5.6 mL/yr faster than reference", -5.57,
+    "fev1_decline.csv", FD("S2", "COPD-major", "est_mL_yr"), 0.05)
+reg("FEV1-02", "FEV1 decline",
+    "NoCT-MD-COPD COPD-major, -5.1 mL/yr", -5.11,
+    "fev1_decline.csv", FD("S3", "COPD-major", "est_mL_yr"), 0.05)
+reg("FEV1-03", "FEV1 decline",
+    "ESI-MD-COPD COPD-major, -4.9 mL/yr", -4.91,
+    "fev1_decline.csv", FD("S4", "COPD-major", "est_mL_yr"), 0.05)
+reg("FEV1-04", "FEV1 decline",
+    "fixed-ratio COPD, -4.3 mL/yr", -4.25,
+    "fev1_decline.csv", FD("S1", "COPD", "est_mL_yr"), 0.05)
+reg("FEV1-05", "FEV1 decline",
+    "seven of ten estimates reach significance", 7,
+    "fev1_decline.csv", "sum(x$p < 0.05)", TOL_EXACT)
+reg("FEV1-06", "FEV1 decline",
+    "every point estimate is negative", 10,
+    "fev1_decline.csv", "sum(x$est_mL_yr < 0)", TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
 CR <- function(sch, cat, out, fld)

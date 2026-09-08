@@ -84,7 +84,7 @@ respiratory mortality (crude 2.23 and 2.34, adjusted 1.84 and 1.75, all on 2 and
 4 respiratory deaths and reported without intervals), with a modest excess in
 exacerbations that was present under both (adjusted incidence rate ratio 1.36,
 95% CI: 1.08 to 1.73, and 1.25, 1.05 to 1.50) {CONSREF-01, CONSREF-02,
-CONSREF-05, CONSREF-06, CONSREF-07, CONSREF-09} (Figure 2). Under the
+CONSREF-05, CONSREF-06, CONSREF-07, CONSREF-09} (Figure 2, Supplemental Tables S3a to S3c). Under the
 NoCT-MD-COPD classification, this group carried substantially elevated risk on
 every outcome, most markedly for respiratory mortality (crude 10.00, 95% CI:
 4.95 to 21.87; adjusted 6.80, 3.44 to 13.46), and also for all-cause mortality
@@ -103,7 +103,7 @@ participants with preserved spirometry, the three multidimensional
 classifications were indistinguishable on all three outcomes, with adjusted
 all-cause hazard ratios of 2.02, 1.97 and 2.01 under MD-COPD, ESI-MD-COPD and
 NoCT-MD-COPD, and overlapping intervals throughout {CONSREF-10, CONSREF-11,
-CONSREF-12} (Figure 3, Table 3). Resampling participants while refitting both
+CONSREF-12} (Figure 3, Table 3, Supplemental Tables S3a to S3c). Resampling participants while refitting both
 classifications within each resample likewise gave no detectable difference
 between MD-COPD and ESI-MD-COPD for this group, although the two differed for
 COPD-major (Supplemental Table S9). An ESI criterion adds little where the
@@ -150,28 +150,13 @@ how closely ESI tracks them. Mean ESI increased monotonically across both
 scales, from 1.04 in participants with no visual emphysema to 6.62 in those with
 advanced destructive emphysema {CTLEV-01, CTLEV-02} (Supplemental Table S12).
 
-ESI separated participants who met these criteria from those who did not only
-when they had airflow limitation. In that stratum it discriminated both visual
+Among participants with airflow limitation, ESI discriminated both visual
 emphysema and definite wall thickening with an area under the curve of 0.75,
 whereas among those with preserved spirometry the values fell to 0.56 and 0.61
-{CTAUC-03, CTAUC-04} (Table 5). Pooled values across the whole cohort were
-higher {CTAUC-01} but reflect the mixture of the two strata rather than
-detection within either, as does the correlation between ESI and low attenuation
-area, which was 0.78 across the cohort but 0.08 within GOLD 0 {CORR-01,
-CORR-03}. FEV₁/FVC discriminated both criteria at least as well as ESI
-{CTAUC-02, CTAUC-02b} but is already the major criterion and cannot serve as a
-minor one (Supplemental Table S13). An ESI criterion changed the classification in the
-same place: it retained COPD-major participants who would otherwise have been
-reclassified, and left the COPD-minor group unchanged.
-
-## ESI as a continuous measure
-
-Analyzed as a continuous measure, ESI was associated with all-cause mortality in
-a model also containing FEV₁/FVC (hazard ratio 1.07 per unit, 95% CI: 1.03 to
-1.12; likelihood ratio P = 0.002) but not with respiratory mortality {CONT-01,
-CONT-02, CONT-03}. Among GOLD 0 participants each unit of baseline ESI predicted
-an additional 4.6 mL/yr of FEV₁ decline (P = 0.002) {CONT-04} (Supplemental
-Tables S7 and S8).
+{CTAUC-03, CTAUC-04} (Table 5). This distribution corresponds to where an ESI
+criterion changed the classification: it retained COPD-major participants who
+would otherwise have been reclassified, and left the COPD-minor group
+unaffected.
 
 ## Longitudinal FEV₁ decline
 
@@ -179,15 +164,14 @@ Tables S7 and S8).
 
 We estimated annualized change in FEV₁ for every group under all four
 classifications, this being the fourth outcome against which the MD-COPD
-framework was validated. No group differed from its own noCOPD reference under
-MD-COPD, and only two of the ten estimates reached significance, both for
-COPD-major under a CT-free classification and both indicating slower decline
-than the reference rather than faster {DEC-01, DEC-02} (Supplemental Table S6).
-FEV₁ decline did not distinguish between the classifications.
-
----
+framework was validated, adjusting for baseline post-bronchodilator FEV₁ as the
+source report did. Every point estimate was negative and seven of the ten
+reached significance {FEV1-05, FEV1-06}. COPD-major declined faster than its
+reference under all three multidimensional classifications, by 5.6, 5.1 and 4.9
+mL/yr under MD-COPD, NoCT-MD-COPD and ESI-MD-COPD {FEV1-01, FEV1-02, FEV1-03},
+and fixed-ratio COPD by 4.3 mL/yr {FEV1-04} (Supplemental Table S6). The three
+multidimensional classifications did not separate from each other on this
+outcome, which is the comparison this study is making, so FEV₁ decline does not
+bear on whether the CT criteria can be replaced.
 
 ## Open
-
-- Whether the continuous-ESI paragraph deserves more room, or belongs only in
-  the Supplement.

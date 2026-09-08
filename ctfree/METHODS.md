@@ -76,6 +76,14 @@ against. A per-classification reference would differ in composition between
 classifications and estimates made against it would not be comparable, which is
 the comparison this study requires.
 
+Annualized change in FEV₁ was estimated with linear mixed models over visits 1
+to 3 with a random intercept per participant, adjusted for height, sex, race,
+age, smoking status and pack-years, the difference between groups being the
+interaction between follow-up time and group. Each model was fitted twice, the
+second adding baseline post-bronchodilator FEV₁ as the source MD-COPD report
+did. Baseline FEV₁ enters through its interaction with time, since a main
+effect would have the visit 1 outcome predicting itself.
+
 Fixed-ratio COPD comprises the AFL-only and COPD-major categories of the
 MD-COPD framework, so the fixed-ratio model is nested within the four-category
 model; the two were compared by likelihood ratio test on 2 degrees of freedom.

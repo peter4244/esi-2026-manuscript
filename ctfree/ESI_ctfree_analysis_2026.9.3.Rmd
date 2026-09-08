@@ -1129,8 +1129,17 @@ base_cols <- d_b %>% transmute(
   gender_baseline = factor(gender),
   race_baseline   = factor(race))
 
+# Baseline post-bronchodilator FEV1, for the adjusted model below. Taken from
+# visit 1 of the longitudinal file rather than d_b so it is on the same scale
+# and from the same source as the outcome.
+base_fev1 <- fev1_long %>%
+  filter(visitnum == 1) %>%
+  transmute(pid, FEV1_base_mL = FEV1_post_mL) %>%
+  distinct(pid, .keep_all = TRUE)
+
 decline <- fev1_long %>%
   inner_join(base_cols, by = "pid") %>%
+  inner_join(base_fev1, by = "pid") %>%
   filter(!is.na(Height_CM), !is.na(age_visit), !is.na(SmokCigNow))
 
 cat(sprintf("FEV1 decline: %d observations on %d participants\n",
@@ -1143,12 +1152,18 @@ lmm_row <- function(fit, term) {
     p = unname(co[term, ncol(co)]))
 }
 
+# The source MD-COPD report adjusted its FEV1 model for baseline
+# post-bronchodilator FEV1, and the groups differ sharply in baseline lung
+# function, so the estimate asks whether a group declines faster than others
+# starting from the same FEV1. Baseline FEV1 enters through its interaction
+# with time only. A main effect would have visit 1 predicting itself, since the
+# outcome at time zero IS the baseline value.
 dec_rows <- list()
 for (sname in c("S1", "S2", "S3", "S4")) {
   f <- as.formula(paste0(
     "FEV1_post_mL ~ years_from_baseline * ", sname,
     " + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow",
-    " + ATS_PackYears + (1 | pid)"))
+    " + ATS_PackYears + years_from_baseline:FEV1_base_mL + (1 | pid)"))
   fit <- lmer(f, data = decline)
   for (g in levels(decline[[sname]])[-1]) {
     r <- lmm_row(fit, paste0("years_from_baseline:", sname, g))
@@ -1162,9 +1177,12 @@ for (sname in c("S1", "S2", "S3", "S4")) {
   }
 }
 fev1_decline <- do.call(rbind, dec_rows)
+# Both models must cover every group, or a comparison between them is silently
+# comparing different sets of rows.
+stopifnot(nrow(fev1_decline) == 10, all(is.finite(fev1_decline$est_mL_yr)))
 write.csv(fev1_decline, file.path(OUT_DIR, "fev1_decline.csv"), row.names = FALSE)
 kable(fev1_decline, digits = 2,
-      caption = "FEV1 decline (mL/yr) against each classification's own noCOPD group.")
+      caption = "FEV1 decline (mL/yr), adjusted for baseline FEV1.")
 ```
 
 # Section 8c -- Continuous ESI

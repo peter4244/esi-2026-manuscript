@@ -278,31 +278,33 @@ def data_files(doc):
 
 
 def s6_fev1_decline(doc):
-    heading(doc, "Supplemental Table S6. Longitudinal FEV₁ decline by category")
+    heading(doc, "Supplemental Table S6. Longitudinal FEV\u2081 decline by group")
     rows_in = load(ASSETS, "fev1_decline.csv")
     name = {"S1": "Fixed ratio", "S2": "MD-COPD",
             "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
     rows, seen = [], set()
     for r in rows_in:
-        sc = r["schema"]
-        p_ = float(r["p"])
-        rows.append([
-            name.get(sc, sc) if sc not in seen else "",
-            r["category"],
-            f"{int(r['n_subj']):,}",
-            f"{float(r['est_mL_yr']):.1f} "
-            f"({float(r['lo']):.1f} to {float(r['hi']):.1f})",
-            "<0.001" if p_ < 0.001 else f"{p_:.3f}"])
+        sc = r["schema"]; p_ = float(r["p"])
+        rows.append([name.get(sc, sc) if sc not in seen else "", r["category"],
+                     f"{int(r['n_subj']):,}",
+                     f"{float(r['est_mL_yr']):.1f} "
+                     f"({float(r['lo']):.1f} to {float(r['hi']):.1f})",
+                     "<0.001" if p_ < 0.001 else f"{p_:.3f}"])
         seen.add(sc)
-    add_table(doc, ["Classification", "Category", "n",
+    add_table(doc, ["Classification", "Group", "n",
                     "Difference in decline, mL/yr (95% CI)", "P"],
               rows, [1.20, 1.10, 0.66, 2.44, 1.10])
     legend(doc, "Table S6.",
-           "Difference in annual FEV₁ change against each classification's own "
-           "noCOPD category, from linear mixed models over visits 1 to 3 with a "
+           "Difference in annual FEV\u2081 change against each classification's own "
+           "noCOPD group, from linear mixed models over visits 1 to 3 with a "
            "random intercept per participant, adjusted for height, sex, race, age, "
-           "current smoking status and pack-years. A positive value means the "
-           "category declined more slowly than its noCOPD reference.")
+           "smoking status, pack-years and baseline post-bronchodilator "
+           "FEV\u2081, as the source MD-COPD report was. Baseline FEV\u2081 enters "
+           "through its interaction with time; a main effect would have the "
+           "visit 1 outcome predicting itself. Because the groups differ sharply "
+           "in baseline lung function, the estimate asks whether a group declines "
+           "faster than others starting from the same FEV\u2081. A negative value "
+           "is faster decline.")
 
 
 def s7_continuous_esi(doc):
