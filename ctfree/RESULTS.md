@@ -78,7 +78,8 @@ groups across the three multidimensional classifications, we defined a noCOPD
 group consisting of subjects assigned as noCOPD by all three methods in order to
 have a consistent reference group, and all estimates below are made against it
 (Table 3) {CONSREF-00}. In the original report, the AFL-only MD-COPD group
-showed no excess risk on any outcome, crude or adjusted. Against the common
+showed no excess risk in all-cause mortality, exacerbations or FEV₁ decline
+after adjustment. Against the common
 reference the AFL-only group sat at the reference level under MD-COPD and under
 ESI-MD-COPD, with adjusted all-cause hazard ratios of 0.94 (95% CI: 0.70 to
 1.26) and 0.96 (0.78 to 1.19) {CONSREF-01, CONSREF-02}. Under NoCT-MD-COPD
