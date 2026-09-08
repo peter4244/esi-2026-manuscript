@@ -417,6 +417,7 @@ def check_citations(produced):
 def main():
     pjc_guard.check("The supplement build")
     prose_guard.check("The supplement build")
+    prose_guard.check_owned("The supplement build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
     p = doc.add_paragraph()

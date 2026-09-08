@@ -526,6 +526,7 @@ def heading_on_new_page(doc, text):
 def main():
     pjc_guard.check("The manuscript build")
     prose_guard.check("The manuscript build")
+    prose_guard.check_owned("The manuscript build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
 

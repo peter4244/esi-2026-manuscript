@@ -35,6 +35,7 @@ def norm(t):
 
 
 def check(build_name="this build"):
+    """Banned phrases, then his authored paragraphs."""
     bad = []
     for fn in SOURCES:
         path = os.path.join(HERE, fn)
@@ -53,4 +54,47 @@ def check(build_name="this build"):
     sys.stderr.write("  Remove it from the source. If he has since asked for it "
                      "back, delete\n  the entry from prose_guard.DELETED in the "
                      "same commit.\n\n")
+    raise SystemExit(2)
+
+# Paragraphs Pete has authored or rewritten. A wholesale regeneration of one of
+# these is the failure this catches: applying a formatting rule by rewriting the
+# paragraph rather than by editing it in place undoes restructuring he did
+# drafts ago. The build fails if a fingerprint no longer appears in the source.
+# When he supplies a new version, replace the entry in the same commit.
+OWNED = {
+    "RESULTS.md": {
+        "AFL-only outcomes (his rewrite, 2026-09-08)":
+            "For the AFL-only group in the MD-COPD and ESI-MD-COPD "
+            "classifications, risk for all-cause and respiratory mortality was "
+            "not significantly different from the common reference group "
+            "without COPD",
+        "common reference setup (his wording, 2026-09-08)":
+            "we defined a noCOPD group consisting of subjects assigned as "
+            "noCOPD by all three methods in order to have a consistent "
+            "reference group that is used for these analyses",
+        "reclassification opening (his wording, 2026-09-08)":
+            "We compared the two CT-free classifications to MD-COPD",
+    },
+}
+
+
+def check_owned(build_name="this build"):
+    """His paragraphs must still be present, in his words."""
+    missing = []
+    for fn, entries in OWNED.items():
+        path = os.path.join(HERE, fn)
+        if not os.path.exists(path):
+            continue
+        body = norm(open(path).read())
+        for label, text in entries.items():
+            if norm(text) not in body:
+                missing.append((fn, label, text))
+    if not missing:
+        return
+    sys.stderr.write(f"\nREFUSING TO BUILD. {build_name} has lost text Pete "
+                     f"wrote.\n\n")
+    for fn, label, text in missing:
+        sys.stderr.write(f"  {fn}: {label}\n      expected: \"{text[:70]}...\"\n\n")
+    sys.stderr.write("  Restore his wording. If he asked for the change, update "
+                     "the entry in\n  prose_guard.OWNED in the same commit.\n\n")
     raise SystemExit(2)

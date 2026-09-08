@@ -90,23 +90,17 @@ group consisting of subjects assigned as noCOPD by all three methods in order to
 have a consistent reference group that is used for these analyses (Table 3)
 {CONSREF-00}.
 
-For the AFL-only group, risk was at reference level after adjustment in both the MD-COPD and ESI-MD-COPD classifications for
-all-cause mortality (crude rate ratio 1.13, 95% CI: 0.83 - 1.51, and 1.29, 1.04
-- 1.59; adjusted hazard ratio 0.94, CI 0.70 - 1.26, and 0.96, 0.78 - 1.19); for
-respiratory mortality (crude RR 2.23 and 2.34; adjusted HR 1.84 and 1.75, all
-resting on 2 and 4 respiratory deaths and reported without intervals); and for
-respiratory exacerbations, where both carried a modest excess (crude RR 1.23, CI
-0.94 - 1.56, and 1.18, 0.95 - 1.44; adjusted incidence rate ratio 1.36, CI 1.08
-- 1.73, and 1.25, 1.05 - 1.50) {CONSREF-01, CONSREF-02, CONSREF-05, CONSREF-06,
-CONSREF-24, CONSREF-26, CONSREF-28} (Figure 2). Under the NoCT-MD-COPD
-classification, this group carried substantially elevated risk on every outcome:
-for all-cause mortality (crude RR 1.57, CI 1.35 - 1.82; adjusted HR 1.14, 0.98 -
-1.33); for respiratory mortality (crude RR 10.00, CI 4.95 - 21.87; adjusted HR
-6.80, 3.44 - 13.46); and for respiratory exacerbations (crude RR 1.75, CI 1.46 -
-2.03; adjusted IRR 1.81, 1.58 - 2.06) {CONSREF-03, CONSREF-04, CONSREF-16,
-CONSREF-20, CONSREF-21, CONSREF-29, CONSREF-30, CONSREF-31}. This demonstrates
-that removing the CT criteria results in an AFL-only group that is contaminated
-by individuals at elevated risk of COPD-related outcomes.
+For the AFL-only group in the MD-COPD and ESI-MD-COPD classifications, risk for
+all-cause and respiratory mortality was not significantly different from the
+common reference group without COPD (Table 3, p>0.05 for crude and adjusted
+hazard ratios), and there was a modest increase in risk for respiratory
+exacerbations (adjusted IRR for MD-COPD 1.36, CI 1.08 - 1.73 and for
+ESI-MD-COPD IRR 1.25, CI 1.05 - 1.50) {CONSREF-24, CONSREF-26}. Under the
+NoCT-MD-COPD classification, this group carried substantially elevated risk on
+every outcome (p<0.005 for all-cause mortality, respiratory mortality, and
+respiratory exacerbations) {CONSREF-04, CONSREF-16, CONSREF-29, CONSREF-30}.
+This demonstrates that removing the CT criteria results in an AFL-only group
+that is contaminated by individuals at elevated risk of COPD-related outcomes.
 
 For the COPD-minor group, the three multidimensional classifications were
 indistinguishable on all three outcomes. Under MD-COPD, ESI-MD-COPD and
