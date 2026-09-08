@@ -714,6 +714,31 @@ xtab <- do.call(rbind, lapply(c("S3", "S4"), function(s) {
 }))
 stopifnot(sum(xtab$n) == 2 * nrow(d_b))
 write.csv(xtab, file.path(OUT_DIR, "crossclass.csv"), row.names = FALSE)
+
+# Is one classification correct more often than the other? The two are applied
+# to the same participants and scored against the same reference, so the
+# comparison is paired and McNemar's test on the discordant pairs is the test
+# for it. An unpaired comparison of two proportions would ignore that 83% of
+# participants are classified identically by both and would be anticonservative.
+.c3 <- d_b$S3 == d_b$S2; .c4 <- d_b$S4 == d_b$S2
+.b <- sum(.c3 & !.c4); .c <- sum(!.c3 & .c4)
+.mc <- mcnemar.test(matrix(c(sum(!.c3 & !.c4), .b, .c, sum(.c3 & .c4)), 2),
+                    correct = FALSE)
+acc_test <- data.frame(
+  n = nrow(d_b),
+  correct_noct = sum(.c3), correct_esi = sum(.c4),
+  acc_noct = mean(.c3), acc_esi = mean(.c4),
+  only_esi_correct = .c, only_noct_correct = .b,
+  chisq = unname(.mc$statistic), df = unname(.mc$parameter),
+  p_value = .mc$p.value,
+  p_exact = binom.test(.c, .b + .c)$p.value)
+# The discordant pairs are the whole of the test; if they are zero there is
+# nothing to test and the p-value would be meaningless.
+stopifnot(.b + .c > 0, acc_test$correct_esi > acc_test$correct_noct)
+write.csv(acc_test, file.path(OUT_DIR, "accuracy_test.csv"), row.names = FALSE)
+cat(sprintf("Accuracy: NoCT %.1f%% vs ESI %.1f%%; discordant %d vs %d; McNemar P = %.2e\n",
+            100 * acc_test$acc_noct, 100 * acc_test$acc_esi,
+            acc_test$only_esi_correct, acc_test$only_noct_correct, acc_test$p_value))
 ```
 
 # Section 5 -- Outcome data
@@ -1785,7 +1810,7 @@ required_csvs <- c(
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
-  "consensus_ref_lost.csv", "cv_category_test.csv"
+  "consensus_ref_lost.csv", "cv_category_test.csv", "accuracy_test.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing))

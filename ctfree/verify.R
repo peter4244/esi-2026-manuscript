@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 171L
+REGISTRY_N <- 174L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -359,6 +359,16 @@ reg("LAB-04", "Labels", "S3 calls 1,108 AFL-only against the reference's 275",
 
 # --- reclassification counts the Results quotes ---------------------------
 RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
+reg("ACC-01", "Reclassification",
+    "the accuracy difference is significant by McNemar (P < 0.001)", 1,
+    "accuracy_test.csv", "as.integer(x$p_value < 0.001)", TOL_EXACT)
+reg("ACC-02", "Reclassification",
+    "488 participants are correct under ESI-MD-COPD only", 488,
+    "accuracy_test.csv", "x$only_esi_correct", TOL_EXACT)
+reg("ACC-03", "Reclassification",
+    "115 are correct under NoCT-MD-COPD only", 115,
+    "accuracy_test.csv", "x$only_noct_correct", TOL_EXACT)
+
 reg("RECL-09", "Reclassification",
     "ESI-MD-COPD agrees with MD-COPD for 8,126 of 9,240 participants (87.9%)", 8126,
     "reclassification.csv", 'x$concordant[x$schema == "S4"]', TOL_EXACT)
