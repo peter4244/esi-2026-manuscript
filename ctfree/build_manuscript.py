@@ -386,17 +386,57 @@ def check_references():
     return len(listed)
 
 
+def read_titlepage():
+    """TITLEPAGE.md is the single source of truth for the title, author list,
+    affiliations and key words. It is Pete's text; nothing regenerates it."""
+    sections, key = {}, None
+    for line in open(os.path.join(HERE, "TITLEPAGE.md")):
+        line = line.rstrip("\n")
+        if line.startswith("<!--") or line.startswith("     ") and key is None:
+            continue
+        if line.startswith("# "):
+            key = line[2:].strip()
+            sections[key] = []
+        elif key and line.strip():
+            sections[key].append(line.strip())
+    for k in ("TITLE", "AUTHORS", "AFFILIATIONS", "KEYWORDS"):
+        if not sections.get(k):
+            raise SystemExit(f"TITLEPAGE.md is missing the {k} section")
+    return sections
+
+
+def add_front_matter(doc):
+    tp = read_titlepage()
+
+    p = doc.add_paragraph()
+    r = p.add_run(" ".join(tp["TITLE"]))
+    r.bold = True
+    r.font.name, r.font.size = FONT_NAME, Pt(12)
+
+    p = doc.add_paragraph()
+    r = p.add_run(" ".join(tp["AUTHORS"]))
+    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+
+    doc.add_paragraph()
+    for aff in tp["AFFILIATIONS"]:
+        p = doc.add_paragraph()
+        r = p.add_run(aff)
+        r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    r = p.add_run("Key words:")
+    r.bold = True
+    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+    r = p.add_run(" " + " ".join(tp["KEYWORDS"]))
+    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+
+
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
 
-    p = doc.add_paragraph()
-    r = p.add_run("Preserving the diagnostic benefit of a multidimensional COPD "
-                  "framework without chest CT")
-    r.bold = True
-    r.font.name, r.font.size = FONT_NAME, Pt(14)
-    doc.add_paragraph("Draft v1. Prose from the .md sources; tables and figures "
-                      "generated from ctfree/assets/.")
+    add_front_matter(doc)
 
     doc.add_paragraph("ABSTRACT", style="Heading 1")
     add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
