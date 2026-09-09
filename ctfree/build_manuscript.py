@@ -337,60 +337,79 @@ def table3(doc):
 
 
 def table4(doc):
-    """Cross-classification of MD-COPD against ESI-MD-COPD, preserved
-    spirometry. Rates and adjusted estimates in one table so the effect of
-    adjustment is readable."""
-    rates = {r["group"]: r for r in load("discord_rates.csv")}
-    adj = {r["group"]: r for r in load("discord_adjusted.csv")}
-    order = ["Both-noCOPD", "ESI-only-COPD", "CT-only-COPD", "Both-COPD"]
+    """Cross-classification of MD-COPD and ESI-MD-COPD, one panel per stratum.
+    The two strata are separate panels rather than one eight-row table because
+    the reference group differs between them: participants both classifications
+    call noCOPD where spirometry is preserved, and both call AFL-only where it
+    is not. Stacking them under one header would imply a shared reference."""
+    ref = {"ps": "Both-noCOPD", "afl": "Both-AFL-only"}
+    PANELS = [
+        ("ps", "Preserved spirometry", "discord_rates.csv", "discord_adjusted.csv",
+         ["Both-noCOPD", "CT-only-COPD", "ESI-only-COPD", "Both-COPD"]),
+        ("afl", "Airflow limitation", "discord_rates_afl.csv",
+         "discord_adjusted_afl.csv",
+         ["Both-AFL-only", "CT-only-COPD", "ESI-only-COPD", "Both-COPD"]),
+    ]
+    FLAG = "\u2020"
+    for key, title, rf, af, order in PANELS:
+        rates = {r["group"]: r for r in load(rf)}
+        adj = {r["group"]: r for r in load(af)}
+        para(doc, f"**{title}.**") if "para" in globals() else None
+        p = doc.add_paragraph()
+        r_ = p.add_run(f"{title}.")
+        r_.bold = True
+        r_.font.name, r_.font.size = FONT_NAME, Pt(TBL_FS)
 
-    def ci(g, est, lo, hi):
-        if g not in adj:
-            return "reference"
-        r = adj[g]
-        # A cell the analysis marked not estimable must print as such, never
-        # as a number. See the zero-event guard in the analysis report.
-        if r[est] in ("", "NA") or r[lo] in ("", "NA"):
-            return "not estimable"
-        return f"{float(r[est]):.2f} ({float(r[lo]):.2f}–{float(r[hi]):.2f})"
+        def est(g, col, lo, hi, count_col):
+            if g not in adj:
+                return "reference"
+            r = adj[g]
+            if r[col] in ("", "NA") or r[lo] in ("", "NA"):
+                return "not estimable"
+            n_ev = int(rates[g][count_col])
+            if n_ev == 0:
+                return "not estimable"
+            if n_ev < 10:
+                return f"{float(r[col]):.2f}{FLAG}"
+            return (f"{float(r[col]):.2f} "
+                    f"({float(r[lo]):.2f}\u2013{float(r[hi]):.2f})")
 
-    rows = []
-    for g in order:
-        rr = rates[g]
-        rows.append([
-            g,
-            f"{int(rr['n']):,}",
-            f"{float(rr['rate_all_100py']):.2f}",
-            ci(g, "all_HR", "all_LCI", "all_UCI"),
-            f"{float(rr['rate_resp_100py']):.2f}",
-            ci(g, "resp_HR", "resp_LCI", "resp_UCI"),
-            f"{float(rr['rate_exac_100py']):.1f}",
-            ci(g, "exac_IRR", "exac_LCI", "exac_UCI")])
-    # Nine columns split the group names and the counts across lines. Prior
-    # exacerbation burden is one number per group and is already given in the
-    # text, so it moves to the legend rather than squeezing the rest.
-    prior_means = ", ".join(f"{float(rates[g]['prior_exac_mean']):.2f}"
-                            for g in order[:-1]) + \
-        f" and {float(rates[order[-1]]['prior_exac_mean']):.2f}"
-    add_table(doc, ["Group", "n", "All-cause rate", "All-cause HR (95% CI)",
-                    "Respiratory rate", "Respiratory HR (95% CI)",
-                    "Exacerbation rate", "Exacerbation IRR (95% CI)"],
-              rows, [1.30, 0.46, 0.58, 1.02, 0.58, 1.02, 0.58, 0.96])
+        rows = []
+        for g in order:
+            rr = rates[g]
+            rows.append([
+                g, f"{int(rr['n']):,}",
+                f"{float(rr['rate_all_100py']):.2f}",
+                est(g, "all_HR", "all_LCI", "all_UCI", "deaths"),
+                f"{int(rr['resp_deaths']):,}",
+                est(g, "resp_HR", "resp_LCI", "resp_UCI", "resp_deaths"),
+                f"{float(rr['rate_exac_100py']):.1f}",
+                est(g, "exac_IRR", "exac_LCI", "exac_UCI", "deaths")])
+        add_table(doc, ["Group", "n", "All-cause rate", "All-cause HR (95% CI)",
+                        "Resp. deaths", "Resp. HR (95% CI)",
+                        "Exac. rate", "Exac. IRR (95% CI)"],
+                  rows, [1.16, 0.44, 0.60, 1.00, 0.54, 0.94, 0.52, 1.30])
+        doc.add_paragraph()
+
+    pr = {k: load(f)[0] for k, f in
+          (("ps", "discord_rates.csv"), ("afl", "discord_rates_afl.csv"))}
     legend(doc, "Table 4.",
-           "Participants cross-classified by MD-COPD and ESI-MD-COPD within the "
-           "preserved-spirometry subgroup, where the two can disagree about a "
-           "diagnosis. CT-only-COPD is what ESI-MD-COPD misses; ESI-only-COPD is "
-           "what it adds. All rates are observed events per 100 person-years. Adjusted "
-           "estimates are against the Both-noCOPD group and carry age, sex, race, "
+           "Participants cross-classified by MD-COPD and ESI-MD-COPD within each "
+           "stratum of airflow limitation, the only place the two can disagree. "
+           "Among participants with preserved spirometry they disagree about "
+           "whether COPD is present; among those with airflow limitation, about "
+           "whether a diagnosis is given rather than withheld. CT-only-COPD is "
+           "what ESI-MD-COPD misses and ESI-only-COPD what it adds. All rates are "
+           "observed events per 100 person-years. Each panel is estimated against "
+           "its own reference row, "
+           f"{ref['ps']} and {ref['afl']}, so estimates are comparable within a "
+           "panel and not between them. Adjusted models carry age, sex, race, "
            "current smoking status, pack-years and body mass index, with prior "
-           "exacerbation frequency added for exacerbations. Mean exacerbation count "
-           f"in the year before enrollment was {prior_means} across the "
-           "four groups in the order shown. The respiratory estimate for "
-           "CT-only-COPD is not estimable because that group had no respiratory "
-           "deaths during follow-up. "
-           "AFL-only, airflow limitation without other criteria; HR, hazard ratio; "
-           "IRR, incidence rate ratio; CI, confidence interval.")
-
+           "exacerbation frequency added for exacerbations. "
+           f"{FLAG} fewer than 10 events in the group: the point estimate is given "
+           "without an interval. AFL-only, airflow limitation without other "
+           "criteria; HR, hazard ratio; IRR, incidence rate ratio; CI, confidence "
+           "interval.")
 
 def table5(doc):
     """ESI's discrimination of the two visual CT criteria, by stratum. This is

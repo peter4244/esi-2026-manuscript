@@ -1516,6 +1516,102 @@ print(table(d_ps$discord))
 disc_n <- as.data.frame(table(d_ps$discord), stringsAsFactors = FALSE)
 names(disc_n) <- c("group", "n")
 write.csv(disc_n, file.path(OUT_DIR, "discord_counts.csv"), row.names = FALSE)
+
+# Structural and spirometric profile of the four groups, restored from the v15
+# draft. The point is that the two discordant groups are picked out by
+# different measurements, so their CT and ESI profiles should differ in
+# opposite directions.
+.pct <- function(v) 100 * mean(v, na.rm = TRUE)
+.msd <- function(v) c(m = mean(v, na.rm = TRUE), s = sd(v, na.rm = TRUE),
+                      n = sum(!is.na(v)))
+disc_rows_p <- list()
+for (g in levels(d_ps$discord)) {
+  z <- d_ps[d_ps$discord == g, ]
+  e <- .msd(z$ESI); l <- .msd(z$Insp_LAA950_total_Thirona)
+  q <- .msd(z$PRM_pct_emphysema_Thirona)
+  disc_rows_p[[length(disc_rows_p) + 1]] <- data.frame(
+    group = g, n = nrow(z),
+    pct_visual_emph = .pct(z$emph_yn),
+    pct_wall_thick  = .pct(z$wall_yn),
+    mean_ESI = unname(e["m"]), sd_ESI = unname(e["s"]),
+    mean_LAA950 = unname(l["m"]), sd_LAA950 = unname(l["s"]),
+    n_LAA950 = unname(l["n"]),
+    mean_PRM = unname(q["m"]), sd_PRM = unname(q["s"]),
+    stringsAsFactors = FALSE)
+}
+disc_profile <- do.call(rbind, disc_rows_p)
+stopifnot(nrow(disc_profile) == 4, all(disc_profile$n > 0))
+write.csv(disc_profile, file.path(OUT_DIR, "discord_profile.csv"), row.names = FALSE)
+
+# The same cross-classification within the airflow-limitation stratum, where
+# MD-COPD and ESI-MD-COPD assign COPD-major or AFL-only and therefore disagree
+# about whether a diagnosis is given rather than about which group applies.
+# The reference is the participants both call AFL-only.
+d_al <- d_b[d_b$afl, ]; mort_al <- mort[mort$afl, ]; exa_al <- exa[exa$afl, ]
+mk_al <- function(dd) factor(
+  ifelse(dd$S2 == "COPD-major" & dd$S4 == "COPD-major", "Both-COPD",
+  ifelse(dd$S2 == "COPD-major", "CT-only-COPD",
+  ifelse(dd$S4 == "COPD-major", "ESI-only-COPD", "Both-AFL-only"))),
+  levels = c("Both-AFL-only", "ESI-only-COPD", "CT-only-COPD", "Both-COPD"))
+d_al$discord <- mk_al(d_al); mort_al$discord <- mk_al(mort_al)
+exa_al$discord <- mk_al(exa_al)
+stopifnot(nrow(d_al) == sum(d_b$afl), !anyNA(d_al$discord))
+
+rate_rows <- list(); prof_rows <- list()
+for (g in levels(d_al$discord)) {
+  i <- mort_al$discord == g; j <- exa_al$discord == g; z <- d_al[d_al$discord == g, ]
+  rate_rows[[length(rate_rows) + 1]] <- data.frame(
+    group = g, n = nrow(z), n_mort = sum(i), deaths = sum(mort_al$vital_status[i]),
+    resp_deaths = sum(mort_al$ev_resp[i]),
+    rate_all_100py  = 100 * sum(mort_al$vital_status[i]) / sum(mort_al$py[i]),
+    rate_resp_100py = 100 * sum(mort_al$ev_resp[i]) / sum(mort_al$py[i]),
+    n_exac = sum(j),
+    rate_exac_100py = 100 * sum(exa_al$Total_Exacerbations[j]) / sum(exa_al$Years_Followed[j]),
+    prior_exac_mean = mean(exa_al$prior_exac[j]), stringsAsFactors = FALSE)
+  prof_rows[[length(prof_rows) + 1]] <- data.frame(
+    group = g, n = nrow(z),
+    pct_visual_emph = 100 * mean(z$emph_yn), pct_wall_thick = 100 * mean(z$wall_yn),
+    pct_meets_esi   = 100 * mean(z$ESI >= p4$t_low),
+    mean_ESI = mean(z$ESI),
+    mean_LAA950 = mean(z$Insp_LAA950_total_Thirona, na.rm = TRUE),
+    mean_PRM = mean(z$PRM_pct_emphysema_Thirona, na.rm = TRUE),
+    pct_dyspnea = 100 * mean(z$dysp_yn), pct_sgrq = 100 * mean(z$qol_yn),
+    pct_cb = 100 * mean(z$cb_yn), stringsAsFactors = FALSE)
+}
+disc_rates_al <- do.call(rbind, rate_rows)
+disc_profile_al <- do.call(rbind, prof_rows)
+
+m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ discord +", COV)), data = mort_al)
+m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ discord +", COV)), data = mort_al)
+n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ discord +", COV,
+       "+ prior_exac + offset(log(Years_Followed))")), data = exa_al)
+cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
+adj_rows <- list()
+for (g in levels(d_al$discord)[-1]) {
+  r <- paste0("discord", g); k <- disc_rates_al$group == g
+  gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
+  adj_rows[[length(adj_rows) + 1]] <- data.frame(
+    group = g, deaths_all = disc_rates_al$deaths[k],
+    deaths_resp = disc_rates_al$resp_deaths[k],
+    all_HR = gv(cm, 1), all_LCI = gv(cm, 3), all_UCI = gv(cm, 4),
+    resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
+    exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
+    exac_LCI = if (r %in% rownames(ce)) exp(ce[r, 1] - 1.96 * ce[r, 2]) else NA_real_,
+    exac_UCI = if (r %in% rownames(ce)) exp(ce[r, 1] + 1.96 * ce[r, 2]) else NA_real_,
+    all_few_events  = disc_rates_al$deaths[k] < MIN_EVENTS,
+    resp_few_events = disc_rates_al$resp_deaths[k] < MIN_EVENTS,
+    stringsAsFactors = FALSE)
+}
+disc_adj_al <- do.call(rbind, adj_rows)
+stopifnot(nrow(disc_rates_al) == 4, nrow(disc_adj_al) == 3,
+          sum(disc_rates_al$n) == sum(d_b$afl))
+write.csv(disc_rates_al,   file.path(OUT_DIR, "discord_rates_afl.csv"),   row.names = FALSE)
+write.csv(disc_adj_al,     file.path(OUT_DIR, "discord_adjusted_afl.csv"), row.names = FALSE)
+write.csv(disc_profile_al, file.path(OUT_DIR, "discord_profile_afl.csv"),  row.names = FALSE)
+print(disc_rates_al[, c("group","n","deaths","resp_deaths","rate_all_100py","rate_exac_100py")],
+      digits = 3)
+print(disc_profile[, c("group", "n", "pct_visual_emph", "pct_wall_thick",
+                       "mean_ESI", "mean_LAA950", "mean_PRM")], digits = 3)
 ```
 
 ```{r discordance-rates}
@@ -1531,6 +1627,7 @@ rows <- lapply(levels(d_ps$discord), function(g) {
     n              = sum(d_ps$discord == g),
     n_mort         = nrow(m),
     deaths         = sum(m$vital_status),
+    resp_deaths    = sum(m$ev_resp),
     rate_all_100py = rate100(m$vital_status, m$py),
     rate_resp_100py= rate100(m$ev_resp,      m$py),
     n_exac         = nrow(e),
@@ -1818,7 +1915,9 @@ required_csvs <- c(
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
-  "consensus_ref_lost.csv", "cv_category_test.csv", "accuracy_test.csv"
+  "consensus_ref_lost.csv", "cv_category_test.csv", "accuracy_test.csv",
+  "discord_profile.csv", "discord_rates_afl.csv",
+  "discord_adjusted_afl.csv", "discord_profile_afl.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing))
