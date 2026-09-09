@@ -63,17 +63,20 @@ def check(build_name="this build"):
 # When he supplies a new version, replace the entry in the same commit.
 OWNED = {
     "RESULTS.md": {
-        "AFL-only outcomes (his rewrite, 2026-09-08)":
-            "For the AFL-only group in the MD-COPD and ESI-MD-COPD "
-            "classifications, risk for all-cause and respiratory mortality was "
-            "not significantly different from the common reference group "
-            "without COPD",
-        "common reference setup (his wording, 2026-09-08)":
-            "we defined a noCOPD group consisting of subjects assigned as "
-            "noCOPD by all three methods in order to have a consistent "
-            "reference group that is used for these analyses",
-        "reclassification opening (his wording, 2026-09-08)":
-            "We compared the two CT-free classifications to MD-COPD",
+        "agreement section opening (2026-09-08 20:56)":
+            "The cross-classification between MD-COPD and the two CT-free "
+            "classifications is shown in Figure 1",
+        "clinical outcomes opening (2026-09-08 20:56)":
+            "The MD-COPD classification improves on the fixed ratio, because it "
+            "provides better alignment between COPD diagnosis and prospective risk",
+        "cross-tabulation opening (2026-09-08 20:56)":
+            "Since the NoCOPD-MD-COPD subgroup removes the COPD label from a "
+            "high-risk subset of subjects, we focused subsequent comparisons on "
+            "the ESI-MD-COPD classification compared to MD-COPD",
+        "AFL-only outcomes (2026-09-08 20:56)":
+            "For the AFL-only group in the ESI-MD-COPD classification, risk for "
+            "all-cause and respiratory mortality was not significantly different "
+            "from the common reference group without COPD",
     },
 }
 

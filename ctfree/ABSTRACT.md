@@ -1,50 +1,14 @@
-# Abstract
+# Abstract — CT-free MD-COPD paper
 
-*(new)*
+*(Pete's draft of 2026-09-08 20:56, adopted verbatim. Do not rewrite a
+paragraph here; edit it in place or replace it with a version he supplies.)*
 
-**Rationale.** A multidimensional diagnostic framework for COPD (MD-COPD)
-combining post-bronchodilator spirometry, respiratory symptoms and chest
-computed tomography (CT) identifies clinically important disease that the
-fixed FEV₁/FVC ratio misses, and withholds a diagnosis from some participants
-the fixed ratio labels as having COPD. Its requirement for chest CT limits use
-in primary care, epidemiological studies and settings without imaging.
+Rationale. A multidimensional diagnostic framework for COPD (MD-COPD) combining post-bronchodilator spirometry, respiratory symptoms and chest computed tomography (CT) identifies clinically important disease that the fixed FEV₁/FVC ratio misses and also reclassifies a subset of subjects with COPD who do not carry increased risk for mortality. However, the requirement for chest CT measures limits the applicability of the classification in some scenarios.
 
-**Objective.** To determine whether the diagnostic benefit of MD-COPD over the
-fixed ratio can be preserved without chest CT, and whether the Emphysema
-Severity Index (ESI), a spirometric measure derived from the shape of the
-expiratory flow-volume curve, can substitute for the CT criteria.
+Objective. To determine whether the diagnostic benefit of MD-COPD over the fixed ratio can be preserved without chest CT, and whether the Emphysema Severity Index (ESI), a spirometric measure derived from the shape of the expiratory flow-volume curve, can substitute for the CT criteria.
 
-**Methods.** Among 9,240 ever-smokers in COPDGene we compared four
-classifications of the same participants: the fixed ratio; MD-COPD as
-published; NoCT-MD-COPD, with the two CT criteria removed; and ESI-MD-COPD,
-with an ESI criterion in their place. Thresholds for the two modified
-classifications were fitted to reproduce the MD-COPD categories using
-macro-averaged F1, with mortality and exacerbation data excluded from fitting.
-Outcomes were all-cause mortality, respiratory mortality, prospective
-exacerbations and FEV₁ decline.
+Methods. Among 9,240 ever-smokers in COPDGene we compared four classifications of the same participants: the fixed ratio; MD-COPD as published; NoCT-MD-COPD, a modified classification with the two CT criteria removed; and ESI-MD-COPD, with an ESI criterion in their place. Thresholds for the two modified classifications were fitted to reproduce the MD-COPD categories. Outcomes were all-cause mortality, respiratory mortality, prospective exacerbations, and FEV₁ decline.
 
-**Results.** Substituting an ESI threshold for CT visual emphysema and airway
-wall thickening preserved most of the clinical associations between MD-COPD
-categories and risk for mortality and exacerbations. The ESI-MD-COPD
-classification reproduced the MD-COPD diagnostic pathway categories more
-faithfully than the NoCT-MD-COPD classification (macro F1 score 0.752 vs 0.721,
-P < 0.001). Analysis of membership in each of the four MD-COPD diagnostic
-pathways showed that, relative to the NoCT-MD-COPD classification, the ESI-based
-classification performed better in maintaining the MD-COPD classification for
-subjects with airflow limitation and COPD (COPD major pathway, subgroup F1 score
-0.94 vs 0.88, P < 0.001) and subjects with airflow limitation but no minor
-diagnostic criteria (airflow limitation only, AFL-only, F1 score 0.47 vs 0.40,
-P < 0.001), and marginally worse in the two preserved-spirometry pathways
-(noCOPD and COPD-minor, both P < 0.05). When compared against a common reference
-set of subjects without COPD, the ESI-based classification closely mirrored the
-risk profile of the MD-COPD diagnostic pathway groups, but the NoCT-MD-COPD
-classification produced an AFL-only subset with markedly increased risk of
-COPD-related outcomes for all-cause mortality (crude rate ratio 1.57, 95% CI:
-1.35 - 1.82); for respiratory mortality (crude RR 10.00, CI 4.95 - 21.87); and
-for respiratory exacerbations (crude RR 1.75, CI 1.46 - 2.03).
+Results. Overall, the ESI-MD-COPD classification correctly classified 87.9% of subjects compared to 83.9% for the NoCT-MD-COPD classification (p<0.005), and substituting an ESI threshold for CT visual emphysema and airway wall thickening preserved most of the clinical associations previously reported for MD-COPD categories. Analysis of membership in each of the four MD-COPD diagnostic pathways showed that, relative to the NoCT-MD-COPD classification, most of the improvement of the ESI-based classification was in the classification for subjects with airflow limitation and COPD (COPD major pathway, subgroup F1 score 0.94 vs 0.88, P < 0.001) and subjects with airflow limitation but no minor diagnostic criteria (airflow limitation only, AFL-only, F1 score 0.47 vs 0.40, P < 0.001). When compared against a common reference set of subjects without COPD, the ESI-based classification closely mirrored the risk profile of the MD-COPD diagnostic pathway groups, but the NoCT-MD-COPD classification produced an AFL-only subset with markedly increased risk of COPD-related outcomes for all-cause mortality (crude rate ratio 1.6, 95% CI: 1.3 - 1.8); for respiratory mortality (crude RR 10.0, CI 4.9 - 21.9); and for respiratory exacerbations (crude incidence ratio 1.75, CI 1.46 - 2.03).
 
-**Conclusions.** The advantage of a multidimensional framework over the fixed
-ratio can be preserved without chest CT, but not by symptom criteria alone. A
-spirometric measure of the structural domain keeps each group carrying the risk
-its label implies, and it does so among participants with airflow limitation,
-where the CT criteria carry diagnostic weight.
+Conclusions. Many of the advantages of a multidimensional framework over the fixed ratio can be preserved without ESI measures replacing chest CT criteria, but not by symptom criteria alone.
