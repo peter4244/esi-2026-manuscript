@@ -69,20 +69,14 @@ def check(build_name="this build"):
 # When he supplies a new version, replace the entry in the same commit.
 OWNED = {
     "RESULTS.md": {
-        "agreement section opening (2026-09-08 20:56)":
-            "The cross-classification between MD-COPD and the two CT-free "
-            "classifications is shown in Figure 1",
-        "clinical outcomes opening (2026-09-08 20:56)":
-            "The MD-COPD classification improves on the fixed ratio, because it "
-            "provides better alignment between COPD diagnosis and prospective risk",
-        "cross-tabulation opening (2026-09-08 20:56)":
-            "Since the NoCT classification removes the COPD label from a "
-            "high-risk subset of subjects, we focused subsequent comparisons on "
-            "the ESI classification compared to MD-COPD",
-        "AFL-only outcomes (2026-09-08 20:56)":
-            "For the AFL-only group in the ESI classification, risk for "
-            "all-cause and respiratory mortality was not significantly different "
-            "from the common reference group without COPD",
+        'agreement section opening (2026-09-10 16:48)':
+            'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
+        'clinical outcomes opening (2026-09-10 16:48)':
+            'The benefits of the MD-COPD classification over fixed ratio result from the creation of the AFL-only pathway, where the COPD diagnosis is removed from low-risk ',
+        'AFL-only outcomes (2026-09-10 16:48)':
+            'For the AFL-only pathway, while the ESI classification “over-diagnosed” this pathway relative to MD-COPD, the individuals classified through this pathway remain',
+        'cross-tabulation opening (2026-09-10 16:48)':
+            'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
     },
 }
 

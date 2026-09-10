@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 164L
+REGISTRY_N <- 166L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -375,6 +375,15 @@ reg("RECL-09", "Reclassification",
 reg("RECL-10", "Reclassification",
     "NoCT-MD-COPD agrees for 7,753 of 9,240 (83.9%)", 7753,
     "reclassification.csv", 'x$concordant[x$schema == "S3"]', TOL_EXACT)
+# Results: "At the level of COPD versus no COPD, agreement was 87.9% and 83.9%".
+# Equal to the four-group agreement because every disagreement with MD-COPD
+# crosses the COPD / no-COPD line; if these ever diverge, the sentence needs rewording.
+BIN <- function(sch) sprintf(paste0('with(x[x$schema == "%s", ], 100 * sum(n[(row_cat %%in%% ',
+  'c("COPD-minor", "COPD-major")) == (col_cat %%in%% c("COPD-minor", "COPD-major"))]) / sum(n))'), sch)
+reg("RECL-11", "Reclassification", "COPD versus no COPD agreement is 87.9% for the ESI classification",
+    87.9, "crossclass.csv", BIN("S4"), TOL_1DP)
+reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for the NoCT classification",
+    83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
 
 reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only without CT",
     833, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)

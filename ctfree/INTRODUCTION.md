@@ -1,6 +1,6 @@
 # Introduction — CT-free MD-COPD paper
 
-*(Pete's draft of 2026-09-08 20:56, adopted verbatim. Do not rewrite a
+*(Pete's draft of 2026-09-10 16:48, adopted verbatim. Do not rewrite a
 paragraph here; edit it in place or replace it with a version he supplies.)*
 
 Chronic obstructive pulmonary disease (COPD) is a multidimensional disease in which airflow limitation, structural lung abnormalities, and respiratory symptoms provide complementary information on disease expression (1–6). Consequently, reliance on spirometry alone incompletely captures the phenotypic heterogeneity of COPD and has prompted the development of diagnostic approaches integrating multiple disease dimensions (7–10).

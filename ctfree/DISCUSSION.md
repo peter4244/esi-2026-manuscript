@@ -1,6 +1,6 @@
 # Discussion — CT-free MD-COPD paper
 
-*(Pete's draft of 2026-09-08 20:56, adopted verbatim. Do not rewrite a
+*(Pete's draft of 2026-09-10 16:48, adopted verbatim. Do not rewrite a
 paragraph here; edit it in place or replace it with a version he supplies.)*
 
 In this study, we sought to establish a multidimensional COPD classification that retains the advantages of the MD-COPD classification over the fixed ratio but that can also be deployed in the absence of chest CT data. We observed that this is achievable through use of the ESI, a descriptor derived from the morphology of the expiratory flow-volume curve that does not depend on ethnic or anthropometric reference equations. This paper has three main findings. First, the ESI-based reformulation preserves most of the advantages of the CT-based framework for mortality and exacerbations, generating a classification with comparable prognostic associations. Second, it is necessary to have ESI or some other effective surrogate for structural lung disease in a multidimensional classification. Otherwise, individuals with airflow obstruction and unrepresented emphysema or airway wall thickening will be misclassified and contaminate the AFL-only group, leading to a harmful underdiagnosis of individuals at high risk of COPD-related complications. Third, the benefit of ESI is primarily in improving the classification of individuals with spirometric obstruction, where ESI is a better surrogate for CT measures.

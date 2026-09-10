@@ -89,6 +89,8 @@
 "ACC-03","Reclassification","115 are correct under NoCT-MD-COPD only","115","115","accuracy_test.csv","PASS",""
 "RECL-09","Reclassification","ESI-MD-COPD agrees with MD-COPD for 8,126 of 9,240 participants (87.9%)","8126","8126","reclassification.csv","PASS",""
 "RECL-10","Reclassification","NoCT-MD-COPD agrees for 7,753 of 9,240 (83.9%)","7753","7753","reclassification.csv","PASS",""
+"RECL-11","Reclassification","COPD versus no COPD agreement is 87.9% for the ESI classification","87.9","87.943722943723","crossclass.csv","PASS",""
+"RECL-12","Reclassification","COPD versus no COPD agreement is 83.9% for the NoCT classification","83.9","83.9069264069264","crossclass.csv","PASS",""
 "RECL-01","Reclassification","833 COPD-major become AFL-only without CT","833","833","reclassification.csv","PASS",""
 "RECL-02","Reclassification","350 do so with ESI","350","350","reclassification.csv","PASS",""
 "RECL-03","Reclassification","21.9% of COPD-major qualify only through a CT finding","21.9","21.8692570228406","reclassification.csv","PASS",""

@@ -1684,6 +1684,146 @@ write.csv(adj, file.path(OUT_DIR, "discord_adjusted.csv"), row.names = FALSE)
 kable(adj, digits = 2, caption = "Adjusted estimates against Both-noCOPD.")
 ```
 
+# Section 9b -- Both strata together, for Figures 5 and 6
+
+Profile, crude ratios and adjusted estimates for the concordant and discordant
+groups in each stratum, laid out identically so the figures can set the strata
+side by side. Crude intervals follow the rest of the paper: exact Poisson for
+deaths, subject bootstrap for exacerbations, and no interval below the event
+floor. Also the per-pathway agreement the Results quote, with a paired
+bootstrap P for the difference between the two classifications.
+
+```{r strata-combined}
+set.seed(CV_SEED)
+se_of <- function(v) { v <- v[!is.na(v)]; sd(v) / sqrt(length(v)) }
+STRATA <- list(
+  list(stratum = "Preserved spirometry", d = d_ps, m = mort_ps, e = exa_ps,
+       ref = "Both-noCOPD"),
+  list(stratum = "Airflow limitation", d = d_al, m = mort_al, e = exa_al,
+       ref = "Both-AFL-only"))
+
+prof_rows <- list(); crude_rows_s <- list()
+for (st in STRATA) {
+  lv <- levels(st$d$discord); ref <- st$ref
+  stopifnot(ref %in% lv, ref %in% st$m$discord, ref %in% st$e$discord)
+  for (g in lv) {
+    z <- st$d[st$d$discord == g, ]
+    prof_rows[[length(prof_rows) + 1]] <- data.frame(
+      stratum = st$stratum, group = g, n = nrow(z),
+      mean_ESI = mean(z$ESI), se_ESI = se_of(z$ESI),
+      mean_LAA950 = mean(z$Insp_LAA950_total_Thirona, na.rm = TRUE),
+      se_LAA950 = se_of(z$Insp_LAA950_total_Thirona),
+      pct_visual_emph = 100 * mean(z$emph_yn), pct_wall_thick = 100 * mean(z$wall_yn),
+      pct_dyspnea = 100 * mean(z$dysp_yn), pct_sgrq = 100 * mean(z$qol_yn),
+      pct_cb = 100 * mean(z$cb_yn), pct_meets_esi = 100 * mean(z$ESI >= p4$t_low),
+      stringsAsFactors = FALSE)
+  }
+  m <- st$m; e <- st$e
+  ratio <- function(ev, py, dat, g)
+    (sum(dat[[ev]][dat$discord == g]) / sum(dat[[py]][dat$discord == g])) /
+    (sum(dat[[ev]][dat$discord == ref]) / sum(dat[[py]][dat$discord == ref]))
+  others <- setdiff(lv, ref)
+  boot_e <- replicate(CRUDE_B, {
+    dd <- e[sample.int(nrow(e), nrow(e), replace = TRUE), ]
+    vapply(others, function(g) ratio("Total_Exacerbations", "Years_Followed", dd, g),
+           numeric(1)) })
+  for (g in others) {
+    for (o in c("all", "resp", "exac")) {
+      if (o == "exac") {
+        ev <- sum(e$Total_Exacerbations[e$discord == g])
+        rr <- ratio("Total_Exacerbations", "Years_Followed", e, g)
+        v <- boot_e[g, ]; v <- v[is.finite(v)]
+        lo <- unname(quantile(v, .025)); hi <- unname(quantile(v, .975))
+      } else {
+        col <- if (o == "all") "vital_status" else "ev_resp"
+        ev <- sum(m[[col]][m$discord == g])
+        rr <- ratio(col, "py", m, g)
+        ci <- exact_rate_ratio(ev, sum(m$py[m$discord == g]),
+                               sum(m[[col]][m$discord == ref]), sum(m$py[m$discord == ref]))
+        lo <- ci[1]; hi <- ci[2]
+      }
+      crude_rows_s[[length(crude_rows_s) + 1]] <- data.frame(
+        stratum = st$stratum, group = g, outcome = o, events = ev,
+        rr = rr, lo = lo, hi = hi, few_events = ev < MIN_EVENTS,
+        stringsAsFactors = FALSE)
+    }
+  }
+}
+disc_profile_strata <- do.call(rbind, prof_rows)
+disc_crude_strata   <- do.call(rbind, crude_rows_s)
+stopifnot(nrow(disc_profile_strata) == 8, nrow(disc_crude_strata) == 18,
+          sum(disc_profile_strata$n) == nrow(d_b))
+
+cols <- c("group", "deaths_all", "deaths_resp", "all_HR", "all_LCI", "all_UCI",
+          "resp_HR", "resp_LCI", "resp_UCI", "exac_IRR", "exac_LCI", "exac_UCI")
+stopifnot(all(cols %in% names(adj)), all(cols %in% names(disc_adj_al)))
+disc_adj_strata <- rbind(
+  cbind(stratum = "Preserved spirometry", adj[, cols], stringsAsFactors = FALSE),
+  cbind(stratum = "Airflow limitation",  disc_adj_al[, cols], stringsAsFactors = FALSE))
+stopifnot(nrow(disc_adj_strata) == 6)
+
+# Per-pathway agreement, both directions, with a paired bootstrap for the
+# difference in the share of each classification's assignments MD-COPD agrees
+# with. Paired because both classifications label the same participants.
+L3 <- d_b[, c("S2", "S3", "S4")]
+share <- function(dd, s, g) { a <- dd[[s]] == g; if (!any(a)) NA_real_ else mean(dd$S2[a] == g) }
+bs_ag <- replicate(CRUDE_B, {
+  dd <- L3[sample.int(nrow(L3), nrow(L3), replace = TRUE), ]
+  vapply(O, function(g) share(dd, "S4", g) - share(dd, "S3", g), numeric(1)) })
+agree_rows <- lapply(O, function(g) {
+  v <- bs_ag[g, ]; v <- v[is.finite(v)]
+  data.frame(category = g, n_md = sum(L3$S2 == g),
+             n_noct = sum(L3$S3 == g), agree_noct = sum(L3$S3 == g & L3$S2 == g),
+             n_esi  = sum(L3$S4 == g), agree_esi  = sum(L3$S4 == g & L3$S2 == g),
+             recall_noct = 100 * mean(L3$S3[L3$S2 == g] == g),
+             recall_esi  = 100 * mean(L3$S4[L3$S2 == g] == g),
+             p_boot = 2 * min(mean(v <= 0), mean(v >= 0)), B_eff = length(v),
+             stringsAsFactors = FALSE) })
+agreement_by_group <- do.call(rbind, agree_rows)
+agreement_by_group$pct_noct <- 100 * agreement_by_group$agree_noct / agreement_by_group$n_noct
+agreement_by_group$pct_esi  <- 100 * agreement_by_group$agree_esi  / agreement_by_group$n_esi
+stopifnot(sum(agreement_by_group$n_md) == nrow(d_b),
+          sum(agreement_by_group$agree_esi)  == sum(d_b$S4 == d_b$S2),
+          sum(agreement_by_group$agree_noct) == sum(d_b$S3 == d_b$S2))
+
+write.csv(disc_profile_strata, file.path(OUT_DIR, "discord_profile_strata.csv"),  row.names = FALSE)
+write.csv(disc_crude_strata,   file.path(OUT_DIR, "discord_crude_strata.csv"),    row.names = FALSE)
+write.csv(disc_adj_strata,     file.path(OUT_DIR, "discord_adjusted_strata.csv"), row.names = FALSE)
+write.csv(agreement_by_group,  file.path(OUT_DIR, "agreement_by_group.csv"),      row.names = FALSE)
+print(agreement_by_group[, c("category", "pct_noct", "pct_esi", "recall_noct", "recall_esi", "p_boot")],
+      digits = 3)
+```
+
+```{r strata-profile-tests}
+# Pairwise tests behind the Figure 5 brackets, within each stratum: Wilcoxon
+# rank-sum for the two continuous measures, Fisher's exact test for the five
+# criteria. Unadjusted. Where neither group has a criterion, or both have it
+# throughout, there is nothing to test and P is 1.
+PT_MEAS  <- c("ESI", "Insp_LAA950_total_Thirona", "emph_yn", "wall_yn",
+              "dysp_yn", "qol_yn", "cb_yn")
+PT_PAIRS <- list(c("CT-only-COPD", "ESI-only-COPD"), c("CT-only-COPD", "Both-COPD"),
+                 c("ESI-only-COPD", "Both-COPD"))
+pt_rows <- list()
+for (st in STRATA) for (pr in PT_PAIRS) for (v in PT_MEAS) {
+  a <- st$d[[v]][st$d$discord == pr[1]]; b <- st$d[[v]][st$d$discord == pr[2]]
+  a <- a[!is.na(a)]; b <- b[!is.na(b)]
+  cont <- v %in% PT_MEAS[1:2]
+  p <- if (cont) wilcox.test(a, b, exact = FALSE)$p.value else {
+    k <- sum(a) + sum(b)
+    if (k == 0 || k == length(a) + length(b)) 1 else
+      fisher.test(matrix(c(sum(a), length(a) - sum(a), sum(b), length(b) - sum(b)), 2))$p.value }
+  pt_rows[[length(pt_rows) + 1]] <- data.frame(
+    stratum = st$stratum, measure = v, group1 = pr[1], group2 = pr[2],
+    n1 = length(a), n2 = length(b), test = if (cont) "Wilcoxon" else "Fisher",
+    p = p, stringsAsFactors = FALSE)
+}
+disc_profile_tests <- do.call(rbind, pt_rows)
+stopifnot(nrow(disc_profile_tests) == 42, all(is.finite(disc_profile_tests$p)),
+          all(disc_profile_tests$n1 > 0), all(disc_profile_tests$n2 > 0))
+write.csv(disc_profile_tests, file.path(OUT_DIR, "discord_profile_tests.csv"), row.names = FALSE)
+print(disc_profile_tests[disc_profile_tests$group2 == "ESI-only-COPD", ], digits = 3)
+```
+
 # Section 10 -- Do the classifications differ? Paired bootstrap
 
 The preceding sections report each classification's estimates side by side.
@@ -1917,7 +2057,9 @@ required_csvs <- c(
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
   "consensus_ref_lost.csv", "cv_category_test.csv", "accuracy_test.csv",
   "discord_profile.csv", "discord_rates_afl.csv",
-  "discord_adjusted_afl.csv", "discord_profile_afl.csv"
+  "discord_adjusted_afl.csv", "discord_profile_afl.csv",
+  "discord_profile_strata.csv", "discord_crude_strata.csv",
+  "discord_adjusted_strata.csv", "agreement_by_group.csv", "discord_profile_tests.csv"
 )
 missing <- required_csvs[!file.exists(file.path(OUT_DIR, required_csvs))]
 if (length(missing))

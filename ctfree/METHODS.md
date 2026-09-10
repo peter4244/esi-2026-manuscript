@@ -1,6 +1,6 @@
 # Methods — CT-free MD-COPD paper
 
-*(Pete's draft of 2026-09-08 20:56, adopted verbatim. Do not rewrite a
+*(Pete's draft of 2026-09-10 16:48, adopted verbatim. Do not rewrite a
 paragraph here; edit it in place or replace it with a version he supplies.)*
 
 ## Study design
@@ -22,7 +22,7 @@ ESI was calculated from absolute values of standard spirometric measurements, in
 
 The MD-COPD framework (11) integrates three domains: spirometric airflow obstruction, respiratory symptoms, and CT-defined structural abnormalities. The major diagnostic criterion is post-bronchodilator FEV₁/FVC below 0.70. Five minor criteria comprise two structural criteria, visual emphysema (Fleischner assessment at least mild) and airway wall thickening (Fleischner assessment definite thickening) (18), together with three symptom criteria: modified Medical Research Council (mMRC) dyspnea score of 2 or greater, St. George's Respiratory Questionnaire (SGRQ) total score of 25 or greater, and chronic bronchitis. Participants meeting the major criterion together with at least one minor criterion are classified as COPD major pathway; participants meeting at least three of five minor criteria without the major criterion are classified as COPD minor pathway; participants meeting the major criterion alone are classified as Airflow Limitation (AFL)-only-noCOPD; and the remaining participants are classified as noCOPD. In participants with a comorbid cardiac condition, specifically coronary artery disease or congestive heart failure, whose symptoms may be explained as well or better by that condition, two of the three minor criteria required for the COPD minor pathway must be imaging-based.
 
-Fixed ratio uses traditional COPD spirometric definition of post-bronchodilator FEV₁/FVC < 0.70. The NoCT classification drops the two CT criteria and keeps dyspnea, SGRQ and chronic bronchitis. Since the two CT minor criteria are not available for this classification, the number of criteria needed for a COPD-minor pathway diagnosis is reduced from 3 to 2. The ESI classification replaces the two CT criteria with a single ESI criterion, and 2 minor criteria are necessary for the COPD-minor pathway diagnosis. Participants with airflow limitation are therefore COPD-major or AFL-only under every classification, and participants without it are COPD-minor or noCOPD. Every disagreement between classifications comes from the minor criteria.
+Fixed ratio uses traditional COPD spirometric definition of post-bronchodilator FEV₁/FVC < 0.70. The NoCT classification drops the two CT criteria and keeps dyspnea, SGRQ and chronic bronchitis. Since the two CT minor criteria are not available for this classification, the number of criteria needed for a COPD-minor pathway diagnosis is reduced from 3 to 2. The ESI classification replaces the two CT criteria with a single ESI criterion, and 2 minor criteria are necessary for the COPD-minor pathway diagnosis (Table 1). Participants with airflow limitation are therefore COPD-major or AFL-only under every classification, and participants without it are COPD-minor or noCOPD. Every disagreement between classifications comes from the minor criteria.
 
 
 ## Determination of diagnostic thresholds for comparator classifications
