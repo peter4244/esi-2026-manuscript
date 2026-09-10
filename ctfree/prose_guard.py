@@ -18,6 +18,12 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "was tested with the corrected resampled t-test":
+        "Methods sentence cut at Pete's direction (menu, 2026-09-10): no result reports it",
+    "the two were compared by likelihood ratio test on 2 degrees of freedom":
+        "Methods paragraph cut at Pete's direction (menu, 2026-09-10): no result reports it",
+    "Discrimination was summarized with the C-index":
+        "Methods paragraph cut at Pete's direction (menu, 2026-09-10): no result reports it",
     "which withholds a COPD diagnosis from participants who would otherwise "
     "receive one with the fixed ratio":
         "2026-09-08, AFL-only paragraph. Deleted repeatedly; the group is "
