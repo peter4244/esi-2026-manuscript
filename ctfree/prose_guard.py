@@ -24,6 +24,12 @@ DELETED = {
         "already defined in Methods and in Table 1.",
     "rather than as COPD versus no COPD":
         "2026-09-08, Methods, agreement sentence.",
+    "ESI-MD-COPD":
+        "2026-09-10, renamed throughout to 'the ESI classification'.",
+    "NoCT-MD-COPD":
+        "2026-09-10, renamed throughout to 'the NoCT classification'.",
+    "NoCOPD-MD-COPD":
+        "2026-09-10, a typo for NoCT-MD-COPD; now 'the NoCT classification'.",
     "This reference is smaller and at lower risk than any single "
     "classification's own noCOPD group":
         "2026-09-08, common-reference setup paragraph.",
@@ -70,11 +76,11 @@ OWNED = {
             "The MD-COPD classification improves on the fixed ratio, because it "
             "provides better alignment between COPD diagnosis and prospective risk",
         "cross-tabulation opening (2026-09-08 20:56)":
-            "Since the NoCOPD-MD-COPD subgroup removes the COPD label from a "
+            "Since the NoCT classification removes the COPD label from a "
             "high-risk subset of subjects, we focused subsequent comparisons on "
-            "the ESI-MD-COPD classification compared to MD-COPD",
+            "the ESI classification compared to MD-COPD",
         "AFL-only outcomes (2026-09-08 20:56)":
-            "For the AFL-only group in the ESI-MD-COPD classification, risk for "
+            "For the AFL-only group in the ESI classification, risk for "
             "all-cause and respiratory mortality was not significantly different "
             "from the common reference group without COPD",
     },

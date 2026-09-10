@@ -27,7 +27,7 @@ ASSETS <- file.path(dirname(HERE), "assets")
 
 risk <- read.csv(file.path(ASSETS, "consensus_ref_risk.csv"),  stringsAsFactors = FALSE)
 crd  <- read.csv(file.path(ASSETS, "consensus_ref_crude.csv"), stringsAsFactors = FALSE)
-SCH  <- c(S2 = "MD-COPD", S3 = "NoCT-MD-COPD", S4 = "ESI-MD-COPD")
+SCH  <- c(S2 = "MD-COPD", S3 = "NoCT classification", S4 = "ESI classification")
 OUTC <- list(c("all", "All-cause mortality"), c("resp", "Respiratory mortality"),
              c("exac", "Exacerbations"))
 GRPS <- c("AFL-only", "COPD-minor", "COPD-major")
@@ -56,8 +56,8 @@ gather_group <- function(grp) {
 make_fig <- function(grp, file) {
   d <- gather_group(grp)
   d$outcome <- factor(d$outcome, levels = vapply(OUTC, `[`, "", 2))
-  # MD-COPD and ESI-MD-COPD sit adjacent because the Results paragraphs pair
-  # them and contrast NoCT-MD-COPD against the pair. Reversed because ggplot
+  # MD-COPD and ESI classification sit adjacent because the Results paragraphs pair
+  # them and contrast NoCT classification against the pair. Reversed because ggplot
   # draws the first factor level at the bottom.
   d$schema  <- factor(d$schema, levels = rev(unname(SCH[c("S2", "S4", "S3")])))
   d$type    <- factor(d$type, levels = c("Crude", "Adjusted"))

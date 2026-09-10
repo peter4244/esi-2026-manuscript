@@ -49,7 +49,7 @@ N_COL = {"all": "n_mort", "resp": "n_mort", "exac": "n_exac"}
 # Results. They replace the numbered "schema N" labels, which required the
 # reader to hold a lookup table to parse a sentence.
 SCHEMA_NAME = {"S1": "Fixed ratio", "S2": "MD-COPD",
-               "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+               "S3": "NoCT classification", "S4": "ESI classification"}
 
 CLAIM_ID   = re.compile(r"\s*\{[A-Z][A-Za-z0-9-]*(?:,\s*[A-Z][A-Za-z0-9-]*)*\}")
 # Any bracketed bold line is an editorial provenance note, not prose.
@@ -213,9 +213,9 @@ def table1(doc):
          n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
         ["MD-COPD", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
-        ["NoCT-MD-COPD", "dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["NoCT classification", "dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
-        ["ESI-MD-COPD", esi_desc,
+        ["ESI classification", esi_desc,
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
     add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only",
                     "COPD-minor", "COPD-major"],
@@ -224,8 +224,8 @@ def table1(doc):
            f"The four classifications applied to the same {n_total:,} participants. "
            "The major criterion is post-bronchodilator FEV₁/FVC below 0.70 in all "
            "four, so no participant moves between the airflow-limitation categories "
-           "and the preserved-spirometry ones. MD-COPD is the reference NoCT-MD-COPD "
-           "and ESI-MD-COPD are compared against.")
+           "and the preserved-spirometry ones. MD-COPD is the reference the NoCT "
+           "and ESI classifications are compared against.")
 
 
 def table2(doc):
@@ -237,8 +237,8 @@ def table2(doc):
     cell = {(r["schema"], r["row_cat"], r["col_cat"]): int(r["n"]) for r in x}
 
     rows = []
-    for schema, name, f1key in (("S3", "NoCT-MD-COPD", "f1_noct"),
-                                ("S4", "ESI-MD-COPD", "f1_esi")):
+    for schema, name, f1key in (("S3", "NoCT classification", "f1_noct"),
+                                ("S4", "ESI classification", "f1_esi")):
         for i, rc in enumerate(O):
             rows.append([
                 name if i == 0 else "", rc,
@@ -271,7 +271,7 @@ def table3(doc):
     cru = {(r["schema"], r["category"], r["outcome"]): r
            for r in load("consensus_ref_crude.csv")}
     ref = load("consensus_ref_group.csv")[0]
-    NM = {"S2": "MD-COPD", "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
     ORDER = ["AFL-only", "COPD-minor", "COPD-major"]
     FLAG = "\u2020"
 
@@ -327,8 +327,8 @@ def table3(doc):
            "race, current smoking status, pack-years and body mass index, with prior "
            "exacerbation frequency added for exacerbations. Respiratory deaths in "
            f"the AFL-only group were {int(afl['S2']['resp_deaths'])} under MD-COPD, "
-           f"{int(afl['S3']['resp_deaths'])} under NoCT-MD-COPD and "
-           f"{int(afl['S4']['resp_deaths'])} under ESI-MD-COPD. "
+           f"{int(afl['S3']['resp_deaths'])} under the NoCT classification and "
+           f"{int(afl['S4']['resp_deaths'])} under the ESI classification. "
            f"{FLAG} fewer than 10 events in the cell: the point estimate is given "
            "without an interval, which would convey precision the data do not "
            "carry. AFL-only, airflow limitation without other criteria; RR, rate "
@@ -337,7 +337,7 @@ def table3(doc):
 
 
 def table4(doc):
-    """Cross-classification of MD-COPD and ESI-MD-COPD, one panel per stratum.
+    """Cross-classification of MD-COPD and the ESI classification, one panel per stratum.
     The two strata are separate panels rather than one eight-row table because
     the reference group differs between them: participants both classifications
     call noCOPD where spirometry is preserved, and both call AFL-only where it
@@ -394,12 +394,12 @@ def table4(doc):
     pr = {k: load(f)[0] for k, f in
           (("ps", "discord_rates.csv"), ("afl", "discord_rates_afl.csv"))}
     legend(doc, "Table 4.",
-           "Participants cross-classified by MD-COPD and ESI-MD-COPD within each "
+           "Participants cross-classified by MD-COPD and the ESI classification within each "
            "stratum of airflow limitation, the only place the two can disagree. "
            "Among participants with preserved spirometry they disagree about "
            "whether COPD is present; among those with airflow limitation, about "
            "whether a diagnosis is given rather than withheld. CT-only-COPD is "
-           "what ESI-MD-COPD misses and ESI-only-COPD what it adds. All rates are "
+           "what the ESI classification misses and ESI-only-COPD what it adds. All rates are "
            "observed events per 100 person-years. Each panel is estimated against "
            "its own reference row, "
            f"{ref['ps']} and {ref['afl']}, so estimates are comparable within a "
@@ -594,7 +594,7 @@ def main():
              "This is the group a replacement criterion must reach among "
              "participants with preserved spirometry."),
             ("figure4_copdmajor.png", "COPD-major",
-             "Estimates are largest under NoCT-MD-COPD because that "
+             "Estimates are largest under the NoCT classification because that "
              "classification moved 833 of this group's members into AFL-only, "
              "leaving a smaller and more severe group behind.")], start=2):
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",

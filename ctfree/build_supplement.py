@@ -121,7 +121,7 @@ def cell_n(rows, schema, row_cat, col_cat):
 def s3_crossclass(doc):
     heading(doc, "Supplemental Table S9. Reclassification against the CT-based framework")
     x = load(ASSETS, "crossclass.csv")
-    nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    nm = {"S3": "NoCT classification", "S4": "ESI classification"}
     for s in ("S3", "S4"):
         para(doc, f"**{nm[s]}.** Rows are this classification; columns are MD-COPD.")
         cell = {(r["row_cat"], r["col_cat"]): int(r["n"]) for r in x if r["schema"] == s}
@@ -147,7 +147,7 @@ def s4_fitting(doc):
     heading(doc, "Supplemental Table S10. Fitted rules and cross-validated performance")
     fit = load(ASSETS, "schema_fit.csv")
     cvd = load(ASSETS, "schema_fit_cv_diff.csv")[0]
-    nm = {"S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+    nm = {"S3": "NoCT classification", "S4": "ESI classification"}
     rows = [[nm[r["schema"]], f"≥ {int(float(r['k']))}",
              "—" if r["t_low"] in ("", "NA") else f"{float(r['t_low']):.2f}",
              f"{float(r['macroF1_insample']):.4f}",
@@ -221,7 +221,7 @@ def s6_fev1_decline(doc):
     heading(doc, "Supplemental Table S5. Longitudinal FEV\u2081 decline by group")
     rows_in = load(ASSETS, "fev1_decline.csv")
     name = {"S1": "Fixed ratio", "S2": "MD-COPD",
-            "S3": "NoCT-MD-COPD", "S4": "ESI-MD-COPD"}
+            "S3": "NoCT classification", "S4": "ESI classification"}
     rows, seen = [], set()
     for r in rows_in:
         sc = r["schema"]; p_ = float(r["p"])
@@ -293,7 +293,7 @@ def s8_esi_trajectory(doc):
 def s9_paired_bootstrap(doc):
     """Whether the two classifications assign different effect sizes to the
     same category. Adjusted only: the crude comparison is not yet computed."""
-    heading(doc, "Supplemental Table S8. ESI-MD-COPD compared with MD-COPD")
+    heading(doc, "Supplemental Table S8. The ESI classification compared with MD-COPD")
     rows, seen = [], set()
     label = {"all-cause mortality": "All-cause mortality",
              "respiratory mortality": "Respiratory mortality",
@@ -310,7 +310,7 @@ def s9_paired_bootstrap(doc):
                     "P", "Resamples"],
               rows, [1.52, 1.14, 2.08, 0.86, 0.90])
     legend(doc, "Table S8.",
-           "Ratio of the adjusted effect size ESI-MD-COPD assigns to a category "
+           "Ratio of the adjusted effect size the ESI classification assigns to a category "
            "to the one MD-COPD assigns to the same category. Participants were "
            "resampled and both classifications refitted within every resample, so "
            "each pair of estimates comes from the same people; the interval and P "
