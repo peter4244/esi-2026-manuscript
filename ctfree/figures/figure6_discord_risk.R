@@ -35,6 +35,9 @@ d <- bind_rows(
   transmute(cr, stratum, group, outcome, est = rr, lo, hi, events, type = "Crude"),
   mutate(adj, type = "Adjusted"))
 stopifnot(!anyNA(d$events), nrow(d) == 36)
+# Respiratory mortality is left out (Pete, 2026-09-11): too few deaths in the
+# discordant groups and the airflow-limitation reference. Its totals go in the legend.
+d <- d[d$outcome != "resp", ]
 # Below the event floor the point stands without an interval; with no events
 # there is no estimate at all, and the group is left out of that panel.
 MIN_EVENTS_FIG <- 10     # the analysis event floor (MIN_EVENTS in the Rmd)
@@ -45,6 +48,7 @@ rt <- rbind(cbind(stratum = "Preserved spirometry",
                   read.csv(file.path(ASSETS, "discord_rates.csv"))[, c("group", "deaths", "resp_deaths")]),
             cbind(stratum = "Airflow limitation",
                   read.csv(file.path(ASSETS, "discord_rates_afl.csv"))[, c("group", "deaths", "resp_deaths")]))
+rt_all <- rt
 rt <- rt[rt$group %in% c("Both-noCOPD", "Both-AFL-only"), ]
 stopifnot(nrow(rt) == 2)
 ref_ev <- rbind(data.frame(stratum = rt$stratum, outcome = "all",  ref_events = rt$deaths),
@@ -57,11 +61,12 @@ d$lo[low] <- NA; d$hi[low] <- NA
 d <- d %>%
   filter(events > 0, is.finite(est), est > 0)
 d$grp     <- factor(GRP[d$group], levels = rev(c("CT-only", "ESI-only", "Both-COPD")))
-d$outcome <- factor(OUTC[d$outcome], levels = OUTC)
+d$outcome <- factor(OUTC[d$outcome], levels = OUTC[c("all", "exac")])
 d$stratum <- factor(d$stratum, levels = names(STR))
 d$type    <- factor(d$type, levels = c("Crude", "Adjusted"))
-stopifnot(!any(is.na(d$lo[d$events >= MIN_EVENTS_FIG & d$ref_events >= MIN_EVENTS_FIG])))
-REF_RESP_AFL <- rt$resp_deaths[rt$stratum == "Airflow limitation"]
+# With respiratory mortality out, every plotted cell clears the floor.
+stopifnot(!any(is.na(d$lo)), all(d$events >= MIN_EVENTS_FIG), all(d$ref_events >= MIN_EVENTS_FIG))
+RESP <- function(st, g) rt_all$resp_deaths[rt_all$stratum == st & rt_all$group == g]
 
 pd <- position_dodge(width = 0.55)
 d$dodge <- factor(d$type, levels = c("Adjusted", "Crude"))   # crude on top
@@ -71,7 +76,7 @@ p <- ggplot(d, aes(x = est, y = grp, colour = grp, shape = type, group = dodge))
   geom_point(size = 2.6, position = pd, fill = "white", stroke = 0.9) +
   scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL) +
   scale_colour_manual(values = GCOL, guide = "none") +
-  scale_x_log10(breaks = scales::breaks_log(n = 4),
+  scale_x_log10(breaks = c(1, 2, 3, 5),
                 labels = scales::label_number(drop0trailing = TRUE),
                 expand = expansion(mult = c(0.10, 0.14))) +
   facet_grid(stratum ~ outcome, scales = "free_x",
@@ -99,10 +104,16 @@ writeLines(c(
         "and against those both classify as AFL-only among those with airflow limitation",
         "(bottom row). The two rows have different references, so estimates are comparable",
         "within a row and not between rows. CT-only, COPD under MD-COPD only; ESI-only, COPD",
-        "under the ESI classification only; Both-COPD, COPD under both. A point drawn without",
-        "an interval had fewer than 10 events in that group or in its reference, so no interval",
-        sprintf("was estimated; the airflow-limitation reference had %d respiratory deaths.", REF_RESP_AFL),
-        "A group with no events is not shown.", adj_note,
+        "under the ESI classification only; Both-COPD, COPD under both.",
+        "Respiratory mortality is not shown because the numbers of respiratory deaths are too",
+        sprintf(paste("small for estimation: with preserved spirometry, %d in the reference, %d CT-only,",
+                      "%d ESI-only and %d Both-COPD; with airflow limitation, %d in the reference, %d CT-only,",
+                      "%d ESI-only and %d Both-COPD."),
+                RESP("Preserved spirometry", "Both-noCOPD"), RESP("Preserved spirometry", "CT-only-COPD"),
+                RESP("Preserved spirometry", "ESI-only-COPD"), RESP("Preserved spirometry", "Both-COPD"),
+                RESP("Airflow limitation", "Both-AFL-only"), RESP("Airflow limitation", "CT-only-COPD"),
+                RESP("Airflow limitation", "ESI-only-COPD"), RESP("Airflow limitation", "Both-COPD")),
+        adj_note,
         "AFL-only, airflow limitation without other criteria.")),
   file.path(HERE, "figure6_discord_risk_legend.md"))
 cat("wrote", out, "\n")
