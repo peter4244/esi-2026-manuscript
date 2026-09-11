@@ -191,15 +191,14 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure1
 
 p_txt <- if (acc$p_value < 0.001) "P < 0.001" else sprintf("P = %.3f", acc$p_value)
 writeLines(c(
-  "**Figure 1. Reclassification of the MD-COPD categories when chest CT is unavailable.**",
+  "**Figure 1. Reclassification of the MD-COPD categories by the CT-free classifications.**",
   "",
   sprintf(paste(
     "(A) Participant flow from MD-COPD (center) to the NoCT classification (left) and",
     "the ESI classification (right). Column heights and ribbon widths are proportional",
-    "to participant counts. Ribbons are colored by MD-COPD category, solid where the",
-    "participant changes category and pale where it agrees; colors are gray for noCOPD,",
-    "purple for AFL-only, yellow for COPD-minor and red for COPD-major, as in the",
-    "diagonal cells of (B) and (C). (B) The NoCT classification cross-classified against",
+    "to participant counts. Ribbons are colored by MD-COPD category, solid color where the",
+    "participant changes category and shaded gray where it agrees. (B) The NoCT",
+    "classification cross-classified against",
     "MD-COPD. Rows are MD-COPD categories and columns the NoCT classification; diagonal",
     "cells, which agree, are shaded in the category color with depth proportional to",
     "count, and off-diagonal cells are white. (C) The ESI classification cross-classified",

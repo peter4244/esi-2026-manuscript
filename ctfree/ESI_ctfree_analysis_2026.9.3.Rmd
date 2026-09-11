@@ -1405,6 +1405,67 @@ kable(fev1_decline, digits = 2,
       caption = "FEV1 decline (mL/yr) against the common noCOPD reference.")
 ```
 
+Does FEV1 decline differ between the two CT-free classifications' groups? The
+groups overlap (every ESI AFL-only participant is also NoCT AFL-only), so the
+two estimates are not independent. Participants are resampled, both
+classifications' models are refitted on the same draw, and the difference in
+each group's slope is taken, NoCT minus ESI. Point estimates are the full-data
+ones above; the first assertion checks that this chunk fits the same model.
+
+```{r fev1-paired-bootstrap}
+B_FEV <- 1000L
+CACHE <- file.path(OUT_DIR, "_cache"); dir.create(CACHE, showWarnings = FALSE)
+FPATH <- file.path(CACHE, "fev1_paired_bootstrap.rds")
+fit_slopes <- function(dat, sname) {
+  dd <- dat[dat$cons | dat[[sname]] %in% OTHER[[sname]], ]
+  dd$g <- factor(ifelse(dd$cons, "REF", as.character(dd[[sname]])), c("REF", OTHER[[sname]]))
+  f <- as.formula(paste0(
+    "FEV1_post_mL ~ years_from_baseline * g",
+    " + Height_CM + gender_baseline + race_baseline + age_visit + SmokCigNow",
+    " + ATS_PackYears + years_from_baseline:FEV1_base_mL + (1 | pid)"))
+  co <- summary(lmer(f, data = dd))$coefficients
+  vapply(OTHER[[sname]], function(g) {
+    t <- paste0("years_from_baseline:g", g)
+    if (t %in% rownames(co)) co[t, "Estimate"] else NA_real_ }, numeric(1))
+}
+stopifnot(identical(OTHER[["S3"]], OTHER[["S4"]]))
+pt <- list(S3 = fit_slopes(decline, "S3"), S4 = fit_slopes(decline, "S4"))
+for (sn in c("S3", "S4")) {
+  ref <- fev1_decline$est_mL_yr[fev1_decline$schema == sn][match(OTHER[[sn]],
+          fev1_decline$category[fev1_decline$schema == sn])]
+  stopifnot(isTRUE(all.equal(unname(pt[[sn]]), ref)))
+}
+.want <- list(n = nrow(decline), B = B_FEV, version = 1L,
+              labels = substr(digest::digest(paste(decline$pid, decline$S3, decline$S4,
+                                                   decline$cons)), 1, 12))
+.cached <- if (file.exists(FPATH)) readRDS(FPATH) else NULL
+if (!is.null(.cached) && identical(.cached$fingerprint, .want)) {
+  D <- .cached$D
+} else {
+  set.seed(CV_SEED)
+  rows_by <- split(seq_len(nrow(decline)), decline$pid); ids <- names(rows_by)
+  D <- matrix(NA_real_, B_FEV, length(OTHER[["S3"]]), dimnames = list(NULL, OTHER[["S3"]]))
+  for (b in seq_len(B_FEV)) {
+    draw <- sample(ids, length(ids), replace = TRUE); idx <- rows_by[draw]
+    dd <- decline[unlist(idx, use.names = FALSE), ]
+    dd$pid <- rep(seq_along(draw), lengths(idx))   # a participant drawn twice is two participants
+    D[b, ] <- tryCatch(suppressMessages(fit_slopes(dd, "S3") - fit_slopes(dd, "S4")),
+                       error = function(e) NA_real_)
+  }
+  saveRDS(list(D = D, fingerprint = .want), FPATH)
+}
+fev1_noct_vs_esi <- do.call(rbind, lapply(OTHER[["S3"]], function(g) {
+  v <- D[, g]; v <- v[is.finite(v)]
+  data.frame(category = g, est_noct = pt$S3[[g]], est_esi = pt$S4[[g]],
+             diff_noct_minus_esi = pt$S3[[g]] - pt$S4[[g]],
+             lo = unname(quantile(v, .025)), hi = unname(quantile(v, .975)),
+             p_boot = min(1, 2 * min(mean(v <= 0), mean(v >= 0))), B_eff = length(v),
+             stringsAsFactors = FALSE) }))
+stopifnot(nrow(fev1_noct_vs_esi) == 3, all(fev1_noct_vs_esi$B_eff >= 0.95 * B_FEV))
+write.csv(fev1_noct_vs_esi, file.path(OUT_DIR, "fev1_noct_vs_esi.csv"), row.names = FALSE)
+print(fev1_noct_vs_esi, digits = 3)
+```
+
 # Section 8c -- Continuous ESI
 
 ESI as a continuous measure rather than a thresholded criterion. Four
@@ -2154,7 +2215,7 @@ required_csvs <- c(
   "supp_baseline.csv", "supp_esi_ct.csv", "metric_sweep.csv",
   "f1_by_category.csv", "esi_ct_levels.csv", "esi_ct_auc.csv",
   "discord_counts.csv", "discord_rates.csv", "discord_adjusted.csv",
-  "schema_diff_bootstrap.csv", "fev1_decline.csv",
+  "schema_diff_bootstrap.csv", "fev1_decline.csv", "fev1_noct_vs_esi.csv",
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
   "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",

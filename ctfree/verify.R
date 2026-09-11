@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 166L
+REGISTRY_N <- 204L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -384,6 +384,84 @@ reg("RECL-11", "Reclassification", "COPD versus no COPD agreement is 87.9% for t
     87.9, "crossclass.csv", BIN("S4"), TOL_1DP)
 reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for the NoCT classification",
     83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
+
+# Results fills and the S5 sentence (2026-09-11 13:01 draft).
+reg("FILL-01", "Fills 2026-09-11", "common noCOPD reference n=3,745", 3745, "consensus_ref_group.csv",
+    'x$n_cohort', TOL_EXACT)
+reg("FILL-02", "Fills 2026-09-11", "preserved: visual emphysema 100% in CT-only", 100, "discord_profile_strata.csv",
+    'x$pct_visual_emph[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("FILL-03", "Fills 2026-09-11", "preserved: visual emphysema 5.2% in ESI-only", 5.2, "discord_profile_strata.csv",
+    'x$pct_visual_emph[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
+reg("FILL-04", "Fills 2026-09-11", "preserved: visual emphysema contrast p<0.001", 1, "discord_profile_tests.csv",
+    'as.integer(x$p[x$stratum == "Preserved spirometry" & x$measure == "emph_yn" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
+reg("FILL-05", "Fills 2026-09-11", "preserved: mean %LAA-950 1.68 in CT-only", 1.68, "discord_profile_strata.csv",
+    'x$mean_LAA950[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_2DP)
+reg("FILL-06", "Fills 2026-09-11", "preserved: mean %LAA-950 1.25 in ESI-only", 1.25, "discord_profile_strata.csv",
+    'x$mean_LAA950[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-07", "Fills 2026-09-11", "preserved: %LAA-950 contrast p=0.008", 0.008, "discord_profile_tests.csv",
+    'x$p[x$stratum == "Preserved spirometry" & x$measure == "Insp_LAA950_total_Thirona" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"]', TOL_3DP)
+reg("FILL-08", "Fills 2026-09-11", "preserved: wall thickening 100% in CT-only", 100, "discord_profile_strata.csv",
+    'x$pct_wall_thick[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("FILL-09", "Fills 2026-09-11", "preserved: wall thickening 4.7% in ESI-only", 4.7, "discord_profile_strata.csv",
+    'x$pct_wall_thick[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
+reg("FILL-10", "Fills 2026-09-11", "preserved: wall thickening contrast p<0.001", 1, "discord_profile_tests.csv",
+    'as.integer(x$p[x$stratum == "Preserved spirometry" & x$measure == "wall_yn" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
+reg("FILL-11", "Fills 2026-09-11", "preserved: mean ESI 0.90 in CT-only", 0.9, "discord_profile_strata.csv",
+    'x$mean_ESI[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_2DP)
+reg("FILL-12", "Fills 2026-09-11", "preserved: mean ESI 0.94 in ESI-only", 0.94, "discord_profile_strata.csv",
+    'x$mean_ESI[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-13", "Fills 2026-09-11", "preserved: ESI contrast p=0.14", 0.14, "discord_profile_tests.csv",
+    'x$p[x$stratum == "Preserved spirometry" & x$measure == "ESI" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-14", "Fills 2026-09-11", "obstructed: mean %LAA-950 4.80 in ESI-only", 4.8, "discord_profile_strata.csv",
+    'x$mean_LAA950[x$stratum == "Airflow limitation" & x$group == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-15", "Fills 2026-09-11", "obstructed: mean %LAA-950 4.09 in CT-only", 4.09, "discord_profile_strata.csv",
+    'x$mean_LAA950[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_2DP)
+reg("FILL-16", "Fills 2026-09-11", "obstructed: %LAA-950 contrast p=0.53", 0.53, "discord_profile_tests.csv",
+    'x$p[x$stratum == "Airflow limitation" & x$measure == "Insp_LAA950_total_Thirona" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-17", "Fills 2026-09-11", "obstructed: mean ESI 2.25 in ESI-only", 2.25, "discord_profile_strata.csv",
+    'x$mean_ESI[x$stratum == "Airflow limitation" & x$group == "ESI-only-COPD"]', TOL_2DP)
+reg("FILL-18", "Fills 2026-09-11", "obstructed: mean ESI 1.21 in CT-only", 1.21, "discord_profile_strata.csv",
+    'x$mean_ESI[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_2DP)
+reg("FILL-19", "Fills 2026-09-11", "obstructed: ESI contrast p<0.001", 1, "discord_profile_tests.csv",
+    'as.integer(x$p[x$stratum == "Airflow limitation" & x$measure == "ESI" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
+reg("S5-20", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: ratio 1.19", 1.19, "binary_vs_mdcopd.csv",
+    'x$ratio_of_ratios[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-21", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: lower bound 1.12", 1.12, "binary_vs_mdcopd.csv",
+    'x$lo[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-22", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: upper bound 1.27", 1.27, "binary_vs_mdcopd.csv",
+    'x$hi[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-23", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: ratio 0.45", 0.45, "binary_vs_mdcopd.csv",
+    'x$ratio_of_ratios[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
+reg("S5-24", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: lower bound 0.27", 0.27, "binary_vs_mdcopd.csv",
+    'x$lo[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
+reg("S5-25", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: upper bound 0.68", 0.68, "binary_vs_mdcopd.csv",
+    'x$hi[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
+reg("S5-26", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: ratio 1.13", 1.13, "binary_vs_mdcopd.csv",
+    'x$ratio_of_ratios[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-27", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: lower bound 1.04", 1.04, "binary_vs_mdcopd.csv",
+    'x$lo[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-28", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: upper bound 1.23", 1.23, "binary_vs_mdcopd.csv",
+    'x$hi[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-29", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: ratio 0.93", 0.93, "binary_vs_mdcopd.csv",
+    'x$ratio_of_ratios[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
+reg("S5-30", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: lower bound 0.88", 0.88, "binary_vs_mdcopd.csv",
+    'x$lo[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
+reg("S5-31", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: upper bound 0.98", 0.98, "binary_vs_mdcopd.csv",
+    'x$hi[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
+reg("S5-32", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: ratio 0.78", 0.78, "binary_vs_mdcopd.csv",
+    'x$ratio_of_ratios[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-33", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: lower bound 0.72", 0.72, "binary_vs_mdcopd.csv",
+    'x$lo[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-34", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: upper bound 0.84", 0.84, "binary_vs_mdcopd.csv",
+    'x$hi[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
+reg("S5-35", "Fills 2026-09-11", "S5 vs MD-COPD, ESI all-cause: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S4" & x$outcome == "all"] >= 0.05)', TOL_EXACT)
+reg("S5-36", "Fills 2026-09-11", "S5 vs MD-COPD, ESI respiratory: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S4" & x$outcome == "resp"] >= 0.05)', TOL_EXACT)
+reg("S5-37", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT all-cause: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "all"] >= 0.05)', TOL_EXACT)
+reg("S5-38", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio respiratory: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S1" & x$outcome == "resp"] >= 0.05)', TOL_EXACT)
 
 reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only without CT",
     833, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)

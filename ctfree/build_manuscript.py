@@ -237,11 +237,7 @@ def t_classifications(doc, label="Table 1."):
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, label,
-           f"The four classifications applied to the same {n_total:,} participants. "
-           "The major criterion is post-bronchodilator FEV₁/FVC below 0.70 in all "
-           "four, so no participant moves between the airflow-limitation categories "
-           "and the preserved-spirometry ones. MD-COPD is the reference the NoCT "
-           "and ESI classifications are compared against.")
+           f"The four classifications applied to the same {n_total:,} participants.")
 
 
 def t_risk_common_ref(doc, label="Table 3."):
@@ -403,15 +399,8 @@ def t_esi_auc(doc, label="Table 2."):
                     "AUC for ESI"],
               rows, [1.40, 1.46, 0.76, 1.10, 1.78])
     legend(doc, label,
-           "How well ESI discriminates each of the two visual CT criteria it "
-           "replaces, overall and within stratum of airflow limitation. ESI "
-           "discriminates both criteria among participants with airflow "
-           "limitation, where the CT criteria determine whether a participant is "
-           "COPD-major or AFL-only, and does not among participants with "
-           "preserved spirometry, where the COPD-minor pathway operates. The "
-           "pooled values reflect the mixture of the two strata rather than "
-           "detection within either. Mean ESI at each level of the two scales is "
-           f"given in Supplemental Table {supp_num('esi_by_ct')}. "
+           "Discrimination capability of ESI for the two visual CT criteria it "
+           "replaces, shown overall and within stratum of airflow limitation. "
            "AUC, area under the receiver operating characteristic curve.")
 
 
@@ -613,8 +602,10 @@ def main():
              "Estimates are largest under the NoCT classification because that "
              "classification moved 833 of this group's members into AFL-only, "
              "leaving a smaller and more severe group behind.")], start=2):
+        title = ("Prognostic risks for AFL-only pathway subjects in each "
+                 "classification. " if i == 2 else "")          # Pete, 2026-09-11
         add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
-                   f"Crude (open circles) and adjusted (filled circles) risk "
+                   f"{title}Crude (open circles) and adjusted (filled circles) risk "
                    f"for the {grp} group under each multidimensional "
                    f"classification, against a reference common to all three: "
                    f"the {int(ref['n_cohort']):,} participants every "

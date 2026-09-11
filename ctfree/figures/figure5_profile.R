@@ -99,7 +99,7 @@ out <- file.path(HERE, "figure5_profile.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = 4.6, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure5_profile.meta"))
 
-nn <- function(s) paste(sprintf("%s %s", SHOWN, format(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], big.mark = ",")),
+nn <- function(s) paste(sprintf("%s %s", SHOWN, formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")),
                         collapse = ", ")
 writeLines(c(
   "**Figure 5. Profile of the groups on which MD-COPD and the ESI classification agree or disagree.**",

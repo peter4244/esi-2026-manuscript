@@ -5,7 +5,7 @@ supplemental table and the supplement's own headings cannot disagree.
 Reordering it changes every number. The prose citations are literal, and
 display_order.check stops the build until they match.
 """
-SUPP_KEYS = ["baseline", "esi_ct", "thresholds", "crossclass", "risk_common_ref",
+SUPP_KEYS = ["baseline", "esi_ct", "thresholds", "crossclass", "copd_binary", "risk_common_ref",
              "fev1", "discord_risk", "esi_by_ct"]
 
 

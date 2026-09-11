@@ -28,7 +28,7 @@ sys.path.insert(0, HERE)
 from docx.shared import Pt                                   # noqa: E402
 from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME,
-                              t_risk_common_ref, t_discord_risk)
+                              t_risk_common_ref, t_discord_risk, Section)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
@@ -279,6 +279,50 @@ def s_crossclass_agreement(doc, num):
            "AFL-only, airflow limitation without other criteria.")
 
 
+def s_copd_binary(doc, num):
+    """COPD versus no COPD under each classification, crude ratios, each against
+    MD-COPD by a paired bootstrap (Pete, 2026-09-11: MD-COPD first per outcome)."""
+    heading(doc, f"Supplemental Table {num}. COPD versus no COPD under each classification")
+    b = {r["schema"]: r for r in load(ASSETS, "schema_binary.csv")}
+    v = {(r["schema"], r["outcome"]): r for r in load(ASSETS, "binary_vs_mdcopd.csv")}
+    NM = {"S2": "MD-COPD", "S1": "Fixed ratio", "S3": "NoCT classification",
+          "S4": "ESI classification"}
+    OUT = [("all", "All-cause mortality"), ("resp", "Respiratory mortality"),
+           ("exac", "Exacerbations")]
+    assert all(int(r["resp_nocopd"]) >= 10 and int(r["resp_copd"]) >= 10 for r in b.values()), \
+        "a COPD versus no COPD cell is under the event floor"
+    ci = lambda x, lo, hi: f"{float(x):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
+    rows = []
+    for o, title in OUT:
+        rows.append(Section(title))
+        for s_ in ("S2", "S1", "S3", "S4"):
+            r = b[s_]
+            crude = ci(r[f"{o}_rr"], r[f"{o}_rr_lo"], r[f"{o}_rr_hi"])
+            if s_ == "S2":
+                rows.append(["\u2003" + NM[s_], crude, "reference", ""])
+                continue
+            x = v[(s_, o)]; p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
+            pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
+            rows.append(["\u2003" + NM[s_], crude,
+                         ci(x["ratio_of_ratios"], x["lo"], x["hi"]), pt])
+    add_table(doc, ["Classification", "Crude ratio (95% CI)",
+                    "Ratio versus MD-COPD (95% CI)", "P"],
+              rows, [2.10, 1.75, 1.95, 0.70])
+    n = {s_: f"{int(b[s_]['n_copd']):,}" for s_ in b}
+    legend(doc, f"Table {num}.",
+           "Each classification's COPD group (COPD-minor and COPD-major; for the fixed "
+           "ratio, post-bronchodilator FEV\u2081/FVC below 0.70) against its own no-COPD "
+           "group (noCOPD and AFL-only). Crude ratios are the observed event rate in the "
+           "COPD group divided by the rate in the no-COPD group, with exact Poisson "
+           "intervals for deaths and subject-bootstrap intervals for exacerbations. The "
+           "ratio versus MD-COPD divides each classification's crude ratio by that of "
+           "MD-COPD; its interval and two-sided P come from a paired subject bootstrap of "
+           "1,000 resamples, since every classification labels the same participants, and "
+           "P < 0.002 means no resample fell on the other side of 1. COPD groups: "
+           f"MD-COPD {n['S2']}, fixed ratio {n['S1']}, NoCT classification {n['S3']} and "
+           f"ESI classification {n['S4']} of 9,240 participants.")
+
+
 def s_risk_common_ref(doc, num):
     heading(doc, f"Supplemental Table {num}. Risk of each group against the common "
                  "noCOPD reference")
@@ -295,7 +339,8 @@ def s_discord_risk(doc, num):
 # and s4_fitting stay defined but unregistered: Methods still describes the
 # analyses behind them and no result cites them, pending Pete's ruling.
 SUPP_TABLES = [("baseline", s1_baseline), ("esi_ct", s2_ct), ("thresholds", s4_sweep),
-               ("crossclass", s_crossclass_agreement), ("risk_common_ref", s_risk_common_ref),
+               ("crossclass", s_crossclass_agreement), ("copd_binary", s_copd_binary),
+               ("risk_common_ref", s_risk_common_ref),
                ("fev1", s6_fev1_decline), ("discord_risk", s_discord_risk),
                ("esi_by_ct", s12_esi_ct_levels)]
 assert [k for k, _ in SUPP_TABLES] == SUPP_KEYS, "supplement order disagrees with supp_registry"

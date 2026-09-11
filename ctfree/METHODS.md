@@ -1,22 +1,19 @@
 # Methods — CT-free MD-COPD paper
 
-*(Pete's draft of 2026-09-10 16:48, adopted verbatim. Do not rewrite a
+*(Pete's draft of 2026-09-11 13:01, adopted verbatim. Do not rewrite a
 paragraph here; edit it in place or replace it with a version he supplies.)*
 
 ## Study design
 
 The study examined whether the diagnostic benefit of the MD-COPD framework over the fixed ratio can be preserved when chest CT is unavailable. Three classifications were compared against MD-COPD: the fixed ratio alone, the NoCT classification, in which the CT criteria are removed, and the ESI classification, in which they are replaced by the Emphysema Severity Index (ESI).
 
-
 ## Study population
 
 The analysis was performed using data from the COPDGene study (NCT00608764), a multicenter observational cohort of current and former smokers aged 45 to 80 years at enrollment with a smoking history of at least 10 pack-years. Baseline evaluation included standardized pre- and post-bronchodilator spirometry, chest CT imaging, symptom assessment, and longitudinal clinical follow-up. Individuals with pre-existing diagnosed interstitial lung disease or bronchiectasis were not analyzed. Following the source MD-COPD report, the never-smoking controls COPDGene also enrolled were excluded, as were participants without acceptable post-bronchodilator spirometry or a chest CT passing quality control. The analytic cohort is therefore entirely ever-smokers. Details of COPDGene study design, imaging protocols, and follow-up have been previously reported (17). Briefly, quantitative emphysema was measured as low attenuation area below −950 Hounsfield units (LAA-950) using Thirona software. CT visual emphysema and airway wall thickness were scored according to Fleischner Society criteria (18, 19). The Fleischner visual emphysema scale has six levels: none, trace, mild, moderate, confluent and advanced destructive. Visual emphysema was deemed to be present for scores of 2 or greater, corresponding to at least mild emphysema. Visually assessed airway wall thickening was deemed to be present for a visual score of 2, corresponding to definite wall thickening.
 
-
 ## The Emphysema Severity Index
 
 ESI was calculated from absolute values of standard spirometric measurements, including peak expiratory flow (PEF), forced vital capacity (FVC), and forced expiratory flows (FEF) measured after expiration of 25%, 50%, and 75% of FVC (FEF25%, FEF50%, and FEF75%), using a previously validated algorithm (13, 14). ESI ranges from 0 to 10 and reflects expiratory flow-volume curve morphology independently of ethnic and anthropometric reference equations.
-
 
 ## The MD-COPD framework and comparator classifications
 
@@ -24,16 +21,13 @@ The MD-COPD framework (11) integrates three domains: spirometric airflow obstruc
 
 Fixed ratio uses traditional COPD spirometric definition of post-bronchodilator FEV₁/FVC < 0.70. The NoCT classification drops the two CT criteria and keeps dyspnea, SGRQ and chronic bronchitis. Since the two CT minor criteria are not available for this classification, the number of criteria needed for a COPD-minor pathway diagnosis is reduced from 3 to 2. The ESI classification replaces the two CT criteria with a single ESI criterion, and 2 minor criteria are necessary for the COPD-minor pathway diagnosis (Table 1). Participants with airflow limitation are therefore COPD-major or AFL-only under every classification, and participants without it are COPD-minor or noCOPD. Every disagreement between classifications comes from the minor criteria.
 
-
 ## Determination of diagnostic thresholds for comparator classifications
 
 For the NoCT and ESI classifications, thresholds needed to be determined for the number of minor criteria necessary for the COPD-minor pathway, and for the ESI classification an ESI threshold needed to be determined for its use as a minor criterion. The objective of the fitting process was to approximate the MD-COPD labels as closely as possible. We explored thresholds using Cohen's κ, mean per-category sensitivity, and macro-averaged F1 as the selection criteria. Threshold selection used the MD-COPD labels only with five-fold cross validation to assess the recovery of the original labels. Mortality and exacerbation data were not considered for the threshold selection. Final thresholds were based on macro-averaged F1.
 
-
 ## Clinical outcomes
 
 Clinical outcomes were all-cause mortality, respiratory mortality, and prospective exacerbation rate. Overall mortality was determined through longitudinal follow-up calls combined with Social Security Death Index searches. Cause-specific mortality was determined by a pre-specified adjudication process using a modified version of the Towards a Revolution in COPD Health (TORCH) criteria as previously described (20). Respiratory exacerbations were analyzed from the COPDGene Longitudinal Followup (LFU) program dataset. The specific COPDGene data files used are listed in the Supplement.
-
 
 ## Statistical analysis
 
@@ -43,9 +37,11 @@ Crude rate ratios are also reported, calculated as the observed event rate in ea
 
 All comparisons between the multidimensional classifications are made against a single common reference: the participants every multidimensional classification assigns to noCOPD. Every member of that group is noCOPD under each classification, so it shares no participant with any group it is compared against. A per-classification reference would differ in composition between classifications and estimates made against it would not be comparable, which is the comparison this study requires.
 
+For the overall performance of each classification, participants were grouped as COPD (COPD-minor and COPD-major; for the fixed ratio, post-bronchodilator FEV₁/FVC below 0.70) or no COPD (noCOPD and AFL-only), and crude rate ratios of COPD against no COPD were computed within each classification. Each classification's ratio was compared with that of MD-COPD as a ratio of ratios, with a paired subject bootstrap of 1,000 resamples.
+
 Participants were also cross-classified by MD-COPD and the ESI classification within each stratum of airflow limitation. Each stratum was compared against its own reference: participants both classifications assign to noCOPD among those with preserved spirometry, and to AFL-only among those with airflow limitation. The groups on which the two classifications disagree were compared on ESI and LAA-950 with the Wilcoxon rank-sum test and on each minor criterion with Fisher's exact test, without adjustment for multiple comparisons.
 
-Annualized change in FEV₁ was estimated with linear mixed models over visits 1 to 3 with a random intercept per participant, adjusted for height, sex, race, age, smoking status and pack-years, the difference between groups being the interaction between follow-up time and group. Each model was fitted twice, the second adding baseline post-bronchodilator FEV₁ as the source MD-COPD report did. Baseline FEV₁ enters through its interaction with time, since a main effect would have the visit 1 outcome predicting itself.
+Annualized change in FEV₁ was estimated with linear mixed models over visits 1 to 3 with a random intercept per participant, adjusted for height, sex, race, age, smoking status, pack-years and baseline post-bronchodilator FEV₁, as the source MD-COPD report did, the difference between groups being the interaction between follow-up time and group. Baseline FEV₁ enters through its interaction with time, since a main effect would have the visit 1 outcome predicting itself. The difference in decline between the NoCT and ESI classifications' groups was tested with a paired subject bootstrap of 1,000 resamples, refitting both models on each resample, because the groups overlap.
 
 Overall agreement with MD-COPD was compared between the two CT-free classifications with McNemar's test. Agreement within each diagnostic group, the percentage of participants assigned to a group that MD-COPD places in the same group, was compared with a paired subject bootstrap of 1,000 resamples, since both classifications label the same participants.
 

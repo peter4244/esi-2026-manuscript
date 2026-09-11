@@ -1,6 +1,6 @@
 # Abstract — CT-free MD-COPD paper
 
-*(Pete's draft of 2026-09-10 16:48, adopted verbatim. Do not rewrite a
+*(Pete's draft of 2026-09-11 13:01, adopted verbatim. Do not rewrite a
 paragraph here; edit it in place or replace it with a version he supplies.)*
 
 Rationale. A multidimensional diagnostic framework for COPD (MD-COPD) combining post-bronchodilator spirometry, respiratory symptoms and chest computed tomography (CT) identifies clinically important disease that the fixed FEV₁/FVC ratio misses and also reclassifies a subset of subjects with COPD who do not carry increased risk for mortality. However, the requirement for chest CT measures limits the applicability of the classification in some scenarios.

@@ -18,6 +18,18 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "This demonstrates that removing the CT criteria results in an AFL-only group that is contaminated":
+        "Results AFL-only paragraph; Pete deleted it in the 2026-09-11 13:01 PJC",
+    "All-cause mortality rose monotonically across the four groups":
+        "Results cross-tabulation outcomes paragraph; deleted 2026-09-11 13:01",
+    "In this obstructed group, mortality and exacerbation risk was much higher":
+        "Results obstructed outcomes paragraph; deleted 2026-09-11 13:01",
+    "There were no significant differences between the three multidimensional classifications for this outcome":
+        "Results FEV1 sentence; deleted 2026-09-11 13:01",
+    "At the level of COPD versus no COPD, agreement was":
+        "Results agreement sentence; deleted 2026-09-11 13:01",
+    "groups did not have significant differences in CT quantitative emphysema":
+        "Results non-obstructed paragraph; deleted 2026-09-11 13:01",
     "was tested with the corrected resampled t-test":
         "Methods sentence cut at Pete's direction (menu, 2026-09-10): no result reports it",
     "the two were compared by likelihood ratio test on 2 degrees of freedom":
@@ -77,12 +89,20 @@ OWNED = {
     "RESULTS.md": {
         'agreement section opening (2026-09-10 16:48)':
             'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
-        'clinical outcomes opening (2026-09-10 16:48)':
-            'The benefits of the MD-COPD classification over fixed ratio result from the creation of the AFL-only pathway, where the COPD diagnosis is removed from low-risk ',
-        'AFL-only outcomes (2026-09-10 16:48)':
-            'For the AFL-only pathway, while the ESI classification “over-diagnosed” this pathway relative to MD-COPD, the individuals classified through this pathway remain',
+        'clinical outcomes opening (2026-09-11 13:01)':
+            'The benefit of the MD-COPD classification over the fixed ratio results from the creation of the AFL-only pathway, where the COPD diagnosis is removed from low-risk',
+        'AFL-only outcomes (2026-09-11 13:01)':
+            'Crude and adjusted risks for the AFL-only pathway are shown in Figure 2. While the ESI classification over-diagnosed this pathway relative to MD-COPD',
+        'FEV1 paragraph (2026-09-11 13:01)':
+            'While all three groups had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD minor pathway',
         'cross-tabulation opening (2026-09-10 16:48)':
             'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
+        'non-obstructed paragraph (2026-09-11 13:01)':
+            'In the non-obstructed subgroup (n = 5,156), COPD diagnoses occurred only via the COPD minor pathway.',
+        'obstructed paragraph (2026-09-11 13:01)':
+            'In the obstructed subgroup (n = 4,084), COPD diagnoses occurred only via the COPD major pathway in which only one minor criterion was necessary for diagnosis.',
+        'cross-tabulation outcomes (2026-09-11 13:01)':
+            'We also evaluated outcome risks for all-cause mortality and exacerbations by cross-tabulated diagnostic category within obstructed and non-obstructed subjects',
     },
 }
 
