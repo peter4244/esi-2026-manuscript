@@ -1051,6 +1051,49 @@ print(schema_binary[, c("schema", "n_copd", "all_rr", "all_HR", "resp_HR", "exac
                         "c_all", "c_resp", "exac_AIC")], digits = 4)
 ```
 
+Does each classification's crude COPD versus no-COPD ratio differ from
+MD-COPD's? The classifications label the same participants, so the comparison
+is paired: resample participants, recompute every classification's crude ratio
+on the same draw, and take the ratio of each classification's ratio to
+MD-COPD's. Two-sided bootstrap P from the share of draws on the other side of 1.
+
+```{r binary-vs-mdcopd}
+SCH <- c("S1", "S2", "S3", "S4")
+crude_bin <- function(dat, s, ev, pt) {
+  b <- to_bin(dat[[s]])
+  e <- rowsum(dat[[ev]], b)[, 1]; t <- rowsum(dat[[pt]], b)[, 1]
+  unname((e["COPD"] / t["COPD"]) / (e["noCOPD"] / t["noCOPD"]))
+}
+OUTC <- list(all  = list(mort, "vital_status", "py", "all_rr"),
+             resp = list(mort, "ev_resp", "py", "resp_rr"),
+             exac = list(exa, "Total_Exacerbations", "Years_Followed", "exac_rr"))
+set.seed(CV_SEED)
+vs_rows <- list()
+for (o in names(OUTC)) {
+  ev <- OUTC[[o]][[2]]; pt <- OUTC[[o]][[3]]
+  dat <- OUTC[[o]][[1]][, c(SCH, ev, pt)]
+  point <- vapply(SCH, function(s) crude_bin(dat, s, ev, pt), numeric(1))
+  # the point estimates must reproduce the COPD versus no COPD table
+  stopifnot(isTRUE(all.equal(unname(point), schema_binary[[OUTC[[o]][[4]]]][match(SCH, schema_binary$schema)])))
+  bs <- replicate(CRUDE_B, {
+    dd <- dat[sample.int(nrow(dat), nrow(dat), replace = TRUE), ]
+    vapply(SCH, function(s) crude_bin(dd, s, ev, pt), numeric(1)) })
+  for (s in setdiff(SCH, "S2")) {
+    d <- log(bs[s, ]) - log(bs["S2", ]); d <- d[is.finite(d)]
+    vs_rows[[length(vs_rows) + 1]] <- data.frame(
+      schema = s, outcome = o, rr = point[[s]], rr_mdcopd = point[["S2"]],
+      ratio_of_ratios = point[[s]] / point[["S2"]],
+      lo = exp(unname(quantile(d, .025))), hi = exp(unname(quantile(d, .975))),
+      p_boot = min(1, 2 * min(mean(d <= 0), mean(d >= 0))), B_eff = length(d),
+      stringsAsFactors = FALSE)
+  }
+}
+binary_vs_mdcopd <- do.call(rbind, vs_rows)
+stopifnot(nrow(binary_vs_mdcopd) == 9, all(binary_vs_mdcopd$B_eff >= 0.99 * CRUDE_B))
+write.csv(binary_vs_mdcopd, file.path(OUT_DIR, "binary_vs_mdcopd.csv"), row.names = FALSE)
+print(binary_vs_mdcopd, digits = 3)
+```
+
 # Section 8a -- A common reference group across the three classifications
 
 Section 7 estimates every category against its own classification's noCOPD
@@ -2104,7 +2147,7 @@ missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
 required_csvs <- c(
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
   "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
-  "schema_crude.csv", "schema_discrimination.csv", "schema_binary.csv",
+  "schema_crude.csv", "schema_discrimination.csv", "schema_binary.csv", "binary_vs_mdcopd.csv",
   "schema_fit.csv", "schema_fit_cv_diff.csv", "schema_fit_cv_test.csv",
   "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
