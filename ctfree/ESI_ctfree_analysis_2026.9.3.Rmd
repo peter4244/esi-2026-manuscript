@@ -991,6 +991,66 @@ stopifnot(all(is.na(crude$lo[crude$method == "exact Poisson"]) |
 write.csv(crude, file.path(OUT_DIR, "schema_crude.csv"), row.names = FALSE)
 ```
 
+## COPD versus no COPD under each classification
+
+Each classification collapsed to two groups (Pete, 2026-09-11): noCOPD and
+AFL-only are no COPD, COPD-minor and COPD-major are COPD. The fixed ratio is
+already binary. Every model then carries the same two-level exposure and the
+same covariates, so the C-index and AIC compare the classifications on equal
+terms, which the four-group models do not. Each classification's COPD group is
+compared with its own no-COPD group; crude ratios first, then adjusted.
+
+```{r binary-discrimination}
+to_bin <- function(v) factor(ifelse(as.character(v) %in% c("COPD", "COPD-minor", "COPD-major"),
+                                    "COPD", "noCOPD"), levels = c("noCOPD", "COPD"))
+set.seed(CV_SEED)
+bin_rows <- list()
+for (s in c("S1", "S2", "S3", "S4")) {
+  mb <- mort; mb$B <- to_bin(mort[[s]])
+  eb <- exa;  eb$B <- to_bin(exa[[s]])
+  stopifnot(!anyNA(mb$B), !anyNA(eb$B), nlevels(droplevels(mb$B)) == 2)
+  m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ B +", COV)), data = mb)
+  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ B +",      COV)), data = mb)
+  n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ B +", COV,
+         "+ prior_exac + offset(log(Years_Followed))")), data = eb)
+  sm <- function(dat, col, g) sum(dat[[col]][dat$B == g])
+  crude <- function(dat, ev, pt) (sm(dat, ev, "COPD") / sm(dat, pt, "COPD")) /
+                                 (sm(dat, ev, "noCOPD") / sm(dat, pt, "noCOPD"))
+  ci_a <- exact_rate_ratio(sm(mb, "vital_status", "COPD"), sm(mb, "py", "COPD"),
+                           sm(mb, "vital_status", "noCOPD"), sm(mb, "py", "noCOPD"))
+  ci_r <- exact_rate_ratio(sm(mb, "ev_resp", "COPD"), sm(mb, "py", "COPD"),
+                           sm(mb, "ev_resp", "noCOPD"), sm(mb, "py", "noCOPD"))
+  be <- replicate(CRUDE_B, crude(eb[sample.int(nrow(eb), nrow(eb), replace = TRUE), ],
+                                 "Total_Exacerbations", "Years_Followed"))
+  be <- be[is.finite(be)]
+  c1 <- summary(m1)$concordance; c2 <- summary(m2)$concordance
+  hr <- function(m) summary(m)$conf.int["BCOPD", c(1, 3, 4)]
+  ce <- summary(n1)$coef["BCOPD", ]
+  bin_rows[[length(bin_rows) + 1]] <- data.frame(
+    schema = s, n_copd = sum(to_bin(d_b[[s]]) == "COPD"), n_nocopd = sum(to_bin(d_b[[s]]) == "noCOPD"),
+    deaths_copd = sm(mb, "vital_status", "COPD"), deaths_nocopd = sm(mb, "vital_status", "noCOPD"),
+    resp_copd = sm(mb, "ev_resp", "COPD"), resp_nocopd = sm(mb, "ev_resp", "noCOPD"),
+    all_rr = crude(mb, "vital_status", "py"), all_rr_lo = ci_a[1], all_rr_hi = ci_a[2],
+    resp_rr = crude(mb, "ev_resp", "py"), resp_rr_lo = ci_r[1], resp_rr_hi = ci_r[2],
+    exac_rr = crude(eb, "Total_Exacerbations", "Years_Followed"),
+    exac_rr_lo = unname(quantile(be, .025)), exac_rr_hi = unname(quantile(be, .975)),
+    all_HR = hr(m1)[1], all_LCI = hr(m1)[2], all_UCI = hr(m1)[3],
+    resp_HR = hr(m2)[1], resp_LCI = hr(m2)[2], resp_UCI = hr(m2)[3],
+    exac_IRR = exp(ce[1]), exac_LCI = exp(ce[1] - 1.96 * ce[2]), exac_UCI = exp(ce[1] + 1.96 * ce[2]),
+    c_all = c1[1], c_all_lo = c1[1] - 1.96 * c1[2], c_all_hi = c1[1] + 1.96 * c1[2],
+    c_resp = c2[1], c_resp_lo = c2[1] - 1.96 * c2[2], c_resp_hi = c2[1] + 1.96 * c2[2],
+    exac_AIC = AIC(n1), B_eff = length(be), stringsAsFactors = FALSE, row.names = NULL)
+}
+schema_binary <- do.call(rbind, bin_rows)
+stopifnot(nrow(schema_binary) == 4,
+          all(schema_binary$n_copd + schema_binary$n_nocopd == nrow(d_b)),
+          all(is.finite(as.matrix(schema_binary[, -1]))),
+          all(schema_binary$resp_nocopd >= MIN_EVENTS), all(schema_binary$resp_copd >= MIN_EVENTS))
+write.csv(schema_binary, file.path(OUT_DIR, "schema_binary.csv"), row.names = FALSE)
+print(schema_binary[, c("schema", "n_copd", "all_rr", "all_HR", "resp_HR", "exac_IRR",
+                        "c_all", "c_resp", "exac_AIC")], digits = 4)
+```
+
 # Section 8a -- A common reference group across the three classifications
 
 Section 7 estimates every category against its own classification's noCOPD
@@ -2044,7 +2104,7 @@ missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
 required_csvs <- c(
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
   "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
-  "schema_crude.csv", "schema_discrimination.csv",
+  "schema_crude.csv", "schema_discrimination.csv", "schema_binary.csv",
   "schema_fit.csv", "schema_fit_cv_diff.csv", "schema_fit_cv_test.csv",
   "cv_schema_fits.csv",
   "objective_selection.csv", "reclassification.csv", "crossclass.csv",
