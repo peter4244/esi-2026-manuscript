@@ -324,66 +324,64 @@ def t_risk_common_ref(doc, label="Table 3."):
 
 def t_discord_risk(doc, label="Table 4."):
     """Cross-classification of MD-COPD and the ESI classification: each group
-    against its own stratum's reference, crude ratios first, as in Figure 6.
-    One table with a header row per stratum; each stratum carries its own
-    reference row, because the references differ (both call noCOPD where
-    spirometry is preserved, both call AFL-only where it is not). The event
-    floor applies to the group and to its reference alike."""
+    against its own stratum's reference, crude ratios only, respiratory mortality
+    out for too few deaths (Pete, 2026-09-11),
+    as in Figure 6. One table with a header row per stratum; each stratum
+    carries its own reference row, because the references differ (both call
+    noCOPD where spirometry is preserved, both call AFL-only where it is not).
+    The event floor applies to the group and to its reference alike."""
     FLOOR, FLAG = 10, "\u2020"
-    STRATA = [("Preserved spirometry", "discord_rates.csv", "discord_adjusted.csv", "Both-noCOPD"),
-              ("Airflow limitation", "discord_rates_afl.csv", "discord_adjusted_afl.csv", "Both-AFL-only")]
+    STRATA = [("Preserved spirometry", "discord_rates.csv", "Both-noCOPD"),
+              ("Airflow limitation", "discord_rates_afl.csv", "Both-AFL-only")]
     ORDER = ["CT-only-COPD", "ESI-only-COPD", "Both-COPD"]
     cru = {(r["stratum"], r["group"], r["outcome"]): r for r in load("discord_crude_strata.csv")}
 
-    def cell(v, lo, hi, n_ev, n_ref):
-        if n_ev == 0 or v in ("", "NA"):
+    def cell(r, n_ev, n_ref):
+        if n_ev == 0:
             return "not estimable"
-        if n_ev < FLOOR or n_ref < FLOOR or lo in ("", "NA"):
-            return f"{float(v):.2f}{FLAG}"
-        return f"{float(v):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
+        if n_ev < FLOOR or n_ref < FLOOR or r["lo"] in ("", "NA"):
+            return f"{float(r['rr']):.2f}{FLAG}"
+        return f"{float(r['rr']):.2f} ({float(r['lo']):.2f}\u2013{float(r['hi']):.2f})"
 
-    rows, ref_resp = [], {}
-    for title, rf, af, refg in STRATA:
+    rows, resp = [], {}
+    for title, rf, refg in STRATA:
         rates = {r["group"]: r for r in load(rf)}
-        adj = {r["group"]: r for r in load(af)}
         R = rates[refg]
         ref_ev = {"all": int(R["deaths"]), "resp": int(R["resp_deaths"]), "exac": 10 ** 9}
-        ref_resp[title] = ref_ev["resp"]
         rows.append(Section(title))
-        rows.append([f"\u2003{refg} (reference)", f"{int(R['deaths']):,}", "1.00", "reference",
-                     f"{int(R['resp_deaths']):,}", "1.00", "reference", "1.00", "reference"])
+        rows.append([f"\u2003{refg} (reference)", f"{int(R['n']):,}", f"{int(R['deaths']):,}", "1.00",
+                     "1.00"])
+        resp[title] = [(refg, int(R["resp_deaths"]))]
         for g in ORDER:
             c = {o: cru[(title, g, o)] for o in ("all", "resp", "exac")}
             ev = {o: int(float(c[o]["events"])) for o in c}
-            a = adj[g]
             assert ev["all"] == int(rates[g]["deaths"]) and ev["resp"] == int(rates[g]["resp_deaths"]), g
-            rows.append([
-                "\u2003" + g, f"{ev['all']:,}",
-                cell(c["all"]["rr"], c["all"]["lo"], c["all"]["hi"], ev["all"], ref_ev["all"]),
-                cell(a["all_HR"], a["all_LCI"], a["all_UCI"], ev["all"], ref_ev["all"]),
-                f"{ev['resp']:,}",
-                cell(c["resp"]["rr"], c["resp"]["lo"], c["resp"]["hi"], ev["resp"], ref_ev["resp"]),
-                cell(a["resp_HR"], a["resp_LCI"], a["resp_UCI"], ev["resp"], ref_ev["resp"]),
-                cell(c["exac"]["rr"], c["exac"]["lo"], c["exac"]["hi"], ev["exac"], ref_ev["exac"]),
-                cell(a["exac_IRR"], a["exac_LCI"], a["exac_UCI"], ev["exac"], ref_ev["exac"])])
-    add_table(doc, ["Group", "Deaths", "All-cause RR", "All-cause HR (95% CI)",
-                    "Resp. deaths", "Resp. RR", "Resp. HR (95% CI)",
-                    "Exac. RR", "Exac. IRR (95% CI)"],
-              rows, [1.24, 0.42, 0.62, 0.86, 0.48, 0.62, 0.86, 0.58, 0.82])
+            rows.append(["\u2003" + g, f"{int(rates[g]['n']):,}", f"{ev['all']:,}",
+                         cell(c["all"], ev["all"], ref_ev["all"]),
+                         cell(c["exac"], ev["exac"], ref_ev["exac"])])
+            resp[title].append((g, ev["resp"]))
+    # With respiratory mortality out, every cell clears the floor; the legend
+    # carries no flag note, so a flagged cell appearing later must stop the build.
+    assert not any(FLAG in str(v) for r in rows if not isinstance(r, Section) for v in r), \
+        "S7 has a cell under the event floor; restore the flag note in its legend"
+    add_table(doc, ["Group", "n", "Deaths", "All-cause mortality RR (95% CI)",
+                    "Exacerbation RR (95% CI)"],
+              rows, [2.00, 0.70, 0.80, 1.50, 1.50])
+    resp_txt = "; ".join(
+        f"with {st[0].lower() + st[1:]}, " + ", ".join(f"{n} in {g}" for g, n in v)
+        for st, v in resp.items())
     legend(doc, label,
            "Participants cross-classified by MD-COPD and the ESI classification within each "
            "stratum of airflow limitation. CT-only-COPD is COPD under MD-COPD only, "
            "ESI-only-COPD COPD under the ESI classification only, and Both-COPD COPD under "
            "both. Each stratum is estimated against its own reference row, so estimates are "
            "comparable within a stratum and not between strata. Crude rate ratios (RR) are "
-           "the observed event rate in the group divided by the rate in the reference. "
-           "Adjusted models carry age, sex, race, current smoking status, pack-years and "
-           "body mass index, with prior exacerbation frequency added for exacerbations. "
-           f"{FLAG} fewer than 10 events in the group or in its reference: the point "
-           "estimate is given without an interval. The airflow-limitation reference had "
-           f"{ref_resp['Airflow limitation']} respiratory deaths. AFL-only, airflow "
-           "limitation without other criteria; HR, hazard ratio; IRR, incidence rate "
-           "ratio; CI, confidence interval.")
+           "the observed event rate in the group divided by the rate in the reference; "
+           "intervals are exact Poisson intervals for deaths and subject-bootstrap intervals "
+           "for exacerbations. "
+           "Respiratory mortality is not shown because the numbers of respiratory deaths "
+           f"are too small for estimation: {resp_txt}. AFL-only, airflow limitation "
+           "without other criteria; CI, confidence interval.")
 
 def t_esi_auc(doc, label="Table 2."):
     """ESI's discrimination of the two visual CT criteria, by stratum. This is
