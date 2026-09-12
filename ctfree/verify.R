@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 204L
+REGISTRY_N <- 207L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -386,6 +386,12 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for t
     83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
+reg("FILL-20", "Fills 2026-09-11", "AFL-only FEV1 decline -5.0 mL/yr under the NoCT classification",
+    -5.0, "fev1_noct_vs_esi.csv", 'x$est_noct[x$category == "AFL-only"]', TOL_1DP)
+reg("FILL-21", "Fills 2026-09-11", "AFL-only FEV1 decline -4.5 mL/yr under the ESI classification",
+    -4.5, "fev1_noct_vs_esi.csv", 'x$est_esi[x$category == "AFL-only"]', TOL_1DP)
+reg("FILL-22", "Fills 2026-09-11", "the NoCT minus ESI difference in AFL-only decline is p=0.68",
+    0.68, "fev1_noct_vs_esi.csv", 'x$p_boot[x$category == "AFL-only"]', TOL_2DP)
 reg("FILL-01", "Fills 2026-09-11", "common noCOPD reference n=3,745", 3745, "consensus_ref_group.csv",
     'x$n_cohort', TOL_EXACT)
 reg("FILL-02", "Fills 2026-09-11", "preserved: visual emphysema 100% in CT-only", 100, "discord_profile_strata.csv",
