@@ -95,6 +95,8 @@ OWNED = {
             'Crude and adjusted risks for the AFL-only pathway are shown in Figure 2. While the ESI classification over-diagnosed this pathway relative to MD-COPD',
         'FEV1 paragraph (2026-09-11 13:01)':
             'While all three groups had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD minor pathway',
+        'COPD-minor comparison (2026-09-11, his wording)':
+            'For the COPD minor pathway group, the three multidimensional classifications had similar risk profiles for all-cause and respiratory mortality.',
         'cross-tabulation opening (2026-09-10 16:48)':
             'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
         'non-obstructed paragraph (2026-09-11 13:01)':
