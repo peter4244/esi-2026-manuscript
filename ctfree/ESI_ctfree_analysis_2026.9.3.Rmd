@@ -1316,6 +1316,83 @@ kable(merge(cons_crude[cons_crude$outcome == "all",
       caption = "All-cause risk against the common noCOPD reference.", digits = 2)
 ```
 
+Do the three classifications differ in the risk they assign the COPD-minor
+group? They label the same participants, so the comparison is paired:
+resample participants, recompute every classification's crude and adjusted
+estimate for COPD-minor against the common reference on the same draw, and
+take each CT-free classification's estimate over MD-COPD's.
+
+```{r copdminor-paired-bootstrap}
+B_MIN <- 500L
+CACHE <- file.path(OUT_DIR, "_cache"); dir.create(CACHE, showWarnings = FALSE)
+MPATH <- file.path(CACHE, "copdminor_paired_bootstrap.rds")
+CAT <- "COPD-minor"
+MEAS <- c("crude_all", "crude_resp", "crude_exac", "adj_all", "adj_resp", "adj_exac")
+
+fit_cat <- function(mm0, ee0, s) {
+  oth <- OTHER[[s]]
+  mm <- mm0[mm0$cons | mm0[[s]] %in% oth, ]; ee <- ee0[ee0$cons | ee0[[s]] %in% oth, ]
+  mm$g <- factor(ifelse(mm$cons, "REF", as.character(mm[[s]])), c("REF", oth))
+  ee$g <- factor(ifelse(ee$cons, "REF", as.character(ee[[s]])), c("REF", oth))
+  rate <- function(d, ev, py) {
+    a <- d$g == CAT; b <- d$g == "REF"
+    (sum(d[[ev]][a]) / sum(d[[py]][a])) / (sum(d[[ev]][b]) / sum(d[[py]][b]))
+  }
+  r <- paste0("g", CAT)
+  m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
+  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+  n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
+         "+ prior_exac + offset(log(Years_Followed))")), data = ee)
+  c(crude_all  = log(rate(mm, "vital_status", "py")),
+    crude_resp = log(rate(mm, "ev_resp", "py")),
+    crude_exac = log(rate(ee, "Total_Exacerbations", "Years_Followed")),
+    adj_all = unname(coef(m1)[r]), adj_resp = unname(coef(m2)[r]),
+    adj_exac = unname(coef(n1)[r]))
+}
+pt <- vapply(SCHEMAS, function(s) fit_cat(mort_c, exa_c, s), numeric(length(MEAS)))
+# the adjusted point estimates must reproduce the common-reference table
+for (s in SCHEMAS) {
+  k <- cons_risk$schema == s & cons_risk$category == CAT
+  stopifnot(isTRUE(all.equal(exp(pt["adj_all", s]),  cons_risk$all_HR[k])),
+            isTRUE(all.equal(exp(pt["adj_exac", s]), cons_risk$exac_IRR[k])))
+}
+.want <- list(n_m = nrow(mort_c), n_e = nrow(exa_c), B = B_MIN, version = 1L,
+              labels = substr(digest::digest(paste(d_b$S2, d_b$S3, d_b$S4, d_b$cons)), 1, 12))
+.cached <- if (file.exists(MPATH)) readRDS(MPATH) else NULL
+if (!is.null(.cached) && identical(.cached$fingerprint, .want)) {
+  BA <- .cached$BA
+} else {
+  set.seed(CV_SEED)
+  BA <- array(NA_real_, c(B_MIN, length(SCHEMAS), length(MEAS)),
+              dimnames = list(NULL, SCHEMAS, MEAS))
+  for (b in seq_len(B_MIN)) {
+    mm0 <- mort_c[sample.int(nrow(mort_c), nrow(mort_c), replace = TRUE), ]
+    ee0 <- exa_c [sample.int(nrow(exa_c),  nrow(exa_c),  replace = TRUE), ]
+    for (s in SCHEMAS)
+      BA[b, s, ] <- tryCatch(suppressWarnings(fit_cat(mm0, ee0, s)),
+                             error = function(e) rep(NA_real_, length(MEAS)))
+  }
+  saveRDS(list(BA = BA, fingerprint = .want), MPATH)
+}
+OUT_LAB <- c(all = "all-cause mortality", resp = "respiratory mortality", exac = "exacerbations")
+rows <- list()
+for (s in c("S3", "S4")) for (ty in c("crude", "adj")) for (o in names(OUT_LAB)) {
+  meas <- paste0(ty, "_", o)
+  v <- BA[, s, meas] - BA[, "S2", meas]; v <- v[is.finite(v)]
+  rows[[length(rows) + 1]] <- data.frame(
+    schema = s, type = if (ty == "crude") "crude" else "adjusted", outcome = o,
+    est = exp(pt[meas, s]), est_mdcopd = exp(pt[meas, "S2"]),
+    ratio_of_ratios = exp(pt[meas, s] - pt[meas, "S2"]),
+    lo = exp(unname(quantile(v, .025))), hi = exp(unname(quantile(v, .975))),
+    p_boot = min(1, 2 * min(mean(v <= 0), mean(v >= 0))), B_eff = length(v),
+    stringsAsFactors = FALSE)
+}
+copdminor_vs_mdcopd <- do.call(rbind, rows)
+stopifnot(nrow(copdminor_vs_mdcopd) == 12, all(copdminor_vs_mdcopd$B_eff >= 0.95 * B_MIN))
+write.csv(copdminor_vs_mdcopd, file.path(OUT_DIR, "copdminor_vs_mdcopd.csv"), row.names = FALSE)
+print(copdminor_vs_mdcopd, digits = 3)
+```
+
 # Section 8b -- Longitudinal FEV~1~ decline by category
 
 The fourth outcome the MD-COPD framework was validated on, and the one this
@@ -2206,6 +2283,7 @@ missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
 
 ```{r completeness}
 required_csvs <- c(
+  "copdminor_vs_mdcopd.csv",
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
   "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
   "schema_crude.csv", "schema_discrimination.csv", "schema_binary.csv", "binary_vs_mdcopd.csv",
