@@ -197,7 +197,7 @@ writeLines(c(
     "(A) Participant flow from MD-COPD (center) to the NoCT classification (left) and",
     "the ESI classification (right). Column heights and ribbon widths are proportional",
     "to participant counts. Ribbons are colored by MD-COPD category, solid color where the",
-    "participant changes category and shaded gray where it agrees. (B) The NoCT",
+    "participant changes category and pale where it agrees. (B) The NoCT",
     "classification cross-classified against",
     "MD-COPD. Rows are MD-COPD categories and columns the NoCT classification; diagonal",
     "cells, which agree, are shaded in the category color with depth proportional to",
