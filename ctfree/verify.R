@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 207L
+REGISTRY_N <- 216L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -386,6 +386,24 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for t
     83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
+reg("FILL-30", "Discussion", "mean change in ESI after bronchodilation -0.09", -0.09,
+    "bronchodilator_delta_esi.csv", 'x$mean_delta', TOL_2DP)
+reg("FILL-31", "Discussion", "9,234 participants with paired ESI measurements", 9234,
+    "bronchodilator_delta_esi.csv", 'x$n_paired', TOL_EXACT)
+reg("FILL-23", "Fills 2026-09-11", "obstructed CT-only: 77.7% visual emphysema", 77.7,
+    "discord_profile_strata.csv", 'x$pct_visual_emph[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("FILL-24", "Fills 2026-09-11", "obstructed CT-only: 47.4% wall thickening", 47.4,
+    "discord_profile_strata.csv", 'x$pct_wall_thick[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("FILL-25", "Discussion", "ESI-only crude all-cause rate ratio 1.57 (preserved spirometry)", 1.57,
+    "discord_crude_strata.csv", 'x$rr[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
+reg("FILL-26", "Discussion", "its lower bound 1.29", 1.29,
+    "discord_crude_strata.csv", 'x$lo[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
+reg("FILL-27", "Discussion", "its upper bound 1.91", 1.91,
+    "discord_crude_strata.csv", 'x$hi[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
+reg("FILL-28", "Discussion", "Both-COPD crude all-cause rate ratio 1.94 (preserved spirometry)", 1.94,
+    "discord_crude_strata.csv", 'x$rr[x$stratum == "Preserved spirometry" & x$group == "Both-COPD" & x$outcome == "all"]', TOL_2DP)
+reg("FILL-29", "Discussion", "its upper bound 2.31", 2.31,
+    "discord_crude_strata.csv", 'x$hi[x$stratum == "Preserved spirometry" & x$group == "Both-COPD" & x$outcome == "all"]', TOL_2DP)
 reg("FILL-20", "Fills 2026-09-11", "AFL-only FEV1 decline -5.0 mL/yr under the NoCT classification",
     -5.0, "fev1_noct_vs_esi.csv", 'x$est_noct[x$category == "AFL-only"]', TOL_1DP)
 reg("FILL-21", "Fills 2026-09-11", "AFL-only FEV1 decline -4.5 mL/yr under the ESI classification",
