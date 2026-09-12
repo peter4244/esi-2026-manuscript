@@ -91,6 +91,7 @@
 "RECL-10","Reclassification","NoCT-MD-COPD agrees for 7,753 of 9,240 (83.9%)","7753","7753","reclassification.csv","PASS",""
 "RECL-11","Reclassification","COPD versus no COPD agreement is 87.9% for the ESI classification","87.9","87.943722943723","crossclass.csv","PASS",""
 "RECL-12","Reclassification","COPD versus no COPD agreement is 83.9% for the NoCT classification","83.9","83.9069264069264","crossclass.csv","PASS",""
+"MINOR-09","COPD-minor comparison","every crude NoCT and ESI estimate is below MD-COPD’s","6","6","copdminor_vs_mdcopd.csv","PASS",""
 "MINOR-07","COPD-minor comparison","NoCT crude exacerbation ratio is 0.92 of MD-COPD’s","0.92","0.915049558135696","copdminor_vs_mdcopd.csv","PASS",""
 "MINOR-08","COPD-minor comparison","its p = 0.064, so both CT-free ratios are borderline","0.064","0.064","copdminor_vs_mdcopd.csv","PASS",""
 "MINOR-01","COPD-minor comparison","ESI crude exacerbation ratio is 0.90 of MD-COPD’s","0.9","0.902065274872874","copdminor_vs_mdcopd.csv","PASS",""

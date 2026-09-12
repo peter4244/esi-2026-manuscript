@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 224L
+REGISTRY_N <- 225L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -386,6 +386,8 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for t
     83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
+reg("MINOR-09", "COPD-minor comparison", "every crude NoCT and ESI estimate is below MD-COPD\u2019s", 6,
+    "copdminor_vs_mdcopd.csv", 'sum(x$ratio_of_ratios[x$type == "crude"] < 1)', TOL_EXACT)
 reg("MINOR-07", "COPD-minor comparison", "NoCT crude exacerbation ratio is 0.92 of MD-COPD\u2019s", 0.92,
     "copdminor_vs_mdcopd.csv", 'x$ratio_of_ratios[x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-08", "COPD-minor comparison", "its p = 0.064, so both CT-free ratios are borderline", 0.064,
