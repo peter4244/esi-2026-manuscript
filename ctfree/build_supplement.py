@@ -323,52 +323,57 @@ def s_copd_binary(doc, num):
            f"ESI classification {n['S4']} of 9,240 participants.")
 
 
-def s_copdminor_crude(doc, num):
-    """Crude COPD-minor risk under each classification against the common
-    reference, and each CT-free classification against MD-COPD by a paired
-    bootstrap. Crude only (Pete, 2026-09-11)."""
-    heading(doc, f"Supplemental Table {num}. Crude risk of the COPD-minor group under "
+def s_groups_crude(doc, num):
+    """Crude risk of every diagnostic group under each multidimensional
+    classification against the common reference, and each CT-free
+    classification against MD-COPD by a paired bootstrap. Crude only
+    (Pete, 2026-09-11); all three groups (Pete, 2026-09-13)."""
+    heading(doc, f"Supplemental Table {num}. Crude risk of each diagnostic group under "
                  "each classification")
-    cru = {(r["schema"], r["outcome"]): r for r in load(ASSETS, "consensus_ref_crude.csv")
-           if r["category"] == "COPD-minor"}
-    cmp_ = {(r["schema"], r["outcome"]): r for r in load(ASSETS, "copdminor_vs_mdcopd.csv")
+    cru = {(r["schema"], r["category"], r["outcome"]): r for r in load(ASSETS, "consensus_ref_crude.csv")}
+    cmp_ = {(r["schema"], r["category"], r["outcome"]): r for r in load(ASSETS, "group_vs_mdcopd.csv")
             if r["type"] == "crude"}
     ref = load(ASSETS, "consensus_ref_group.csv")[0]
     NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
+    OUTC = (("all", "All-cause mortality"), ("resp", "Respiratory mortality"), ("exac", "Exacerbations"))
     FLAG = "\u2020"
     ci = lambda v, lo, hi: f"{float(v):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
-    rows, flagged = [], False
-    for o, title in (("all", "All-cause mortality"), ("resp", "Respiratory mortality"),
-                     ("exac", "Exacerbations")):
-        rows.append(Section(title))
-        for s_ in ("S2", "S3", "S4"):
-            r = cru[(s_, o)]
-            if r["few_events"].upper() in ("TRUE", "T"):
-                own = f"{float(r['rr']):.2f}{FLAG}"; flagged = True
-            else:
-                own = ci(r["rr"], r["lo"], r["hi"])
-            if s_ == "S2":
-                rows.append(["\u2003" + NM[s_], f"{int(float(r['events'])):,}", own, "reference", ""])
-                continue
-            x = cmp_[(s_, o)]; p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
-            pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
-            rows.append(["\u2003" + NM[s_], f"{int(float(r['events'])):,}", own,
-                         ci(x["ratio_of_ratios"], x["lo"], x["hi"]), pt])
-    add_table(doc, ["Classification", "Events", "Crude ratio versus the common reference (95% CI)",
+    TRUE = ("TRUE", "T")
+    rows = []
+    for g in ("AFL-only", "COPD-minor", "COPD-major"):
+        rows.append(Section(g))
+        for o, olab in OUTC:
+            for k, s_ in enumerate(("S2", "S3", "S4")):
+                r = cru[(s_, g, o)]
+                own = (f"{float(r['rr']):.2f}{FLAG}" if r["few_events"].upper() in TRUE
+                       else ci(r["rr"], r["lo"], r["hi"]))
+                lead = olab if k == 0 else ""
+                if s_ == "S2":
+                    rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", own, "reference", ""])
+                    continue
+                x = cmp_[(s_, g, o)]
+                if x["few_events"].upper() in TRUE:
+                    vs, pt = f"{float(x['ratio_of_ratios']):.2f}{FLAG}", ""
+                else:
+                    p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
+                    vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
+                    pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
+                rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", own, vs, pt])
+    add_table(doc, ["Outcome", "Classification", "Events", "Crude ratio versus the common reference (95% CI)",
                     "Ratio versus MD-COPD (95% CI)", "P"],
-              rows, [1.55, 0.55, 1.85, 1.65, 0.90])
-    flag_note = (f"{FLAG} fewer than 10 events in the group: the rate ratio is given without an "
-                 "interval. " if flagged else "")
+              rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
     legend(doc, f"Table {num}.",
-           "The COPD-minor group of each classification against the common reference, the "
-           f"{int(ref['n_cohort']):,} participants all three classifications assign to noCOPD. "
-           "Crude rate ratios are the observed event rate in the group divided by the rate in "
-           "the reference, with exact Poisson intervals for deaths and subject-bootstrap "
-           "intervals for exacerbations. The ratio versus MD-COPD divides each CT-free "
-           "classification's crude ratio by that of MD-COPD; its interval and two-sided P come "
-           "from a paired subject bootstrap of 500 resamples, refitting every classification on "
-           f"the same draw. {flag_note}Events are deaths for the mortality outcomes and "
-           "exacerbations for the exacerbation outcome. CI, confidence interval.")
+           "Each diagnostic group of the three multidimensional classifications against the common "
+           f"reference, the {int(ref['n_cohort']):,} participants all three classifications assign to "
+           "noCOPD. Crude rate ratios are the observed event rate in the group divided by the rate in "
+           "the reference, with exact Poisson intervals for deaths and subject-bootstrap intervals for "
+           "exacerbations. The ratio versus MD-COPD divides each CT-free classification's crude ratio by "
+           "that of the same group under MD-COPD; its interval and two-sided P come from a paired "
+           "subject bootstrap of 500 resamples, refitting every classification on the same draw. "
+           f"{FLAG} fewer than 10 events in the group, or, for a ratio versus MD-COPD, in either group "
+           "compared: the estimate is given without an interval or P. Events are deaths for the "
+           "mortality outcomes and exacerbations for the exacerbation outcome. AFL-only, airflow "
+           "limitation without other criteria; CI, confidence interval.")
 
 
 def s_risk_common_ref(doc, num):
@@ -388,7 +393,7 @@ def s_discord_risk(doc, num):
 # analyses behind them and no result cites them, pending Pete's ruling.
 SUPP_TABLES = [("baseline", s1_baseline), ("esi_ct", s2_ct), ("thresholds", s4_sweep),
                ("crossclass", s_crossclass_agreement), ("copd_binary", s_copd_binary),
-               ("copdminor", s_copdminor_crude),
+               ("groups_vs_mdcopd", s_groups_crude),
                ("risk_common_ref", s_risk_common_ref),
                ("fev1", s6_fev1_decline), ("discord_risk", s_discord_risk),
                ("esi_by_ct", s12_esi_ct_levels)]

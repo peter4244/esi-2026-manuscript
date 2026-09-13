@@ -387,24 +387,24 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for t
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
 reg("MINOR-09", "COPD-minor comparison", "every crude NoCT and ESI estimate is below MD-COPD\u2019s", 6,
-    "copdminor_vs_mdcopd.csv", 'sum(x$ratio_of_ratios[x$type == "crude"] < 1)', TOL_EXACT)
+    "group_vs_mdcopd.csv", 'sum(x$ratio_of_ratios[x$category == "COPD-minor" & x$type == "crude"] < 1)', TOL_EXACT)
 reg("MINOR-07", "COPD-minor comparison", "NoCT crude exacerbation ratio is 0.92 of MD-COPD\u2019s", 0.92,
-    "copdminor_vs_mdcopd.csv", 'x$ratio_of_ratios[x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
+    "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-08", "COPD-minor comparison", "its p = 0.064, so both CT-free ratios are borderline", 0.064,
-    "copdminor_vs_mdcopd.csv", 'x$p_boot[x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_3DP)
+    "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_3DP)
 reg("MINOR-01", "COPD-minor comparison", "ESI crude exacerbation ratio is 0.90 of MD-COPD\u2019s", 0.90,
-    "copdminor_vs_mdcopd.csv", 'x$ratio_of_ratios[x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
+    "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-02", "COPD-minor comparison", "its lower bound 0.83", 0.83,
-    "copdminor_vs_mdcopd.csv", 'x$lo[x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
+    "group_vs_mdcopd.csv", 'x$lo[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-03", "COPD-minor comparison", "its upper bound 1.00", 1.00,
-    "copdminor_vs_mdcopd.csv", 'x$hi[x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
+    "group_vs_mdcopd.csv", 'x$hi[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-04", "COPD-minor comparison", "its p = 0.04", 0.04,
-    "copdminor_vs_mdcopd.csv", 'x$p_boot[x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
+    "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-05", "COPD-minor comparison", "every adjusted comparison has p > 0.38", 1,
-    "copdminor_vs_mdcopd.csv", 'as.integer(min(x$p_boot[x$type == "adjusted"]) > 0.38)', TOL_EXACT)
+    "group_vs_mdcopd.csv", 'as.integer(min(x$p_boot[x$category == "COPD-minor" & x$type == "adjusted"], na.rm = TRUE) > 0.38)', TOL_EXACT)
 reg("MINOR-06", "COPD-minor comparison", "no other crude comparison is significant", 1,
-    "copdminor_vs_mdcopd.csv",
-    'as.integer(sum(x$p_boot[x$type == "crude"] < 0.05) == 1)', TOL_EXACT)
+    "group_vs_mdcopd.csv",
+    'as.integer(sum(x$p_boot[x$category == "COPD-minor" & x$type == "crude"] < 0.05, na.rm = TRUE) == 1)', TOL_EXACT)
 reg("FILL-30", "Discussion", "mean change in ESI after bronchodilation -0.09", -0.09,
     "bronchodilator_delta_esi.csv", 'x$mean_delta', TOL_2DP)
 reg("FILL-31", "Discussion", "9,234 participants with paired ESI measurements", 9234,
