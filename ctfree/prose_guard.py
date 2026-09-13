@@ -18,6 +18,16 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "identifies clinically important disease that the fixed FEV₁/FVC ratio misses":
+        "Abstract Rationale clause; Pete deleted it in the 2026-09-13 06:51 PJC",
+    "reclassifies a subset of subjects with COPD who do not carry increased risk for mortality":
+        "Abstract Rationale clause; deleted 2026-09-13 06:51",
+    "Analysis of membership in each of the four MD-COPD diagnostic pathways showed that":
+        "Abstract Results clause; deleted 2026-09-13 06:51",
+    "When compared against a common reference set of subjects without COPD":
+        "Abstract Results clause; deleted 2026-09-13 06:51",
+    "avoided significant underdiagnosis that was observed in the absence of CT without ESI substitution":
+        "Introduction closing clause; deleted 2026-09-13 06:51",
     "which is the comparison this study requires":
         "Methods commentary; Pete had the reference paragraphs redrafted without it, 2026-09-13",
     "Two analyses use a different reference":

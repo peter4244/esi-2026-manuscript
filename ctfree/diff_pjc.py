@@ -88,8 +88,9 @@ def main():
                 continue
             best = max(mine, key=lambda m: difflib.SequenceMatcher(None, t, m).ratio())
             ratio = difflib.SequenceMatcher(None, t, best).ratio()
-            if ratio > 0.995:
-                continue
+            # No similarity threshold. A one-word edit ("benefit" to "benefits")
+            # scored above the old 0.995 cutoff and was never reported, so it
+            # would have been reverted. Every non-identical paragraph is shown.
             n_diff += 1
             print(f"\n=== {sec} / {fn}  (similarity {ratio:.3f}) ===")
             sm = difflib.SequenceMatcher(None, best.split(), t.split())
