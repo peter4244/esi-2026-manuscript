@@ -18,6 +18,16 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    'in which the models for all three classifications were refitted':
+        "Methods diagnostic-groups sentence; deleted in Pete's 2026-09-13 18:17 PJC",
+    'without adjustment for multiple comparisons':
+        'Methods cross-classification paragraph; deleted 2026-09-13 18:17',
+    'in which both models were refitted':
+        'Methods FEV1 paragraph; deleted 2026-09-13 18:17',
+    '(entered as its interaction with follow-up time), as in the original MD-COPD report':
+        'Methods FEV1 paragraph; deleted 2026-09-13 18:17',
+    "Across the entire cohort, ESI showed significant associations with quantitative CT measures":
+        "Results ESI-quantitative CT paragraph; Pete deleted it in the 2026-09-13 18:30 PJC",
     "It follows the exclusion chain of the source MD-COPD report":
         "Results study population commentary; Pete had it removed 2026-09-13",
     "so the cohort is entirely ever-smokers":
@@ -136,7 +146,7 @@ OWNED = {
         'agreement section opening (2026-09-10 16:48)':
             'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
         'clinical outcomes opening (2026-09-11 13:01)':
-            'The benefit of the MD-COPD classification over the fixed ratio results from the creation of the AFL-only pathway, where the COPD diagnosis is removed from low-risk',
+            'The benefit of the MD-COPD classification over the fixed ratio results removing the COPD diagnosis from low-risk individuals with airflow obstruction ',
         'AFL-only outcomes (2026-09-11 13:01)':
             'Crude and adjusted risks for the AFL-only pathway are shown in Figure 2. While the ESI classification over-diagnosed this pathway relative to MD-COPD',
         'FEV1 paragraph (2026-09-11 13:01)':

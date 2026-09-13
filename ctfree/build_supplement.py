@@ -369,7 +369,7 @@ def s_groups_crude(doc, num):
            "the reference, with exact Poisson intervals for deaths and subject-bootstrap intervals for "
            "exacerbations. The ratio versus MD-COPD divides each CT-free classification's crude ratio by "
            "that of the same group under MD-COPD; its interval and two-sided P come from a paired "
-           "subject bootstrap of 500 resamples, refitting every classification on the same draw. "
+           "subject bootstrap of 1,000 resamples, refitting every classification on the same draw. "
            f"{FLAG} fewer than 10 events in the group, or, for a ratio versus MD-COPD, in either group "
            "compared: the estimate is given without an interval or P. Events are deaths for the "
            "mortality outcomes and exacerbations for the exacerbation outcome. AFL-only, airflow "

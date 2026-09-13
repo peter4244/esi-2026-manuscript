@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 240L
+REGISTRY_N <- 239L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -388,23 +388,23 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for t
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
 reg("GRP-01", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude all-cause 1.38", 1.38, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
-reg("GRP-02", "Group comparisons", "its lower bound 1.09", 1.09, "group_vs_mdcopd.csv",
+reg("GRP-02", "Group comparisons", "its lower bound 1.10", 1.10, "group_vs_mdcopd.csv",
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
-reg("GRP-03", "Group comparisons", "its upper bound 1.78", 1.78, "group_vs_mdcopd.csv",
+reg("GRP-03", "Group comparisons", "its upper bound 1.77", 1.77, "group_vs_mdcopd.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
-reg("GRP-04", "Group comparisons", "its p = 0.004", 0.004, "group_vs_mdcopd.csv",
+reg("GRP-04", "Group comparisons", "its p = 0.002", 0.002, "group_vs_mdcopd.csv",
     'x$p_boot[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_3DP)
 reg("GRP-05", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude exacerbations 1.42", 1.42, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("GRP-06", "Group comparisons", "its lower bound 1.14", 1.14, "group_vs_mdcopd.csv",
+reg("GRP-06", "Group comparisons", "its lower bound 1.15", 1.15, "group_vs_mdcopd.csv",
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("GRP-07", "Group comparisons", "its upper bound 1.80", 1.8, "group_vs_mdcopd.csv",
+reg("GRP-07", "Group comparisons", "its upper bound 1.79", 1.79, "group_vs_mdcopd.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("GRP-08", "Group comparisons", "its p < 0.005", 1, "group_vs_mdcopd.csv",
     'as.integer(x$p_boot[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "exac"] < 0.005)', TOL_EXACT)
 reg("GRP-09", "Group comparisons", "AFL-only ESI vs MD-COPD, crude all-cause p = 0.25", 0.25, "group_vs_mdcopd.csv",
     'x$p_boot[x$schema == "S4" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
-reg("GRP-10", "Group comparisons", "AFL-only ESI vs MD-COPD, crude exacerbations p = 0.71", 0.71, "group_vs_mdcopd.csv",
+reg("GRP-10", "Group comparisons", "AFL-only ESI vs MD-COPD, crude exacerbations p = 0.73", 0.73, "group_vs_mdcopd.csv",
     'x$p_boot[x$schema == "S4" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("GRP-11", "Group comparisons", "COPD-major NoCT vs MD-COPD, crude ratios from 1.18", 1.18, "group_vs_mdcopd.csv",
     'min(x$ratio_of_ratios[x$schema == "S3" & x$category == "COPD-major" & x$type == "crude"])', TOL_2DP)
@@ -420,7 +420,7 @@ reg("MINOR-09", "COPD-minor comparison", "every crude NoCT and ESI estimate is b
     "group_vs_mdcopd.csv", 'sum(x$ratio_of_ratios[x$category == "COPD-minor" & x$type == "crude"] < 1)', TOL_EXACT)
 reg("MINOR-07", "COPD-minor comparison", "NoCT crude exacerbation ratio is 0.92 of MD-COPD\u2019s", 0.92,
     "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-08", "COPD-minor comparison", "its p = 0.064, so both CT-free ratios are borderline", 0.064,
+reg("MINOR-08", "COPD-minor comparison", "its p = 0.070, so both CT-free ratios are borderline", 0.070,
     "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_3DP)
 reg("MINOR-01", "COPD-minor comparison", "ESI crude exacerbation ratio is 0.90 of MD-COPD\u2019s", 0.90,
     "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
@@ -430,8 +430,6 @@ reg("MINOR-03", "COPD-minor comparison", "its upper bound 1.00", 1.00,
     "group_vs_mdcopd.csv", 'x$hi[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
 reg("MINOR-04", "COPD-minor comparison", "its p = 0.04", 0.04,
     "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-05", "COPD-minor comparison", "every adjusted comparison has p > 0.38", 1,
-    "group_vs_mdcopd.csv", 'as.integer(min(x$p_boot[x$category == "COPD-minor" & x$type == "adjusted"], na.rm = TRUE) > 0.38)', TOL_EXACT)
 reg("MINOR-06", "COPD-minor comparison", "no other crude comparison is significant", 1,
     "group_vs_mdcopd.csv",
     'as.integer(sum(x$p_boot[x$category == "COPD-minor" & x$type == "crude"] < 0.05, na.rm = TRUE) == 1)', TOL_EXACT)

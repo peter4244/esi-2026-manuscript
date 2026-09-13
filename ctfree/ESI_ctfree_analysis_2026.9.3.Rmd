@@ -1326,7 +1326,7 @@ two groups, so it gets no interval or p-value when either has fewer than
 MIN_EVENTS events.
 
 ```{r group-paired-bootstrap}
-B_GRP <- 500L
+B_GRP <- 1000L   # matches every other bootstrap in the paper (Pete, 2026-09-13)
 CACHE <- file.path(OUT_DIR, "_cache"); dir.create(CACHE, showWarnings = FALSE)
 GPATH <- file.path(CACHE, "group_paired_bootstrap.rds")
 MEAS <- c("crude_all", "crude_resp", "crude_exac", "adj_all", "adj_resp", "adj_exac")
@@ -1496,6 +1496,31 @@ stopifnot(nrow(fev1_decline) == 9, all(is.finite(fev1_decline$est_mL_yr)))
 write.csv(fev1_decline, file.path(OUT_DIR, "fev1_decline.csv"), row.names = FALSE)
 kable(fev1_decline, digits = 2,
       caption = "FEV1 decline (mL/yr) against the common noCOPD reference.")
+```
+
+Median follow-up for each outcome, over that outcome's analysis data:
+person-years to death or censoring for mortality, years followed in the
+longitudinal follow-up program for exacerbations, and years from visit 1 to the
+last spirometry visit for FEV1 decline. FEV1 is given twice, over everyone in
+the decline data and over those with at least one follow-up visit, because
+participants seen only at visit 1 contribute zero follow-up.
+
+```{r followup-medians}
+fu_fev <- decline %>% group_by(pid) %>%
+  summarise(last = max(years_from_baseline), n_vis = n_distinct(visitnum), .groups = "drop")
+fu_row <- function(label, v) data.frame(
+  outcome = label, n = length(v), median_yr = median(v),
+  q1_yr = unname(quantile(v, .25)), q3_yr = unname(quantile(v, .75)),
+  stringsAsFactors = FALSE)
+followup_medians <- rbind(
+  fu_row("mortality (all-cause and respiratory)", mort$py),
+  fu_row("exacerbations", exa$Years_Followed),
+  fu_row("FEV1 decline, everyone in the decline data", fu_fev$last),
+  fu_row("FEV1 decline, participants with a follow-up visit", fu_fev$last[fu_fev$n_vis > 1]))
+stopifnot(nrow(followup_medians) == 4, all(followup_medians$median_yr >= 0),
+          followup_medians$n[1] == nrow(mort), followup_medians$n[2] == nrow(exa))
+write.csv(followup_medians, file.path(OUT_DIR, "followup_medians.csv"), row.names = FALSE)
+print(followup_medians, digits = 3)
 ```
 
 Does FEV1 decline differ between the two CT-free classifications' groups? The
@@ -2299,6 +2324,7 @@ missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
 
 ```{r completeness}
 required_csvs <- c(
+  "followup_medians.csv",
   "group_vs_mdcopd.csv",
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
   "schema_labels.csv", "schema_labels.rds", "schema_risk.csv",
