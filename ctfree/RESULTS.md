@@ -5,7 +5,7 @@ paragraph here; edit it in place or replace it with a version he supplies.)*
 
 ## Study population
 
-The analytic cohort comprised 9,240 COPDGene participants (Supplemental Table S1). It follows the exclusion chain of the source MD-COPD report, which removes never-smokers, so the cohort is entirely ever-smokers. It comprised 4,037 smokers without airflow obstruction (GOLD 0), 1,119 participants with PRISm, and 4,084 participants with GOLD 1 to 4 airflow obstruction. Mean baseline ESI increased monotonically with severity, from 0.90 in GOLD 0 to 8.30 in GOLD 4 participants.
+The analytic cohort comprised 9,240 COPDGene participants (Supplemental Table S1). It comprised 4,037 smokers without airflow obstruction (GOLD 0), 1,119 participants with PRISm, and 4,084 participants with GOLD 1 to 4 airflow obstruction. Mean baseline ESI increased monotonically with severity, from 0.90 in GOLD 0 to 8.30 in GOLD 4 participants.
 
 Across the entire cohort, ESI showed significant associations with quantitative CT measures of emphysema, including the percentage of low attenuation area below −950 Hounsfield units (%LAA−950HU; r = 0.78) and PRM-defined emphysema (r = 0.81). The strength of these relationships varied according to disease severity, with weak correlations observed in groups with minimal structural abnormalities (GOLD 0, r = 0.08) and stronger relationships among participants with established airflow obstruction (GOLD 3, r = 0.58) (Supplemental Table S2).
 
