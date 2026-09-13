@@ -66,26 +66,6 @@ def s1_baseline(doc, num):
            "PRISm is preserved ratio impaired spirometry.")
 
 
-def s2_ct(doc, num):
-    heading(doc, f"Supplemental Table {num}. ESI and quantitative CT")
-    rows = load(ASSETS, "supp_esi_ct.csv")
-    keep = [("stratum", "Stratum"),
-            ("n_LAA", "n"), ("r_LAA", "r (ESI, LAA-950)"),
-            ("n_PRM", "n"), ("r_PRM", "r (ESI, PRM emphysema)")]
-    def cell(r, k):
-        v = r[k]
-        return f"{float(v):.3f}" if k.startswith("r_") else v
-    add_table(doc, [h for _, h in keep],
-              [[cell(r, k) for k, _ in keep] for r in rows],
-              [1.30, 0.75, 1.85, 0.75, 1.85])
-    legend(doc, f"Table {num}.",
-           "Pearson correlations between ESI and quantitative CT emphysema, overall "
-           "and within GOLD stratum. LAA-950 is the percentage of lung voxels below "
-           "−950 Hounsfield units on inspiratory CT; PRM emphysema is the parametric "
-           "response map emphysema percentage. Correlations are computed on "
-           "participants with both measures available, so n varies by column.")
-
-
 def s4_sweep(doc, num):
     """The parameter sweep behind the threshold selection."""
     heading(doc, f"Supplemental Table {num}. Threshold selection")
@@ -391,7 +371,7 @@ def s_discord_risk(doc, num):
 # Registered in citation order; numbers come from position. s5_discrimination
 # and s4_fitting stay defined but unregistered: Methods still describes the
 # analyses behind them and no result cites them, pending Pete's ruling.
-SUPP_TABLES = [("baseline", s1_baseline), ("esi_ct", s2_ct), ("thresholds", s4_sweep),
+SUPP_TABLES = [("baseline", s1_baseline), ("thresholds", s4_sweep),
                ("crossclass", s_crossclass_agreement), ("copd_binary", s_copd_binary),
                ("groups_vs_mdcopd", s_groups_crude),
                ("risk_common_ref", s_risk_common_ref),

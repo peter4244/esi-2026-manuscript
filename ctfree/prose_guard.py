@@ -145,8 +145,8 @@ OWNED = {
     "RESULTS.md": {
         'agreement section opening (2026-09-10 16:48)':
             'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
-        'clinical outcomes opening (2026-09-11 13:01)':
-            'The benefit of the MD-COPD classification over the fixed ratio results removing the COPD diagnosis from low-risk individuals with airflow obstruction ',
+        'clinical outcomes opening (2026-09-13 18:30, slip fixed at his request)':
+            'The benefit of the MD-COPD classification over the fixed ratio results from removing the COPD diagnosis from low-risk individuals with airflow obstruc',
         'AFL-only outcomes (2026-09-11 13:01)':
             'Crude and adjusted risks for the AFL-only pathway are shown in Figure 2. While the ESI classification over-diagnosed this pathway relative to MD-COPD',
         'FEV1 paragraph (2026-09-11 13:01)':
