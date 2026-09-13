@@ -18,6 +18,14 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "The analytic cohort is therefore entirely ever-smokers":
+        "Methods study population; Pete deleted it in the 2026-09-13 17:47 PJC",
+    "the never-smoking controls COPDGene also enrolled were excluded":
+        "Methods study population; rewritten by Pete 2026-09-13 17:47",
+    "Since the two CT minor criteria are not available for this classification":
+        "Methods classifications paragraph; deleted 2026-09-13 17:47",
+    "uses traditional COPD spirometric definition":
+        "Methods classifications paragraph; rewritten by Pete 2026-09-13 17:47",
     "consistent with the original MD-COPD report":
         "Methods models paragraph; Pete deleted it in the 2026-09-13 07:06 PJC",
     "; for the fixed ratio, post-bronchodilator FEV₁/FVC below 0.70)":
