@@ -18,6 +18,12 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "which is the comparison this study requires":
+        "Methods commentary; Pete had the reference paragraphs redrafted without it, 2026-09-13",
+    "Two analyses use a different reference":
+        "Methods commentary; redrafted 2026-09-13",
+    "All comparisons between the multidimensional classifications are made against a single common reference":
+        "Methods overclaim; redrafted 2026-09-13 as a scoped paragraph per analysis",
     "This demonstrates that removing the CT criteria results in an AFL-only group that is contaminated":
         "Results AFL-only paragraph; Pete deleted it in the 2026-09-11 13:01 PJC",
     "All-cause mortality rose monotonically across the four groups":
