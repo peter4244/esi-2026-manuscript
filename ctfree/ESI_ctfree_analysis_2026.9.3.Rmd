@@ -1051,6 +1051,39 @@ print(schema_binary[, c("schema", "n_copd", "all_rr", "all_HR", "resp_HR", "exac
                         "c_all", "c_resp", "exac_AIC")], digits = 4)
 ```
 
+Unadjusted discrimination and fit: each classification is the only predictor
+in the model, so these show how much each classification on its own tells
+about each outcome. Two codings: COPD versus no COPD, and the full diagnostic
+groups (the fixed ratio has two groups either way). For a given outcome every
+model uses the same participants, so AIC is comparable across classifications.
+Exacerbations are a count, so they get AIC only.
+
+```{r raw-discrimination}
+raw_rows <- list()
+for (s in c("S1", "S2", "S3", "S4")) for (coding in c("binary", "groups")) {
+  mb <- mort; eb <- exa
+  mb$X <- if (coding == "binary") to_bin(mort[[s]]) else droplevels(factor(mort[[s]]))
+  eb$X <- if (coding == "binary") to_bin(exa[[s]])  else droplevels(factor(exa[[s]]))
+  stopifnot(!anyNA(mb$X), !anyNA(eb$X), nlevels(mb$X) >= 2)
+  m1 <- coxph(Surv(py, vital_status) ~ X, data = mb)
+  m2 <- coxph(Surv(py, ev_resp) ~ X, data = mb)
+  n1 <- glm.nb(Total_Exacerbations ~ X + offset(log(Years_Followed)), data = eb)
+  c1 <- summary(m1)$concordance; c2 <- summary(m2)$concordance
+  raw_rows[[length(raw_rows) + 1]] <- data.frame(
+    schema = s, coding = coding, n_groups = nlevels(mb$X), n_mort = nrow(mb), n_exac = nrow(eb),
+    c_all = unname(c1[1]), c_all_lo = unname(c1[1] - 1.96 * c1[2]), c_all_hi = unname(c1[1] + 1.96 * c1[2]),
+    aic_all = AIC(m1),
+    c_resp = unname(c2[1]), c_resp_lo = unname(c2[1] - 1.96 * c2[2]), c_resp_hi = unname(c2[1] + 1.96 * c2[2]),
+    aic_resp = AIC(m2), aic_exac = AIC(n1), stringsAsFactors = FALSE)
+}
+raw_discrimination <- do.call(rbind, raw_rows)
+stopifnot(nrow(raw_discrimination) == 8, length(unique(raw_discrimination$n_mort)) == 1,
+          length(unique(raw_discrimination$n_exac)) == 1,
+          all(raw_discrimination$c_all > 0.5), all(raw_discrimination$c_resp > 0.5))
+write.csv(raw_discrimination, file.path(OUT_DIR, "raw_discrimination.csv"), row.names = FALSE)
+print(raw_discrimination, digits = 4)
+```
+
 Does each classification's crude COPD versus no-COPD ratio differ from
 MD-COPD's? The classifications label the same participants, so the comparison
 is paired: resample participants, recompute every classification's crude ratio
@@ -2324,6 +2357,7 @@ missing-file error deep in `draft_tables.R` or `build_manuscript.py`.
 
 ```{r completeness}
 required_csvs <- c(
+  "raw_discrimination.csv",
   "followup_medians.csv",
   "group_vs_mdcopd.csv",
   "cohort_flow.csv", "cohort.txt", "mdcopd_validation.csv",
