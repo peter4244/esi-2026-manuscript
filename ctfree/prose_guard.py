@@ -18,6 +18,10 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "consistent with the original MD-COPD report":
+        "Methods models paragraph; Pete deleted it in the 2026-09-13 07:06 PJC",
+    "; for the fixed ratio, post-bronchodilator FEV₁/FVC below 0.70)":
+        "Methods COPD versus no COPD paragraph; deleted 2026-09-13 07:06",
     "conveys precision the data do not carry":
         "Methods commentary; removed at Pete's direction (menu, 2026-09-13)",
     "Exacerbation counts are overdispersed and clustered within participant":
