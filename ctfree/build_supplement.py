@@ -282,7 +282,7 @@ def s_crossclass_agreement(doc, num):
 def s_copd_binary(doc, num):
     """COPD versus no COPD under each classification, crude ratios, each against
     MD-COPD by a paired bootstrap (Pete, 2026-09-11: MD-COPD first per outcome)."""
-    heading(doc, f"Supplemental Table {num}. COPD versus no COPD under each classification")
+    heading(doc, f"Supplemental Table {num}. Event rates in COPD versus no COPD under each classification")
     b = {r["schema"]: r for r in load(ASSETS, "schema_binary.csv")}
     v = {(r["schema"], r["outcome"]): r for r in load(ASSETS, "binary_vs_mdcopd.csv")}
     NM = {"S2": "MD-COPD", "S1": "Fixed ratio", "S3": "NoCT classification",
@@ -305,7 +305,7 @@ def s_copd_binary(doc, num):
             pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
             rows.append(["\u2003" + NM[s_], crude,
                          ci(x["ratio_of_ratios"], x["lo"], x["hi"]), pt])
-    add_table(doc, ["Classification", "Crude ratio (95% CI)",
+    add_table(doc, ["Classification", "Crude rate ratio, COPD vs no COPD (95% CI)",
                     "Ratio versus MD-COPD (95% CI)", "P"],
               rows, [2.10, 1.75, 1.95, 0.70])
     n = {s_: f"{int(b[s_]['n_copd']):,}" for s_ in b}
