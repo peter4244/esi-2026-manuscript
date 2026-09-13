@@ -241,82 +241,49 @@ def t_classifications(doc, label="Table 1."):
 
 
 def t_risk_common_ref(doc, label="Table 3."):
-    """Every group of every multidimensional classification against one common
-    reference: the participants all three agree are noCOPD. The own-noCOPD
-    references used elsewhere differ in composition between classifications,
-    so estimates under one are not on the same scale as estimates under
-    another. Crude ratios lead; adjusted estimates follow. A cell with fewer
-    events than the analysis floor keeps its point estimate and loses its
-    interval, because the interval would convey precision the data lack."""
+    """Adjusted risk of every group of every multidimensional classification
+    against the common reference: the participants all three assign to noCOPD.
+    Adjusted only (Pete, 2026-09-13); the crude ratios for the same groups are
+    in the group comparison table. A cell under the event floor keeps its point
+    estimate and loses its interval."""
     adj = {(r["schema"], r["category"]): r for r in load("consensus_ref_risk.csv")}
-    cru = {(r["schema"], r["category"], r["outcome"]): r
-           for r in load("consensus_ref_crude.csv")}
     ref = load("consensus_ref_group.csv")[0]
     NM_TITLE = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
     ORDER = ["AFL-only", "COPD-minor", "COPD-major"]
-    FLAG = "\u2020"
+    FLAG, TRUE = "\u2020", ("TRUE", "T")
 
-    def crude(s_, g, outcome):
-        r = cru[(s_, g, outcome)]
-        if r["few_events"].upper() in ("TRUE", "T"):
-            return f"{float(r['rr']):.2f}{FLAG}"
-        return (f"{float(r['rr']):.2f} "
-                f"({float(r['lo']):.2f}\u2013{float(r['hi']):.2f})")
-
-    def adjusted(s_, g, est, lo, hi, flag):
-        r = adj[(s_, g)]
-        if r[flag].upper() in ("TRUE", "T"):
+    def cell(r, est, lo, hi, few):
+        if few:
             return f"{float(r[est]):.2f}{FLAG}"
-        return (f"{float(r[est]):.2f} "
-                f"({float(r[lo]):.2f}\u2013{float(r[hi]):.2f})")
+        return f"{float(r[est]):.2f} ({float(r[lo]):.2f}\u2013{float(r[hi]):.2f})"
 
-    rows = [["Common reference (noCOPD under all three)", f"{int(ref['deaths']):,}", "1.00", "reference",
-             f"{int(ref['resp_deaths']):,}", "1.00", "reference",
-             "1.00", "reference"]]
-    n_flagged = 0
+    rows = [["Common reference (noCOPD under all three)", f"{int(ref['deaths']):,}", "reference",
+             f"{int(ref['resp_deaths']):,}", "reference", "reference"]]
     for s_ in ("S2", "S3", "S4"):
         rows.append(Section(NM_TITLE[s_]))
         for g in ORDER:
             r = adj[(s_, g)]
-            n_flagged += sum(
-                cru[(s_, g, o)]["few_events"].upper() in ("TRUE", "T")
-                for o in ("all", "resp", "exac"))
             rows.append([
-                "\u2003" + g,
-                f"{int(r['deaths']):,}",
-                crude(s_, g, "all"),
-                adjusted(s_, g, "all_HR", "all_LCI", "all_UCI", "all_few_events"),
+                "\u2003" + g, f"{int(r['deaths']):,}",
+                cell(r, "all_HR", "all_LCI", "all_UCI", r["all_few_events"].upper() in TRUE),
                 f"{int(r['resp_deaths']):,}",
-                crude(s_, g, "resp"),
-                adjusted(s_, g, "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
-                crude(s_, g, "exac"),
-                adjusted(s_, g, "exac_IRR", "exac_LCI", "exac_UCI", "all_few_events")])
-    add_table(doc, ["Group", "Deaths",
-                    "All-cause RR", "All-cause HR (95% CI)",
-                    "Resp. deaths", "Resp. RR", "Resp. HR (95% CI)",
-                    "Exac. RR", "Exac. IRR (95% CI)"],
-              rows, [1.24, 0.42, 0.62, 0.86, 0.48, 0.62, 0.86, 0.58, 0.82])
-    afl = {s_: adj[(s_, "AFL-only")] for s_ in ("S2", "S3", "S4")}
+                cell(r, "resp_HR", "resp_LCI", "resp_UCI", r["resp_few_events"].upper() in TRUE),
+                cell(r, "exac_IRR", "exac_LCI", "exac_UCI", False)])
+    add_table(doc, ["Group", "Deaths", "All-cause HR (95% CI)", "Resp. deaths",
+                    "Resp. HR (95% CI)", "Exacerbation IRR (95% CI)"],
+              rows, [2.05, 0.65, 1.25, 0.65, 1.00, 0.90])
+    flagged = any(FLAG in str(v) for r_ in rows if not isinstance(r_, Section) for v in r_)
     legend(doc, label,
-           "Every group of the three multidimensional classifications estimated "
-           "against one common reference: the "
-           f"{int(ref['n_cohort']):,} participants all three classifications agree "
-           "are noCOPD. Because every member of that group is noCOPD under each "
-           "classification, it is disjoint from all the groups shown, and estimates "
-           "under one classification are on the same scale as estimates under "
-           "another. Crude rate ratios (RR) are the observed event rate in the group "
-           "divided by the rate in the reference. Adjusted models carry age, sex, "
-           "race, current smoking status, pack-years and body mass index, with prior "
-           "exacerbation frequency added for exacerbations. Respiratory deaths in "
-           f"the AFL-only group were {int(afl['S2']['resp_deaths'])} under MD-COPD, "
-           f"{int(afl['S3']['resp_deaths'])} under the NoCT classification and "
-           f"{int(afl['S4']['resp_deaths'])} under the ESI classification. "
-           f"{FLAG} fewer than 10 events in the cell: the point estimate is given "
-           "without an interval, which would convey precision the data do not "
-           "carry. AFL-only, airflow limitation without other criteria; RR, rate "
-           "ratio; HR, hazard ratio; IRR, incidence rate ratio; CI, confidence "
-           "interval.")
-
+           "Adjusted risk of each group of the three multidimensional classifications against "
+           f"a common reference, the {int(ref['n_cohort']):,} participants all three "
+           "classifications assign to noCOPD. Adjusted models carry age, sex, race, current "
+           "smoking status, pack-years and body mass index, with prior exacerbation frequency "
+           "added for exacerbations. Crude rate ratios for the same groups are given in "
+           f"Supplemental Table {supp_num('groups_vs_mdcopd')}. "
+           + (f"{FLAG} fewer than 10 events in the group: the estimate is given without an "
+              "interval. " if flagged else "")
+           + "AFL-only, airflow limitation without other criteria; HR, hazard ratio; IRR, "
+           "incidence rate ratio; CI, confidence interval.")
 
 def t_discord_risk(doc, label="Table 4."):
     """Cross-classification of MD-COPD and the ESI classification: each group

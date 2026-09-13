@@ -377,7 +377,7 @@ def s_groups_crude(doc, num):
 
 
 def s_risk_common_ref(doc, num):
-    heading(doc, f"Supplemental Table {num}. Risk of each group against the common "
+    heading(doc, f"Supplemental Table {num}. Adjusted risk of each group against the common "
                  "noCOPD reference")
     t_risk_common_ref(doc, label=f"Table {num}.")
 
