@@ -18,6 +18,8 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "the rate ratio was given alone and flagged":
+        "Methods crude-ratio paragraph; Pete rewrote the sentence in the 2026-09-13 17:56 PJC",
     "The analytic cohort is therefore entirely ever-smokers":
         "Methods study population; Pete deleted it in the 2026-09-13 17:47 PJC",
     "the never-smoking controls COPDGene also enrolled were excluded":
