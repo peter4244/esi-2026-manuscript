@@ -18,6 +18,18 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "conveys precision the data do not carry":
+        "Methods commentary; removed at Pete's direction (menu, 2026-09-13)",
+    "Exacerbation counts are overdispersed and clustered within participant":
+        "Methods commentary; removed 2026-09-13",
+    "since a main effect would have the visit 1 outcome predicting itself":
+        "Methods commentary; removed 2026-09-13",
+    "because the groups overlap":
+        "Methods commentary; removed 2026-09-13",
+    "since both classifications label the same participants":
+        "Methods commentary; removed 2026-09-13",
+    "divided by the observed rate in the common reference group":
+        "Methods overclaim: S5 and the cross-classification use other references; fixed 2026-09-13",
     "identifies clinically important disease that the fixed FEV₁/FVC ratio misses":
         "Abstract Rationale clause; Pete deleted it in the 2026-09-13 06:51 PJC",
     "reclassifies a subset of subjects with COPD who do not carry increased risk for mortality":
