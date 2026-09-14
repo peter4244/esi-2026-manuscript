@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Figure 6: risk in the groups on which MD-COPD and the ESI classification agree
+# Figure 4: risk in the groups on which MD-COPD and the ESI classification agree
 # or disagree, within each stratum of airflow limitation.
 #
 # Rows are strata and columns outcomes. Each panel shows the three groups either
@@ -70,13 +70,13 @@ p <- ggplot(d, aes(x = est, y = grp, colour = grp)) +
   theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
         plot.margin = margin(4, 6, 2, 4))
 
-out <- file.path(HERE, "figure6_discord_risk.png")
+out <- file.path(HERE, "figure4_discord_risk.png")
 validate_layout(p, out)
 ggsave(out, p, width = NATIVE_W, height = 3.8, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure6_discord_risk.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4_discord_risk.meta"))
 
 writeLines(c(
-  "**Figure 6. Risk in the groups on which MD-COPD and the ESI classification agree or disagree.**",
+  "**Figure 4. Risk in the groups on which MD-COPD and the ESI classification agree or disagree.**",
   "",
   paste("Crude rate ratios for all-cause mortality and exacerbations, with 95% confidence",
         "intervals, for the three groups either classification calls COPD, within each stratum",
@@ -96,5 +96,5 @@ writeLines(c(
                 RESP("Airflow limitation", "Both-AFL-only"), RESP("Airflow limitation", "CT-only-COPD"),
                 RESP("Airflow limitation", "ESI-only-COPD"), RESP("Airflow limitation", "Both-COPD")),
         "AFL-only, airflow limitation without other criteria.")),
-  file.path(HERE, "figure6_discord_risk_legend.md"))
+  file.path(HERE, "figure4_discord_risk_legend.md"))
 cat("wrote", out, "\n")

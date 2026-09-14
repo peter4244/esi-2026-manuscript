@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 243L
+REGISTRY_N <- 267L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -394,6 +394,54 @@ reg("FU-03", "Follow-up", "median follow-up 9.7 years for lung function decline"
     'x$median_yr[x$outcome == "FEV1 decline, participants with a follow-up visit"]', TOL_1DP)
 reg("FU-04", "Follow-up", "among 5,414 participants with a follow-up spirometry visit", 5414, "followup_medians.csv",
     'x$n[x$outcome == "FEV1 decline, participants with a follow-up visit"]', TOL_EXACT)
+reg("AFL-01", "AFL-only paragraph", "ESI AFL-only group n = 543", 543, "schema_labels.csv",
+    'x$n[x$schema == "S4" & x$category == "AFL-only"]', TOL_EXACT)
+reg("AFL-02", "AFL-only paragraph", "ESI AFL-only crude all-cause 1.29", 1.29, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-03", "AFL-only paragraph", "its lower bound 1.04", 1.04, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-04", "AFL-only paragraph", "its upper bound 1.59", 1.59, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-05", "AFL-only paragraph", "MD-COPD AFL-only crude all-cause 1.13", 1.13, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-06", "AFL-only paragraph", "its lower bound 0.83", 0.83, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-07", "AFL-only paragraph", "its upper bound 1.51", 1.51, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-08", "AFL-only paragraph", "ESI AFL-only crude exacerbations 1.18", 1.18, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-09", "AFL-only paragraph", "its lower bound 0.95", 0.95, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-10", "AFL-only paragraph", "its upper bound 1.44", 1.44, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-11", "AFL-only paragraph", "MD-COPD AFL-only crude exacerbations 1.23", 1.23, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-12", "AFL-only paragraph", "its lower bound 0.94", 0.94, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-13", "AFL-only paragraph", "its upper bound 1.56", 1.56, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-14", "AFL-only paragraph", "4 respiratory deaths in the ESI AFL-only group", 4, "consensus_ref_crude.csv",
+    'x$events[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
+reg("AFL-15", "AFL-only paragraph", "2 respiratory deaths in the MD-COPD AFL-only group", 2, "consensus_ref_crude.csv",
+    'x$events[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
+reg("AFL-16", "AFL-only paragraph", "NoCT AFL-only crude all-cause 1.57", 1.57, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-17", "AFL-only paragraph", "its lower bound 1.35", 1.35, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-18", "AFL-only paragraph", "its upper bound 1.82", 1.82, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
+reg("AFL-19", "AFL-only paragraph", "NoCT AFL-only crude respiratory 10.00", 10.0, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
+reg("AFL-20", "AFL-only paragraph", "its lower bound 4.95", 4.95, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
+reg("AFL-21", "AFL-only paragraph", "its upper bound 21.87", 21.87, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
+reg("AFL-22", "AFL-only paragraph", "NoCT AFL-only crude exacerbations 1.75", 1.75, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-23", "AFL-only paragraph", "its lower bound 1.46", 1.46, "consensus_ref_crude.csv",
+    'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("AFL-24", "AFL-only paragraph", "its upper bound 2.03", 2.03, "consensus_ref_crude.csv",
+    'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
 reg("GRP-01", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude all-cause 1.38", 1.38, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
 reg("GRP-02", "Group comparisons", "its lower bound 1.10", 1.10, "group_vs_mdcopd.csv",

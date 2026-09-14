@@ -402,7 +402,7 @@ def read_legend(stem):
     """Legend text from a figure's sidecar: its title sentence, then its body.
     The title used to be dropped, leaving a legend that opened on panel (A)."""
     lines = [l.strip() for l in open(os.path.join(FIGS, stem + "_legend.md")) if l.strip()]
-    m = re.match(r"^\*\*Figure \d+\.\s*(.*?)\*\*$", lines[0])
+    m = re.match(r"^\*\*(?:Supplemental )?Figure S?\d+\.\s*(.*?)\*\*$", lines[0])
     if not m:
         raise SystemExit(f"{stem}_legend.md: first line is not a bold figure title")
     return f"{m.group(1).strip()} {CLAIM_ID.sub('', lines[-1])}"
@@ -511,7 +511,7 @@ def main():
     prose_guard.check("The manuscript build")
     prose_guard.check_owned("The manuscript build")
     display_order.check(HERE, {"Table": ["1", "2"],
-                               "Figure": [str(i) for i in range(1, 7)]},
+                               "Figure": [str(i) for i in range(1, 5)]},
                         "The manuscript build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
@@ -556,40 +556,10 @@ def main():
                read_legend("figure1_flow"), width=fig1_w)
     if landscape:
         new_section(doc, landscape=False)
-    ref = load("consensus_ref_group.csv")[0]
-    for i, (png, grp, note) in enumerate([
-            ("figure2_aflonly.png", "AFL-only",
-             "This is the group that withholds a COPD diagnosis from "
-             "participants with airflow limitation, so it is the group a "
-             "CT-free classification has to keep at low risk."),
-            ("figure3_copdminor.png", "COPD-minor",
-             "This is the group a replacement criterion must reach among "
-             "participants with preserved spirometry."),
-            ("figure4_copdmajor.png", "COPD-major",
-             "Estimates are largest under the NoCT classification because that "
-             "classification moved 833 of this group's members into AFL-only, "
-             "leaving a smaller and more severe group behind.")], start=2):
-        title = ("Prognostic risks for AFL-only pathway subjects in each "
-                 "classification. " if i == 2 else "")          # Pete, 2026-09-11
-        add_figure(doc, os.path.join(FIGS, png), f"Figure {i}.",
-                   f"{title}Crude (open circles) and adjusted (filled circles) risk "
-                   f"for the {grp} group under each multidimensional "
-                   f"classification, against a reference common to all three: "
-                   f"the {int(ref['n_cohort']):,} participants every "
-                   f"classification assigns to noCOPD. A common reference makes "
-                   f"an estimate under one classification comparable with an "
-                   f"estimate under another. Panels carry separate x scales "
-                   f"because the three outcomes differ in magnitude; the "
-                   f"comparison the figure supports is between classifications "
-                   f"within a panel. A point drawn without an interval had "
-                   f"fewer than 10 events in that group, so no interval was "
-                   f"estimated. {note} AFL-only, airflow limitation without "
-                   f"other criteria.")
-
-    # Figures 5 and 6 carry their legends in a sidecar, as Figure 1 does, and
+    # Figures 2 to 4 carry their legends in a sidecar, as Figure 1 does, and
     # declare their own widths; the page turns where a width needs it to.
     landscape_now = False
-    for n, stem in ((5, "figure5_profile"), (6, "figure6_discord_risk")):
+    for n, stem in ((2, "figure2_group_risk"), (3, "figure3_profile"), (4, "figure4_discord_risk")):
         w = figure_width(os.path.join(FIGS, stem + ".meta"))
         want = w > CONTENT_WIDTH_IN + 0.01
         if want != landscape_now:

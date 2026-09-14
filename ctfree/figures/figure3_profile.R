@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Figure 5: structural, spirometric and symptom profile of the groups on which
+# Figure 3: structural, spirometric and symptom profile of the groups on which
 # MD-COPD and the ESI classification agree or disagree, within each stratum.
 #
 # Updated from v15 Figure 2 (../../figures/figure2_discordance), which showed the
@@ -92,17 +92,17 @@ panel <- function(i) {
   p
 }
 panels <- lapply(seq_along(MEAS), panel)
-for (p in panels) validate_layout(p, "figure5_profile.png", native_w = NATIVE_W_FIG)
+for (p in panels) validate_layout(p, "figure3_profile.png", native_w = NATIVE_W_FIG)
 fig <- wrap_plots(panels, nrow = 1) +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
-out <- file.path(HERE, "figure5_profile.png")
+out <- file.path(HERE, "figure3_profile.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = 4.6, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure5_profile.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure3_profile.meta"))
 
 nn <- function(s) paste(sprintf("%s %s", SHOWN, formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")),
                         collapse = ", ")
 writeLines(c(
-  "**Figure 5. Profile of the groups on which MD-COPD and the ESI classification agree or disagree.**",
+  "**Figure 3. Profile of the groups on which MD-COPD and the ESI classification agree or disagree.**",
   "",
   paste("Within each stratum of airflow limitation, bars show group means with standard errors",
         "(ESI, %LAA-950HU) or the percentage of the group meeting each criterion. CT-only, COPD",
@@ -117,5 +117,5 @@ writeLines(c(
         "with airflow limitation:", paste0(nn("Airflow limitation"), "."),
         "%LAA-950HU, percentage of lung below -950 Hounsfield units; mMRC, modified Medical",
         "Research Council dyspnea scale; SGRQ, St. George's Respiratory Questionnaire.")),
-  file.path(HERE, "figure5_profile_legend.md"))
+  file.path(HERE, "figure3_profile_legend.md"))
 cat("wrote", out, "\n")

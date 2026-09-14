@@ -28,7 +28,8 @@ sys.path.insert(0, HERE)
 from docx.shared import Pt                                   # noqa: E402
 from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, SCHEMA_NAME,
-                              t_risk_common_ref, t_discord_risk, Section)
+                              t_risk_common_ref, t_discord_risk, Section,
+                              add_figure, read_legend, figure_width, FIGS)
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
@@ -383,6 +384,8 @@ SUPP_TABLES = [("baseline", s1_baseline), ("thresholds", s4_sweep),
                ("esi_by_ct", s12_esi_ct_levels)]
 assert [k for k, _ in SUPP_TABLES] == SUPP_KEYS, "supplement order disagrees with supp_registry"
 SUPP_ORDER = [f"S{i}" for i in range(1, len(SUPP_TABLES) + 1)]
+# Supplemental figures, numbered in citation order like the tables.
+SUPP_FIGURES = [("S1", "figureS1_group_risk")]
 
 def check_citations(produced):
     """The main text and this file must agree on which supplemental tables
@@ -429,7 +432,8 @@ def main():
     pjc_guard.check("The supplement build")
     prose_guard.check("The supplement build")
     prose_guard.check_owned("The supplement build")
-    display_order.check(HERE, {"Supplemental Table": SUPP_ORDER},
+    display_order.check(HERE, {"Supplemental Table": SUPP_ORDER,
+                               "Supplemental Figure": [n for n, _ in SUPP_FIGURES]},
                         "The supplement build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
@@ -442,6 +446,10 @@ def main():
     for i, (_, fn) in enumerate(SUPP_TABLES, 1):
         fn(doc, f"S{i}")
         doc.add_paragraph()
+    doc.add_page_break()
+    for n, stem in SUPP_FIGURES:
+        add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Supplemental Figure {n}.",
+                   read_legend(stem), width=figure_width(os.path.join(FIGS, stem + ".meta")))
     data_files(doc)
     doc.save(OUT)
     check_citations(SUPP_ORDER)

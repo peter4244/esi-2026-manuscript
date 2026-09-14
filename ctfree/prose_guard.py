@@ -18,6 +18,10 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "adjusted IRR for the ESI classification of 1.25":
+        "Results AFL-only paragraph; crude-only rewrite at Pete's request, 2026-09-13",
+    "remained at low risk for all-cause and respiratory mortality":
+        "Results AFL-only paragraph; crude all-cause is 1.29 (1.04-1.59), respiratory untestable; removed 2026-09-13",
     'in which the models for all three classifications were refitted':
         "Methods diagnostic-groups sentence; deleted in Pete's 2026-09-13 18:17 PJC",
     'without adjustment for multiple comparisons':
@@ -147,8 +151,8 @@ OWNED = {
             'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
         'clinical outcomes opening (2026-09-13 18:30, slip fixed at his request)':
             'The benefit of the MD-COPD classification over the fixed ratio results from removing the COPD diagnosis from low-risk individuals with airflow obstruc',
-        'AFL-only outcomes (2026-09-11 13:01)':
-            'Crude and adjusted risks for the AFL-only pathway are shown in Figure 2. While the ESI classification over-diagnosed this pathway relative to MD-COPD',
+        'AFL-only outcomes (crude only, rewritten at his request 2026-09-13)':
+            'Crude risks for the AFL-only pathway are shown in Figure 2, with crude and adjusted risks in Supplemental Figure S1. While the ESI classification over',
         'FEV1 paragraph (2026-09-11 13:01)':
             'While all three groups had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD minor pathway',
         'COPD-minor comparison (2026-09-11, his wording)':

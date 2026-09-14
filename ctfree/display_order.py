@@ -12,7 +12,7 @@ import re
 
 PROSE = ("INTRODUCTION.md", "METHODS.md", "RESULTS.md", "DISCUSSION.md")
 CITE = re.compile(
-    r"(Supplemental\s+Tables?|Tables?|Figures?)\s+(S?\d+[a-c]?)"
+    r"(Supplemental\s+Tables?|Supplemental\s+Figures?|Tables?|Figures?)\s+(S?\d+[a-c]?)"
     r"(?:\s*(?:to|-|–)\s*(S?\d+[a-c]?))?"
     r"((?:\s*(?:,|and)\s*(?:S?\d+[a-c]?))*)")
 
@@ -34,10 +34,11 @@ def cited_in_order(here):
     text = " ".join(open(os.path.join(here, f)).read()
                     for f in PROSE if os.path.exists(os.path.join(here, f)))
     text = re.sub(r"\{[^}]*\}", "", text)
-    seq = {"Table": [], "Figure": [], "Supplemental Table": []}
+    seq = {"Table": [], "Figure": [], "Supplemental Table": [], "Supplemental Figure": []}
     for m in CITE.finditer(text):
         head = m.group(1)
-        kind = ("Supplemental Table" if head.startswith("Supplemental")
+        kind = (("Supplemental Figure" if "Figure" in head else "Supplemental Table")
+                if head.startswith("Supplemental")
                 else "Table" if head.startswith("Table") else "Figure")
         items = _range(m.group(2), m.group(3)) if m.group(3) else [m.group(2)]
         items += re.findall(r"S?\d+[a-c]?", m.group(4) or "")
