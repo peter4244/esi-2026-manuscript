@@ -1,5 +1,6 @@
 import pjc_guard
 import prose_guard
+import word_guard
 import display_order
 from supp_registry import SUPP_KEYS
 #!/usr/bin/env python3
@@ -430,6 +431,7 @@ def check_citations(produced):
 
 def main():
     pjc_guard.check("The supplement build")
+    word_guard.check([OUT], "The supplement build")
     prose_guard.check("The supplement build")
     prose_guard.check_owned("The supplement build")
     display_order.check(HERE, {"Supplemental Table": SUPP_ORDER,

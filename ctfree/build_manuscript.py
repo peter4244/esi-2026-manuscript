@@ -34,6 +34,7 @@ from docx.enum.table import WD_ALIGN_VERTICAL                # noqa: E402
 from tables.docx_helpers import FONT_NAME, CONTENT_WIDTH_IN  # noqa: E402
 import pjc_guard
 import prose_guard                                             # noqa: E402
+import word_guard
 import display_order                                           # noqa: E402
 from supp_registry import supp_num                             # noqa: E402
 
@@ -508,6 +509,7 @@ def heading_on_new_page(doc, text):
 
 def main():
     pjc_guard.check("The manuscript build")
+    word_guard.check([OUT], "The manuscript build")
     prose_guard.check("The manuscript build")
     prose_guard.check_owned("The manuscript build")
     display_order.check(HERE, {"Table": ["1", "2"],
