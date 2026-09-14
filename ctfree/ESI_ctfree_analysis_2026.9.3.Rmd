@@ -1039,9 +1039,26 @@ for (s in c("S1", "S2", "S3", "S4")) {
     exac_IRR = exp(ce[1]), exac_LCI = exp(ce[1] - 1.96 * ce[2]), exac_UCI = exp(ce[1] + 1.96 * ce[2]),
     c_all = c1[1], c_all_lo = c1[1] - 1.96 * c1[2], c_all_hi = c1[1] + 1.96 * c1[2],
     c_resp = c2[1], c_resp_lo = c2[1] - 1.96 * c2[2], c_resp_hi = c2[1] + 1.96 * c2[2],
-    exac_AIC = AIC(n1), B_eff = length(be), stringsAsFactors = FALSE, row.names = NULL)
+    exac_AIC = AIC(n1), B_eff = length(be),
+    # Rates behind the ratios, per 100 person-years (mortality) and per 100
+    # years followed (exacerbations), so the table can show units.
+    py_copd = sm(mb, "py", "COPD"), py_nocopd = sm(mb, "py", "noCOPD"),
+    exac_copd = sm(eb, "Total_Exacerbations", "COPD"), exac_nocopd = sm(eb, "Total_Exacerbations", "noCOPD"),
+    fy_copd = sm(eb, "Years_Followed", "COPD"), fy_nocopd = sm(eb, "Years_Followed", "noCOPD"),
+    rate_all_copd   = 100 * sm(mb, "vital_status", "COPD")   / sm(mb, "py", "COPD"),
+    rate_all_nocopd = 100 * sm(mb, "vital_status", "noCOPD") / sm(mb, "py", "noCOPD"),
+    rate_resp_copd   = 100 * sm(mb, "ev_resp", "COPD")   / sm(mb, "py", "COPD"),
+    rate_resp_nocopd = 100 * sm(mb, "ev_resp", "noCOPD") / sm(mb, "py", "noCOPD"),
+    rate_exac_copd   = 100 * sm(eb, "Total_Exacerbations", "COPD")   / sm(eb, "Years_Followed", "COPD"),
+    rate_exac_nocopd = 100 * sm(eb, "Total_Exacerbations", "noCOPD") / sm(eb, "Years_Followed", "noCOPD"),
+    stringsAsFactors = FALSE, row.names = NULL)
 }
 schema_binary <- do.call(rbind, bin_rows)
+# the rates must reproduce the rate ratios exactly
+with(schema_binary, stopifnot(
+  isTRUE(all.equal(rate_all_copd / rate_all_nocopd, all_rr)),
+  isTRUE(all.equal(rate_resp_copd / rate_resp_nocopd, resp_rr)),
+  isTRUE(all.equal(rate_exac_copd / rate_exac_nocopd, exac_rr))))
 stopifnot(nrow(schema_binary) == 4,
           all(schema_binary$n_copd + schema_binary$n_nocopd == nrow(d_b)),
           all(is.finite(as.matrix(schema_binary[, -1]))),
