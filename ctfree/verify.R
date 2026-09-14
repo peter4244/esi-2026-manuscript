@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 267L
+REGISTRY_N <- 278L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -442,6 +442,28 @@ reg("AFL-23", "AFL-only paragraph", "its lower bound 1.46", 1.46, "consensus_ref
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
 reg("AFL-24", "AFL-only paragraph", "its upper bound 2.03", 2.03, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
+reg("BIN-01", "COPD versus no COPD paragraph", "fixed ratio all-cause crude rate ratio 2.82", 2.82, "schema_binary.csv",
+    'x$all_rr[x$schema == "S1"]', TOL_2DP)
+reg("BIN-02", "COPD versus no COPD paragraph", "MD-COPD all-cause crude rate ratio 3.03", 3.03, "schema_binary.csv",
+    'x$all_rr[x$schema == "S2"]', TOL_2DP)
+reg("BIN-03", "COPD versus no COPD paragraph", "fixed ratio vs MD-COPD all-cause p = 0.012", 0.012, "binary_vs_mdcopd.csv",
+    'x$p_boot[x$schema == "S1" & x$outcome == "all"]', TOL_3DP)
+reg("BIN-04", "COPD versus no COPD paragraph", "NoCT and ESI all-cause rate ratios similar to MD-COPD (p >= 0.05)", 1, "binary_vs_mdcopd.csv",
+    'as.integer(all(x$p_boot[x$schema %in% c("S3", "S4") & x$outcome == "all"] >= 0.05))', TOL_EXACT)
+reg("BIN-05", "COPD versus no COPD paragraph", "NoCT respiratory relative risk significantly lower than MD-COPD", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "resp"] < 0.05 & x$ratio_of_ratios[x$schema == "S3" & x$outcome == "resp"] < 1)', TOL_EXACT)
+reg("BIN-06", "COPD versus no COPD paragraph", "fixed ratio exacerbation crude rate ratio 3.09", 3.09, "schema_binary.csv",
+    'x$exac_rr[x$schema == "S1"]', TOL_2DP)
+reg("BIN-07", "COPD versus no COPD paragraph", "MD-COPD exacerbation crude rate ratio 3.97", 3.97, "schema_binary.csv",
+    'x$exac_rr[x$schema == "S2"]', TOL_2DP)
+reg("BIN-08", "COPD versus no COPD paragraph", "fixed ratio vs MD-COPD exacerbations p < 0.005", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S1" & x$outcome == "exac"] < 0.005)', TOL_EXACT)
+reg("BIN-09", "COPD versus no COPD paragraph", "NoCT exacerbation crude rate ratio 4.48", 4.48, "schema_binary.csv",
+    'x$exac_rr[x$schema == "S3"]', TOL_2DP)
+reg("BIN-10", "COPD versus no COPD paragraph", "ESI exacerbation crude rate ratio 4.71", 4.71, "schema_binary.csv",
+    'x$exac_rr[x$schema == "S4"]', TOL_2DP)
+reg("BIN-11", "COPD versus no COPD paragraph", "NoCT and ESI vs MD-COPD exacerbations p < 0.002", 1, "binary_vs_mdcopd.csv",
+    'as.integer(all(x$p_boot[x$schema %in% c("S3", "S4") & x$outcome == "exac"] < 0.002))', TOL_EXACT)
 reg("GRP-01", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude all-cause 1.38", 1.38, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
 reg("GRP-02", "Group comparisons", "its lower bound 1.10", 1.10, "group_vs_mdcopd.csv",

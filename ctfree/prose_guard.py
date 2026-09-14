@@ -18,6 +18,10 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "the ratio of event rates between participants with and without COPD differed":
+        "Results comparison paragraph; Pete deleted it in the 2026-09-13 22:28 PJC",
+    "[add in overall predictive value, i.e. AUC, etc]":
+        "Results placeholder; replaced by his paragraph, 2026-09-13 22:28",
     "adjusted IRR for the ESI classification of 1.25":
         "Results AFL-only paragraph; crude-only rewrite at Pete's request, 2026-09-13",
     "remained at low risk for all-cause and respiratory mortality":
@@ -157,6 +161,8 @@ OWNED = {
             'While all three groups had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD minor pathway',
         'COPD-minor comparison (2026-09-11, his wording)':
             'For the COPD minor pathway group, the three multidimensional classifications had similar risk profiles, with the NoCT and ESI estimates numerically lower than MD-COPD on all three outcomes.',
+        'COPD versus no COPD comparison (2026-09-13 22:28, his wording)':
+            'We first examined how, within each competing classification, the risks for all-cause mortality, respiratory mortality, and respiratory exacerbations b',
         'cross-tabulation opening (2026-09-10 16:48)':
             'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
         'non-obstructed paragraph (2026-09-11 13:01)':
