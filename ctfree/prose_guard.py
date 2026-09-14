@@ -18,6 +18,10 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "The same pattern governs where an ESI criterion helps":
+        "Discussion; merged into the preceding sentence at Pete's direction 2026-09-14",
+    "Imperfect correlation between CT and ESI":
+        "Discussion; the correlation results were removed, now 'agreement' (2026-09-14)",
     "We first examined how, within each competing classification":
         "Results COPD versus no COPD paragraph; Pete deleted it in the 2026-09-13 23:22 PJC",
     "Comparing event rates between COPD versus no COPD diagnostic groups":
