@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 283L
+REGISTRY_N <- 282L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -466,14 +466,12 @@ reg("BIN-11", "COPD versus no COPD paragraph", "NoCT and ESI vs MD-COPD exacerba
     'as.integer(all(x$p_boot[x$schema %in% c("S3", "S4") & x$outcome == "exac"] < 0.002))', TOL_EXACT)
 reg("AFL-25", "AFL-only paragraph", "34 respiratory deaths in the NoCT AFL-only group", 34, "consensus_ref_crude.csv",
     'x$events[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
-reg("BIN-12", "COPD versus no COPD paragraph", "NoCT all-cause crude rate ratio 2.98", 2.98, "schema_binary.csv",
-    'x$all_rr[x$schema == "S3"]', TOL_2DP)
-reg("BIN-13", "COPD versus no COPD paragraph", "NoCT vs MD-COPD all-cause p = 0.57", 0.57, "binary_vs_mdcopd.csv",
-    'x$p_boot[x$schema == "S3" & x$outcome == "all"]', TOL_2DP)
-reg("BIN-14", "COPD versus no COPD paragraph", "ESI all-cause crude rate ratio 3.05", 3.05, "schema_binary.csv",
-    'x$all_rr[x$schema == "S4"]', TOL_2DP)
-reg("BIN-15", "COPD versus no COPD paragraph", "ESI vs MD-COPD all-cause p = 0.91", 0.91, "binary_vs_mdcopd.csv",
-    'x$p_boot[x$schema == "S4" & x$outcome == "all"]', TOL_2DP)
+reg("BIN-12", "COPD versus no COPD paragraph", "NoCT respiratory crude rate ratio 17.48", 17.48, "schema_binary.csv",
+    'x$resp_rr[x$schema == "S3"]', TOL_2DP)
+reg("BIN-13", "COPD versus no COPD paragraph", "MD-COPD respiratory crude rate ratio 38.98", 38.98, "schema_binary.csv",
+    'x$resp_rr[x$schema == "S2"]', TOL_2DP)
+reg("BIN-14", "COPD versus no COPD paragraph", "NoCT vs MD-COPD respiratory p < 0.002", 1, "binary_vs_mdcopd.csv",
+    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "resp"] < 0.002)', TOL_EXACT)
 reg("GRP-01", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude all-cause 1.38", 1.38, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
 reg("GRP-02", "Group comparisons", "its lower bound 1.10", 1.10, "group_vs_mdcopd.csv",
