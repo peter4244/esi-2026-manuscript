@@ -261,54 +261,6 @@ def s_crossclass_agreement(doc, num):
            "AFL-only, airflow limitation without other criteria.")
 
 
-def s_copd_binary(doc, num):
-    """COPD versus no COPD under each classification: the event rate in each group
-    with its units, the crude rate ratio, and each classification against MD-COPD
-    by a paired bootstrap (Pete, 2026-09-11: MD-COPD first per outcome;
-    2026-09-13: show the rates and their units)."""
-    heading(doc, f"Supplemental Table {num}. Event rates in COPD versus no COPD under each classification")
-    b = {r["schema"]: r for r in load(ASSETS, "schema_binary.csv")}
-    v = {(r["schema"], r["outcome"]): r for r in load(ASSETS, "binary_vs_mdcopd.csv")}
-    NM = {"S2": "MD-COPD", "S1": "Fixed ratio", "S3": "NoCT classification",
-          "S4": "ESI classification"}
-    OUT = [("all", "All-cause mortality, deaths per 100 person-years", 2),
-           ("resp", "Respiratory mortality, deaths per 100 person-years", 3),
-           ("exac", "Exacerbations, exacerbations per 100 person-years", 1)]
-    assert all(int(r["resp_nocopd"]) >= 10 and int(r["resp_copd"]) >= 10 for r in b.values()), \
-        "a COPD versus no COPD cell is under the event floor"
-    ci = lambda x, lo, hi: f"{float(x):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
-    rows = []
-    for o, title, dp in OUT:
-        rows.append(Section(title))
-        for s_ in ("S2", "S1", "S3", "S4"):
-            r = b[s_]
-            rate_c, rate_n = float(r[f"rate_{o}_copd"]), float(r[f"rate_{o}_nocopd"])
-            assert abs(rate_c / rate_n - float(r[f"{o}_rr"])) < 1e-9, f"{s_} {o}: rates do not reproduce the ratio"
-            crude = ci(r[f"{o}_rr"], r[f"{o}_rr_lo"], r[f"{o}_rr_hi"])
-            lead = ["\u2003" + NM[s_], f"{rate_c:.{dp}f}", f"{rate_n:.{dp}f}", crude]
-            if s_ == "S2":
-                rows.append(lead + ["reference", ""])
-                continue
-            x = v[(s_, o)]; p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
-            pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
-            rows.append(lead + [ci(x["ratio_of_ratios"], x["lo"], x["hi"]), pt])
-    add_table(doc, ["Classification", "Rate, COPD", "Rate, no COPD",
-                    "Crude rate ratio (95% CI)", "Ratio versus MD-COPD (95% CI)", "P"],
-              rows, [1.55, 0.80, 0.80, 1.35, 1.35, 0.65])
-    n = {s_: f"{int(b[s_]['n_copd']):,}" for s_ in b}
-    legend(doc, f"Table {num}.",
-           "Each classification's COPD group (COPD-minor and COPD-major; for the fixed "
-           "ratio, post-bronchodilator FEV\u2081/FVC below 0.70) against its own no-COPD "
-           "group (noCOPD and AFL-only). Rates are events per 100 person-years of follow-up, "
-           "in the unit named in each section heading. The crude rate ratio is the rate in the "
-           "COPD group divided by the rate in the no-COPD group and has no units, with exact "
-           "Poisson intervals for deaths and subject-bootstrap intervals for exacerbations. The "
-           "ratio versus MD-COPD divides each classification's crude rate ratio by that of "
-           "MD-COPD and has no units; its interval and two-sided P come from a paired subject "
-           "bootstrap of 1,000 resamples, and P < 0.002 means no resample fell on the other side "
-           f"of 1. COPD groups: MD-COPD {n['S2']}, fixed ratio {n['S1']}, NoCT classification "
-           f"{n['S3']} and ESI classification {n['S4']} of 9,240 participants.")
-
 def s_groups_crude(doc, num):
     """Crude risk of every diagnostic group under each multidimensional
     classification against the common reference, and each CT-free
@@ -378,7 +330,7 @@ def s_discord_risk(doc, num):
 # and s4_fitting stay defined but unregistered: Methods still describes the
 # analyses behind them and no result cites them, pending Pete's ruling.
 SUPP_TABLES = [("baseline", s1_baseline), ("thresholds", s4_sweep),
-               ("crossclass", s_crossclass_agreement), ("copd_binary", s_copd_binary),
+               ("crossclass", s_crossclass_agreement),
                ("groups_vs_mdcopd", s_groups_crude),
                ("risk_common_ref", s_risk_common_ref),
                ("fev1", s6_fev1_decline), ("discord_risk", s_discord_risk),

@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 282L
+REGISTRY_N <- 284L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -472,6 +472,10 @@ reg("BIN-13", "COPD versus no COPD paragraph", "MD-COPD respiratory crude rate r
     'x$resp_rr[x$schema == "S2"]', TOL_2DP)
 reg("BIN-14", "COPD versus no COPD paragraph", "NoCT vs MD-COPD respiratory p < 0.002", 1, "binary_vs_mdcopd.csv",
     'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "resp"] < 0.002)', TOL_EXACT)
+reg("AFL-26", "AFL-only paragraph", "MD-COPD AFL-only crude respiratory rate ratio 2.23", 2.23, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
+reg("FILL-32", "Results study population", "bronchodilator change in ESI has SD 0.82", 0.82, "bronchodilator_delta_esi.csv",
+    'x$sd_delta', TOL_2DP)
 reg("GRP-01", "Group comparisons", "AFL-only NoCT vs MD-COPD, crude all-cause 1.38", 1.38, "group_vs_mdcopd.csv",
     'x$ratio_of_ratios[x$schema == "S3" & x$category == "AFL-only" & x$type == "crude" & x$outcome == "all"]', TOL_2DP)
 reg("GRP-02", "Group comparisons", "its lower bound 1.10", 1.10, "group_vs_mdcopd.csv",

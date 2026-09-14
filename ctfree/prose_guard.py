@@ -18,6 +18,18 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "We first examined how, within each competing classification":
+        "Results COPD versus no COPD paragraph; Pete deleted it in the 2026-09-13 23:22 PJC",
+    "Comparing event rates between COPD versus no COPD diagnostic groups":
+        "Methods paragraph for the deleted analysis; removed at his direction 2026-09-14",
+    "The 612 participants that the ESI classification adds to the COPD-minor pathway":
+        "Discussion sentence; deleted 2026-09-13 23:22",
+    "is defensible only while the participants in it are genuinely at low risk":
+        "Discussion clause; deleted 2026-09-13 23:22",
+    "Associations between ESI and quantitative CT emphysema were weak":
+        "Discussion sentence without supporting results; removed at his direction 2026-09-14",
+    "AFL-only-noCOPD":
+        "Methods label; changed to AFL-only at his direction 2026-09-14",
     "the ratio of event rates between participants with and without COPD differed":
         "Results comparison paragraph; Pete deleted it in the 2026-09-13 22:28 PJC",
     "[add in overall predictive value, i.e. AUC, etc]":
@@ -156,13 +168,11 @@ OWNED = {
         'clinical outcomes opening (2026-09-13 18:30, slip fixed at his request)':
             'The benefit of the MD-COPD classification over the fixed ratio results from removing the COPD diagnosis from low-risk individuals with airflow obstruc',
         'AFL-only outcomes (crude only, rewritten at his request 2026-09-13)':
-            'Crude risks for the AFL-only pathway are shown in Figure 2, with crude and adjusted risks in Supplemental Figure S1. While the ESI classification over',
+            'Crude risks for the AFL-only pathway are shown in Figure 2, with crude and adjusted risks in Supplemental Figure S1 and Supplemental Tables S4 and S5.',
         'FEV1 paragraph (2026-09-11 13:01)':
-            'While all three groups had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD minor pathway',
+            'While all three classifications had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD min',
         'COPD-minor comparison (2026-09-11, his wording)':
             'For the COPD minor pathway group, the three multidimensional classifications had similar risk profiles, with the NoCT and ESI estimates numerically lower than MD-COPD on all three outcomes.',
-        'COPD versus no COPD comparison (2026-09-13 22:28, his wording)':
-            'We first examined how, within each competing classification, the risks for all-cause mortality, respiratory mortality, and respiratory exacerbations b',
         'cross-tabulation opening (2026-09-10 16:48)':
             'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
         'non-obstructed paragraph (2026-09-11 13:01)':

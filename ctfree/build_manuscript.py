@@ -561,7 +561,7 @@ def main():
     # Figures 2 to 4 carry their legends in a sidecar, as Figure 1 does, and
     # declare their own widths; the page turns where a width needs it to.
     landscape_now = False
-    for n, stem in ((2, "figure2_group_risk"), (3, "figure3_profile"), (4, "figure4_discord_risk")):
+    for n, stem in ((2, "figure2_group_risk"), (3, "figure3_discord_risk"), (4, "figure4_profile")):
         w = figure_width(os.path.join(FIGS, stem + ".meta"))
         want = w > CONTENT_WIDTH_IN + 0.01
         if want != landscape_now:

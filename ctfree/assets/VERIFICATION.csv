@@ -134,6 +134,8 @@
 "BIN-12","COPD versus no COPD paragraph","NoCT respiratory crude rate ratio 17.48","17.48","17.4757087696317","schema_binary.csv","PASS",""
 "BIN-13","COPD versus no COPD paragraph","MD-COPD respiratory crude rate ratio 38.98","38.98","38.9835324413394","schema_binary.csv","PASS",""
 "BIN-14","COPD versus no COPD paragraph","NoCT vs MD-COPD respiratory p < 0.002","1","1","binary_vs_mdcopd.csv","PASS",""
+"AFL-26","AFL-only paragraph","MD-COPD AFL-only crude respiratory rate ratio 2.23","2.23","2.22763985956818","consensus_ref_crude.csv","PASS",""
+"FILL-32","Results study population","bronchodilator change in ESI has SD 0.82","0.82","0.818237470942477","bronchodilator_delta_esi.csv","PASS",""
 "GRP-01","Group comparisons","AFL-only NoCT vs MD-COPD, crude all-cause 1.38","1.38","1.38308450774125","group_vs_mdcopd.csv","PASS",""
 "GRP-02","Group comparisons","its lower bound 1.10","1.1","1.09756909771239","group_vs_mdcopd.csv","PASS",""
 "GRP-03","Group comparisons","its upper bound 1.77","1.77","1.77219458399413","group_vs_mdcopd.csv","PASS",""
