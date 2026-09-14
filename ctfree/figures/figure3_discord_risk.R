@@ -49,7 +49,6 @@ d <- left_join(d, ref_ev, by = c("stratum", "outcome"))
 # With respiratory mortality out, every plotted cell clears the floor and has an interval.
 stopifnot(!anyNA(d$ref_events), !anyNA(d$lo), !anyNA(d$hi),
           all(d$events >= MIN_EVENTS_FIG), all(d$ref_events >= MIN_EVENTS_FIG))
-RESP <- function(st, g) rt$resp_deaths[rt$stratum == st & rt$group == g]
 
 d$grp     <- factor(GRP[d$group], levels = rev(c("CT-only", "ESI-only", "Both-COPD")))
 d$outcome <- factor(OUTC[d$outcome], levels = OUTC)
@@ -76,25 +75,17 @@ ggsave(out, p, width = NATIVE_W, height = 3.8, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure3_discord_risk.meta"))
 
 writeLines(c(
-  "**Figure 3. Risk in the groups on which MD-COPD and the ESI classification agree or disagree.**",
+  "**Figure 3. Risk in the COPD-diagnosed subjects grouped by agreement of MD-COPD and ESI classifications.**",
   "",
   paste("Crude rate ratios for all-cause mortality and exacerbations, with 95% confidence",
         "intervals, for the three groups either classification calls COPD, within each stratum",
-        "of airflow limitation: against the participants both classify as noCOPD among those",
-        "with preserved spirometry (top row), and against those both classify as AFL-only among",
-        "those with airflow limitation (bottom row). The two rows have different references, so",
-        "estimates are comparable within a row and not between rows. Intervals are exact Poisson",
-        "intervals for deaths and subject-bootstrap intervals for exacerbations. CT-only, COPD",
-        "under MD-COPD only; ESI-only, COPD under the ESI classification only; Both-COPD, COPD",
-        "under both.",
-        "Respiratory mortality is not shown because the numbers of respiratory deaths are too",
-        sprintf(paste("small for estimation: with preserved spirometry, %d in the reference, %d CT-only,",
-                      "%d ESI-only and %d Both-COPD; with airflow limitation, %d in the reference, %d CT-only,",
-                      "%d ESI-only and %d Both-COPD."),
-                RESP("Preserved spirometry", "Both-noCOPD"), RESP("Preserved spirometry", "CT-only-COPD"),
-                RESP("Preserved spirometry", "ESI-only-COPD"), RESP("Preserved spirometry", "Both-COPD"),
-                RESP("Airflow limitation", "Both-AFL-only"), RESP("Airflow limitation", "CT-only-COPD"),
-                RESP("Airflow limitation", "ESI-only-COPD"), RESP("Airflow limitation", "Both-COPD")),
-        "AFL-only, airflow limitation without other criteria.")),
+        "of airflow limitation. Reference groups are the subjects classified as noCOPD by both",
+        "methods among those with preserved spirometry (top row) and subjects classified as",
+        "AFL-only by both methods among those with airflow limitation (bottom row). Intervals",
+        "are exact Poisson intervals for deaths and subject-bootstrap intervals for",
+        "exacerbations. CT-only = diagnosed as COPD under MD-COPD only; ESI-only = diagnosed",
+        "as COPD under the ESI classification only; Both-COPD = diagnosed as COPD under both;",
+        "AFL-only = airflow limitation without other criteria. Respiratory mortality is not",
+        "shown because the numbers of respiratory deaths are too small for estimation.")),
   file.path(HERE, "figure3_discord_risk_legend.md"))
 cat("wrote", out, "\n")

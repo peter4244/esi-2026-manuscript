@@ -18,6 +18,18 @@ SOURCES = ("ABSTRACT.md", "INTRODUCTION.md", "METHODS.md", "RESULTS.md",
 
 # Phrase -> why it is banned.
 DELETED = {
+    "contamination of similar size in the two":
+        "Results FEV1 paragraph; Pete edited it in the 2026-09-14 10:07 PJC",
+    "In the non-obstructed subgroup (n = 5,156)":
+        "Results preserved-spirometry opening; Pete edited it in the 2026-09-14 10:07 PJC",
+    "In the obstructed subgroup (n = 4,084)":
+        "Results airflow-obstruction opening; Pete edited it in the 2026-09-14 10:07 PJC",
+    "The objective of the fitting process was to approximate the MD-COPD labels":
+        "Methods thresholds paragraph; removed as commentary at Pete's direction 2026-09-14",
+    "Agreement between classifications was assessed across the four diagnostic categories":
+        "Methods final paragraph; removed as commentary at Pete's direction 2026-09-14",
+    "and conversely by applying the diagnosis":
+        "Results clinical outcomes opening; Pete deleted it in the 2026-09-14 09:58 PJC",
     "The same pattern governs where an ESI criterion helps":
         "Discussion; merged into the preceding sentence at Pete's direction 2026-09-14",
     "Imperfect correlation between CT and ESI":
@@ -168,7 +180,7 @@ def check(build_name="this build"):
 OWNED = {
     "RESULTS.md": {
         'agreement section opening (2026-09-10 16:48)':
-            'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1, and overall the ESI classification correctly classified 87.9%',
+            'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1. The ESI classification correctly classified 89.0%',
         'clinical outcomes opening (2026-09-13 18:30, slip fixed at his request)':
             'The benefit of the MD-COPD classification over the fixed ratio results from removing the COPD diagnosis from low-risk individuals with airflow obstruc',
         'AFL-only outcomes (crude only, rewritten at his request 2026-09-13)':
@@ -180,9 +192,9 @@ OWNED = {
         'cross-tabulation opening (2026-09-10 16:48)':
             'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
         'non-obstructed paragraph (2026-09-11 13:01)':
-            'In the non-obstructed subgroup (n = 5,156), COPD diagnoses occurred only via the COPD minor pathway.',
+            'In subjects with preserved spirometry (n = 5,156), COPD diagnoses occurred only via the COPD minor pathway.',
         'obstructed paragraph (2026-09-11 13:01)':
-            'In the obstructed subgroup (n = 4,084), COPD diagnoses occurred only via the COPD major pathway in which only one minor criterion was necessary for diagnosis.',
+            'In subjects with airflow obstruction (n = 4,084), COPD diagnoses occurred only via the COPD major pathway in which only one minor criterion was necessary for diagnosis.',
         'cross-tabulation outcomes (2026-09-11 13:01)':
             'We also evaluated outcome risks for all-cause mortality and exacerbations by cross-tabulated diagnostic category within obstructed and non-obstructed subjects',
     },

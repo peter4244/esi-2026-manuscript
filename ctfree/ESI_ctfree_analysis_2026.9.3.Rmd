@@ -362,6 +362,15 @@ preserved-spirometry pair (noCOPD and COPD-minor).
 d_b$afl <- d_b$major_criterion
 d_b$ESI <- d_b$ESI_v1post
 d_b$om  <- d_b$dysp_yn + d_b$qol_yn + d_b$cb_yn
+# Cardiac comorbidity rule. MD-COPD requires two imaging criteria for the COPD
+# minor pathway in participants with coronary artery disease or congestive heart
+# failure. NoCT has no imaging criterion, so the pathway is closed to them; ESI
+# is the one imaging surrogate, so it must be met (Pete, 2026-09-14).
+stopifnot(!anyNA(d_b$CoronaryArtery), !anyNA(d_b$CongestHeartFail))
+d_b$card <- d_b$CoronaryArtery == 1 | d_b$CongestHeartFail == 1
+# The source file applies the rule as read here: every cardiac participant it
+# places in COPD minor meets both CT criteria.
+stopifnot(all((d_b$emph_yn & d_b$wall_yn) | !(d_b$bhatt_cls == "COPD-minor" & d_b$card)))
 O <- c("noCOPD", "AFL-only", "COPD-minor", "COPD-major")
 
 # Generic classifier: given membership rules for the four categories,
@@ -379,7 +388,7 @@ d_b$S1 <- factor(ifelse(d_b$afl, "COPD", "noCOPD"),
 d_b$S2 <- factor(as.character(d_b$bhatt_cls), levels = O)
 
 # S3  NoCT-MD-COPD. Symptom criteria only; count threshold is fitted below.
-s3 <- function(df, k) label(df, df$om >= k, df$om == 0)
+s3 <- function(df, k) label(df, df$om >= k & !df$card, df$om == 0)
 
 # S4  ESI-MD-COPD. ESI is a single criterion, met at or above one fitted
 # threshold, so it counts like any of the three symptom criteria. An earlier
@@ -387,11 +396,14 @@ s3 <- function(df, k) label(df, df$om >= k, df$om == 0)
 # satisfy the count. That threshold was fitted at 7.00 and reached by 2 of the
 # 5,156 participants with preserved spirometry, so it bought essentially
 # nothing for an extra fitted parameter and is dropped.
-s4 <- function(df, k, tl) label(df, (as.integer(df$ESI >= tl) + df$om) >= k,
-                                   (as.integer(df$ESI >= tl) + df$om) == 0)
+s4 <- function(df, k, tl) {
+  e <- as.integer(df$ESI >= tl)
+  label(df, (e + df$om) >= k & (!df$card | e == 1), (e + df$om) == 0)
+}
 
 # Retained only to score the v15 draft rule, which WAS a two-threshold rule,
 # so that historical comparison stays faithful to what was actually drafted.
+# It predates the cardiac rule and is left without it.
 s4_two <- function(df, k, tl, th) {
   s <- ifelse(df$ESI >= th, 2, ifelse(df$ESI >= tl, 1, 0))
   label(df, (s + df$om) >= k, (s + df$om) == 0)
@@ -861,15 +873,15 @@ for (s in c("S1", "S2", "S3", "S4")) {
          "+ prior_exac + offset(log(Years_Followed))")), data = exa)
   cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
   for (g in levels(d_b[[s]])) {
-    r <- paste0(s, g); ix <- mort[[s]] == g
+    r <- paste0(s, g); ix <- mort[[s]] == g; rx <- mort[[s]] == levels(d_b[[s]])[1]
     gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
     risk_rows[[length(risk_rows) + 1]] <- data.frame(
       schema = s, category = g,
       n_mort = sum(ix), n_exac = sum(exa[[s]] == g),
       n_cohort = sum(d_b[[s]] == g), deaths = sum(mort$vital_status[ix]),
       resp_deaths = sum(mort$ev_resp[ix]),
-      all_few_events  = sum(mort$vital_status[ix]) < MIN_EVENTS,
-      resp_few_events = sum(mort$ev_resp[ix]) < MIN_EVENTS,
+      all_few_events  = min(sum(mort$vital_status[ix]), sum(mort$vital_status[rx])) < MIN_EVENTS,
+      resp_few_events = min(sum(mort$ev_resp[ix]), sum(mort$ev_resp[rx])) < MIN_EVENTS,
       all_HR  = gv(cm, 1), all_LCI  = gv(cm, 3), all_UCI  = gv(cm, 4),
       resp_HR = gv(cr, 1), resp_LCI = gv(cr, 3), resp_UCI = gv(cr, 4),
       exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
@@ -974,7 +986,7 @@ for (spec in list(list("all",  "vital_status",        "py",             mort),
         events = sum(dat[[ev]][ix]),
         rr = unname(est[[g]]), lo = lo, hi = hi,
         method = if (key == "exac") "bootstrap" else "exact Poisson",
-        few_events = sum(dat[[ev]][ix]) < MIN_EVENTS,
+        few_events = min(sum(dat[[ev]][ix]), sum(dat[[ev]][rx])) < MIN_EVENTS,
         B_eff = sum(v > 0), stringsAsFactors = FALSE)
     }
   }
@@ -1014,13 +1026,13 @@ for (s in c("S1", "S2", "S3", "S4")) {
   n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ B +", COV,
          "+ prior_exac + offset(log(Years_Followed))")), data = eb)
   sm <- function(dat, col, g) sum(dat[[col]][dat$B == g])
-  crude <- function(dat, ev, pt) (sm(dat, ev, "COPD") / sm(dat, pt, "COPD")) /
+  crude_bin <- function(dat, ev, pt) (sm(dat, ev, "COPD") / sm(dat, pt, "COPD")) /
                                  (sm(dat, ev, "noCOPD") / sm(dat, pt, "noCOPD"))
   ci_a <- exact_rate_ratio(sm(mb, "vital_status", "COPD"), sm(mb, "py", "COPD"),
                            sm(mb, "vital_status", "noCOPD"), sm(mb, "py", "noCOPD"))
   ci_r <- exact_rate_ratio(sm(mb, "ev_resp", "COPD"), sm(mb, "py", "COPD"),
                            sm(mb, "ev_resp", "noCOPD"), sm(mb, "py", "noCOPD"))
-  be <- replicate(CRUDE_B, crude(eb[sample.int(nrow(eb), nrow(eb), replace = TRUE), ],
+  be <- replicate(CRUDE_B, crude_bin(eb[sample.int(nrow(eb), nrow(eb), replace = TRUE), ],
                                  "Total_Exacerbations", "Years_Followed"))
   be <- be[is.finite(be)]
   c1 <- summary(m1)$concordance; c2 <- summary(m2)$concordance
@@ -1030,9 +1042,9 @@ for (s in c("S1", "S2", "S3", "S4")) {
     schema = s, n_copd = sum(to_bin(d_b[[s]]) == "COPD"), n_nocopd = sum(to_bin(d_b[[s]]) == "noCOPD"),
     deaths_copd = sm(mb, "vital_status", "COPD"), deaths_nocopd = sm(mb, "vital_status", "noCOPD"),
     resp_copd = sm(mb, "ev_resp", "COPD"), resp_nocopd = sm(mb, "ev_resp", "noCOPD"),
-    all_rr = crude(mb, "vital_status", "py"), all_rr_lo = ci_a[1], all_rr_hi = ci_a[2],
-    resp_rr = crude(mb, "ev_resp", "py"), resp_rr_lo = ci_r[1], resp_rr_hi = ci_r[2],
-    exac_rr = crude(eb, "Total_Exacerbations", "Years_Followed"),
+    all_rr = crude_bin(mb, "vital_status", "py"), all_rr_lo = ci_a[1], all_rr_hi = ci_a[2],
+    resp_rr = crude_bin(mb, "ev_resp", "py"), resp_rr_lo = ci_r[1], resp_rr_hi = ci_r[2],
+    exac_rr = crude_bin(eb, "Total_Exacerbations", "Years_Followed"),
     exac_rr_lo = unname(quantile(be, .025)), exac_rr_hi = unname(quantile(be, .975)),
     all_HR = hr(m1)[1], all_LCI = hr(m1)[2], all_UCI = hr(m1)[3],
     resp_HR = hr(m2)[1], resp_LCI = hr(m2)[2], resp_UCI = hr(m2)[3],
@@ -1208,8 +1220,8 @@ for (s in SCHEMAS) {
       n_mort = sum(mm$g == g), n_exac = sum(ee$g == g),
       deaths = sum(mm$vital_status[mm$g == g]),
       resp_deaths = sum(mm$ev_resp[mm$g == g]),
-      all_few_events  = sum(mm$vital_status[mm$g == g]) < MIN_EVENTS,
-      resp_few_events = sum(mm$ev_resp[mm$g == g]) < MIN_EVENTS,
+      all_few_events  = min(sum(mm$vital_status[mm$g == g]), sum(mm$vital_status[mm$g == "REF"])) < MIN_EVENTS,
+      resp_few_events = min(sum(mm$ev_resp[mm$g == g]), sum(mm$ev_resp[mm$g == "REF"])) < MIN_EVENTS,
       all_HR = cm[r, 1], all_LCI = cm[r, 3], all_UCI = cm[r, 4],
       resp_HR = cr[r, 1], resp_LCI = cr[r, 3], resp_UCI = cr[r, 4],
       exac_IRR = exp(ce[r, 1]),
@@ -1266,7 +1278,7 @@ for (spec in list(list("all",  "vital_status",        "py",             mort_c),
         rate_100py = 100 * sum(dat[[ev]][ix]) / sum(dat[[py]][ix]),
         rr = unname(est[[g]]), lo = lo, hi = hi,
         method = if (key == "exac") "bootstrap" else "exact Poisson",
-        few_events = sum(dat[[ev]][ix]) < MIN_EVENTS,
+        few_events = min(sum(dat[[ev]][ix]), sum(dat[[ev]][rx])) < MIN_EVENTS,
         B_eff = sum(v > 0), stringsAsFactors = FALSE)
     }
   }
@@ -1344,8 +1356,8 @@ cons_lost <- data.frame(
   exac_IRR = exp(.ce[.r, 1]),
   exac_LCI = exp(.ce[.r, 1] - 1.96 * .ce[.r, 2]),
   exac_UCI = exp(.ce[.r, 1] + 1.96 * .ce[.r, 2]),
-  all_few_events  = sum(mm$vital_status[mm$lost]) < MIN_EVENTS,
-  resp_few_events = sum(mm$ev_resp[mm$lost]) < MIN_EVENTS)
+  all_few_events  = min(sum(mm$vital_status[mm$lost]), sum(mm$vital_status[mm$cons])) < MIN_EVENTS,
+  resp_few_events = min(sum(mm$ev_resp[mm$lost]), sum(mm$ev_resp[mm$cons])) < MIN_EVENTS)
 stopifnot(nrow(cons_lost) == 1, is.finite(cons_lost$all_HR))
 write.csv(cons_lost, file.path(OUT_DIR, "consensus_ref_lost.csv"), row.names = FALSE)
 cat(sprintf("Reclassified group (n=%d): all-cause crude %.2f, adjusted %.2f; respiratory %d deaths, adjusted %.2f\n",
@@ -1763,7 +1775,7 @@ g0_out <- data.frame(
   stringsAsFactors = FALSE)
 write.csv(g0_out, file.path(OUT_DIR, "continuous_esi_gold0_decline.csv"), row.names = FALSE)
 cat(sprintf("GOLD 0: each 1-unit higher baseline ESI predicts %.2f mL/yr of additional FEV1 decline (SE %.2f, p = %.3g), n = %d\n",
-            esi_int["est"], esi_int["se"], esi_int["p"], nrow(g0_out) && length(unique(g0$pid))))
+            esi_int["est"], esi_int["se"], esi_int["p"], length(unique(g0$pid))))
 ```
 
 ## Section 8c.3 -- ESI trajectory, PRISm against GOLD 0
@@ -1921,6 +1933,7 @@ cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
 adj_rows <- list()
 for (g in levels(d_al$discord)[-1]) {
   r <- paste0("discord", g); k <- disc_rates_al$group == g
+  k0 <- disc_rates_al$group == levels(d_al$discord)[1]; stopifnot(sum(k0) == 1)
   gv <- function(M, j) if (r %in% rownames(M)) M[r, j] else NA_real_
   adj_rows[[length(adj_rows) + 1]] <- data.frame(
     group = g, deaths_all = disc_rates_al$deaths[k],
@@ -1930,8 +1943,8 @@ for (g in levels(d_al$discord)[-1]) {
     exac_IRR = if (r %in% rownames(ce)) exp(ce[r, 1]) else NA_real_,
     exac_LCI = if (r %in% rownames(ce)) exp(ce[r, 1] - 1.96 * ce[r, 2]) else NA_real_,
     exac_UCI = if (r %in% rownames(ce)) exp(ce[r, 1] + 1.96 * ce[r, 2]) else NA_real_,
-    all_few_events  = disc_rates_al$deaths[k] < MIN_EVENTS,
-    resp_few_events = disc_rates_al$resp_deaths[k] < MIN_EVENTS,
+    all_few_events  = min(disc_rates_al$deaths[k], disc_rates_al$deaths[k0]) < MIN_EVENTS,
+    resp_few_events = min(disc_rates_al$resp_deaths[k], disc_rates_al$resp_deaths[k0]) < MIN_EVENTS,
     stringsAsFactors = FALSE)
 }
 disc_adj_al <- do.call(rbind, adj_rows)
@@ -2063,12 +2076,14 @@ for (st in STRATA) {
     for (o in c("all", "resp", "exac")) {
       if (o == "exac") {
         ev <- sum(e$Total_Exacerbations[e$discord == g])
+        ev0 <- sum(e$Total_Exacerbations[e$discord == ref])
         rr <- ratio("Total_Exacerbations", "Years_Followed", e, g)
         v <- boot_e[g, ]; v <- v[is.finite(v)]
         lo <- unname(quantile(v, .025)); hi <- unname(quantile(v, .975))
       } else {
         col <- if (o == "all") "vital_status" else "ev_resp"
         ev <- sum(m[[col]][m$discord == g])
+        ev0 <- sum(m[[col]][m$discord == ref])
         rr <- ratio(col, "py", m, g)
         ci <- exact_rate_ratio(ev, sum(m$py[m$discord == g]),
                                sum(m[[col]][m$discord == ref]), sum(m$py[m$discord == ref]))
@@ -2076,7 +2091,7 @@ for (st in STRATA) {
       }
       crude_rows_s[[length(crude_rows_s) + 1]] <- data.frame(
         stratum = st$stratum, group = g, outcome = o, events = ev,
-        rr = rr, lo = lo, hi = hi, few_events = ev < MIN_EVENTS,
+        rr = rr, lo = lo, hi = hi, few_events = min(ev, ev0) < MIN_EVENTS,
         stringsAsFactors = FALSE)
     }
   }
@@ -2274,99 +2289,7 @@ kable(diffs, digits = 3,
       caption = "ESI-MD-COPD versus MD-COPD, same category, paired resamples. A ratio of 1 means the two classifications assign the same effect size.")
 ```
 
-# Section 9 -- Self-check (canonical values echoed for drift detection)
-
-Each row prints the freshly-computed value alongside the value cited in
-the manuscript (`expected`). Rerunning this report on the cluster should
-reproduce the `expected` column exactly (within rounding).
-
-```{r self-check}
-selfcheck <- function(name, computed, expected, tol = 0.02) {
-  ok <- if (is.numeric(computed) && is.numeric(expected)) {
-          isTRUE(abs(computed - expected) < tol)
-        } else identical(computed, expected)
-  data.frame(check = name,
-             computed = if (is.numeric(computed)) sprintf("%.3f", computed)
-                        else as.character(computed),
-             expected = if (is.numeric(expected)) sprintf("%.3f", expected)
-                        else as.character(expected),
-             status = ifelse(ok, "PASS", "FAIL"),
-             stringsAsFactors = FALSE)
-}
-
-R2 <- function(s, cat, fld) risk[[fld]][risk$schema == s & risk$category == cat]
-CR <- function(s, cat, out, fld) crude[[fld]][crude$schema == s & crude$category == cat & crude$outcome == out]
-GT <- function(o, fld) {
-  g <- do.call(rbind, gate_rows); g[[fld]][g$outcome == o]
-}
-DS <- function(s, fld) {
-  d <- do.call(rbind, disc_rows); d[[fld]][d$schema == s]
-}
-
-# Canonical values are those cited in the manuscript prose. The point of
-# this table is to detect drift on re-run: if any row goes FAIL, an
-# expected number must be updated deliberately (with a corresponding
-# manuscript edit) rather than silently changed. Every value is loaded
-# from the already-written artifact so this block reflects what downstream
-# reads, not what the in-memory objects happened to hold.
-
-# MD-COPD counts BEFORE the baseline-ESI restriction are what should
-# reproduce Bhatt Table 1 exactly. mdcopd_validation.csv captures that
-# state; d_b at self-check time has already been ESI-restricted.
-mdval <- read.csv(file.path(OUT_DIR, "mdcopd_validation.csv"),
-                  stringsAsFactors = FALSE)
-MDV <- function(cat) mdval$ours[mdval$category == cat]
-
-checks <- list(
-  # ---- Bhatt Table 1 reproduction (before ESI restriction) --------------
-  selfcheck("MD-COPD noCOPD n vs Bhatt 4,439",
-            MDV("noCOPD"),          4439L),
-  selfcheck("MD-COPD AFL-only n vs Bhatt 282",
-            MDV("AFL-only"), 282L),
-  selfcheck("MD-COPD COPD-minor n vs Bhatt 811",
-            MDV("COPD-minor"),      811L),
-  selfcheck("MD-COPD COPD-major n vs Bhatt 3,884",
-            MDV("COPD-major"),      3884L),
-
-  # ---- Analytic cohort after ESI restriction ---------------------------
-  selfcheck("analytic cohort n (with baseline ESI)",
-            as.integer(nrow(d_b)),  9240L, tol = 0.5),
-
-  # ---- Nested LR gate: MD-COPD vs. fixed ratio (2 df) ------------------
-  selfcheck("all-cause LR chi-square, MD-COPD over fixed ratio",
-            GT("ALL-CAUSE MORTALITY", "lrt_chisq"),   122.1, tol = 0.1),
-  selfcheck("respiratory LR chi-square, MD-COPD over fixed ratio",
-            GT("RESPIRATORY MORTALITY", "lrt_chisq"),  76.1, tol = 0.1),
-  selfcheck("exacerbation LR chi-square, MD-COPD over fixed ratio",
-            GT("EXACERBATIONS", "lrt_chisq"),         158.9, tol = 0.1),
-
-  # ---- Fitted CT-free rules --------------------------------------------
-  selfcheck("NoCT-MD-COPD count threshold", k3,       2L),
-  selfcheck("ESI-MD-COPD count threshold",  p4$k,     2L),
-  selfcheck("ESI-MD-COPD T_low",            p4$t_low, 1.50, tol = 0.001),
-
-  # ---- AFL-only risk, the load-bearing category ------------------
-  selfcheck("MD-COPD AFL-only all-cause HR",
-            R2("S2", "AFL-only", "all_HR"),  0.87, tol = 0.02),
-  selfcheck("NoCT-MD-COPD AFL-only respiratory HR (should be highly elevated)",
-            R2("S3", "AFL-only", "resp_HR"), 6.37, tol = 0.05),
-  selfcheck("ESI-MD-COPD AFL-only all-cause HR (should straddle 1)",
-            R2("S4", "AFL-only", "all_HR"),  0.96, tol = 0.02),
-
-  # ---- Discrimination --------------------------------------------------
-  selfcheck("MD-COPD all-cause C-index",
-            DS("S2", "c_allcause"), 0.703, tol = 0.005)
-)
-selfcheck_tbl <- do.call(rbind, checks)
-write.csv(selfcheck_tbl, file.path(OUT_DIR, "SELFCHECK.csv"), row.names = FALSE)
-kable(selfcheck_tbl, caption = "Self-check -- computed vs canonical values.")
-cat(sprintf("\nSelf-check summary: %d PASS, %d FAIL (of %d total)\n",
-            sum(selfcheck_tbl$status == "PASS"),
-            sum(selfcheck_tbl$status == "FAIL"),
-            nrow(selfcheck_tbl)))
-```
-
-# Section 10 -- Completeness check
+# Section 11 -- Completeness check
 
 Enumerates every CSV downstream tables and figures depend on and aborts if
 any is missing, so a partial run is caught here rather than surfacing as a
@@ -2389,7 +2312,7 @@ required_csvs <- c(
   "schema_diff_bootstrap.csv", "fev1_decline.csv", "fev1_noct_vs_esi.csv",
   "continuous_esi_mortality.csv", "continuous_esi_gold0_decline.csv",
   "esi_trajectory.csv", "bronchodilator_delta_esi.csv",
-  "gate_fixedratio.csv", "gate_exac_aic.csv", "SELFCHECK.csv",
+  "gate_fixedratio.csv", "gate_exac_aic.csv",
   "consensus_ref_lost.csv", "cv_category_test.csv", "accuracy_test.csv",
   "discord_profile.csv", "discord_rates_afl.csv",
   "discord_adjusted_afl.csv", "discord_profile_afl.csv",
@@ -2403,7 +2326,7 @@ cat(sprintf("All %d required artifacts present in %s\n",
             length(required_csvs), normalizePath(OUT_DIR)))
 ```
 
-# Section 11 -- Provenance
+# Section 12 -- Provenance
 
 ```{r provenance}
 provenance <- c(

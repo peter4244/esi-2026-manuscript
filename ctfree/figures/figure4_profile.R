@@ -26,7 +26,8 @@ stopifnot(TXT_PT * CONTENT_W / NATIVE_W_FIG >= DOCX_READABILITY_FLOOR)
 prof  <- read.csv(file.path(ASSETS, "discord_profile_strata.csv"), stringsAsFactors = FALSE)
 tests <- read.csv(file.path(ASSETS, "discord_profile_tests.csv"),  stringsAsFactors = FALSE)
 stopifnot(nrow(prof) == 8, nrow(tests) == 42)
-SHOWN <- c("CT-only-COPD" = "CT-only", "Both-COPD" = "Both-COPD", "ESI-only-COPD" = "ESI-only")
+# Bar order: Both-COPD leftmost (Pete, 2026-09-14), then the two discordant groups.
+SHOWN <- c("Both-COPD" = "Both-COPD", "CT-only-COPD" = "CT-only", "ESI-only-COPD" = "ESI-only")
 GCOL  <- c("CT-only" = "#1F77B4", "Both-COPD" = "#7F7F7F", "ESI-only" = "#D62728")
 STR   <- c("Preserved spirometry" = "Preserved\nspirometry",
            "Airflow limitation"   = "Airflow\nlimitation")
@@ -62,18 +63,22 @@ panel <- function(i) {
     group_by(stratum) %>% summarise(z = all(y == 0), .groups = "drop")
   br <- br[!br$stratum %in% both_zero$stratum[both_zero$z], ]
   br$yb <- br$ymax + 0.08 * span; br$yl <- br$yb + 0.05 * span
+  # Bracket ends sit on the CT-only and ESI-only bars wherever the bar order puts them.
+  xa <- match("CT-only", levels(d$grp)); xb <- match("ESI-only", levels(d$grp))
+  stopifnot(!is.na(xa), !is.na(xb))
+  br$xa <- xa; br$xb <- xb; br$xm <- (xa + xb) / 2
   ylim_top <- max(c(br$yl, span)) + 0.12 * span
   p <- ggplot(d, aes(x = grp, y = y, fill = grp)) +
     geom_col(width = 0.72, colour = "grey25", linewidth = 0.2) +
     { if (is_mean) geom_errorbar(aes(ymin = y - se, ymax = y + se), width = 0.25,
                                  linewidth = 0.35) } +
-    geom_segment(data = br, inherit.aes = FALSE, aes(x = 1, xend = 3, y = yb, yend = yb),
+    geom_segment(data = br, inherit.aes = FALSE, aes(x = xa, xend = xb, y = yb, yend = yb),
                  linewidth = 0.3) +
-    geom_segment(data = br, inherit.aes = FALSE, aes(x = 1, xend = 1, y = yb, yend = yb - 0.03 * span),
+    geom_segment(data = br, inherit.aes = FALSE, aes(x = xa, xend = xa, y = yb, yend = yb - 0.03 * span),
                  linewidth = 0.3) +
-    geom_segment(data = br, inherit.aes = FALSE, aes(x = 3, xend = 3, y = yb, yend = yb - 0.03 * span),
+    geom_segment(data = br, inherit.aes = FALSE, aes(x = xb, xend = xb, y = yb, yend = yb - 0.03 * span),
                  linewidth = 0.3) +
-    geom_text(data = br, inherit.aes = FALSE, aes(x = 2, y = yl, label = lab),
+    geom_text(data = br, inherit.aes = FALSE, aes(x = xm, y = yl, label = lab),
               size = TXT_PT / .pt, family = "Arial", vjust = 0) +
     scale_fill_manual(values = GCOL, name = NULL) +
     scale_y_continuous(limits = c(0, ylim_top), expand = expansion(mult = c(0, 0)),
@@ -102,20 +107,18 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4
 nn <- function(s) paste(sprintf("%s %s", SHOWN, formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")),
                         collapse = ", ")
 writeLines(c(
-  "**Figure 4. Profile of the groups on which MD-COPD and the ESI classification agree or disagree.**",
+  "**Figure 4. Profile of the COPD-diagnosed subjects grouped by agreement of MD-COPD and ESI classifications.**",
   "",
   paste("Within each stratum of airflow limitation, bars show group means with standard errors",
-        "(ESI, %LAA-950HU) or the percentage of the group meeting each criterion. CT-only, COPD",
-        "under MD-COPD only; Both-COPD, COPD under both; ESI-only, COPD under the ESI",
-        "classification only. Brackets compare the CT-only and ESI-only groups (Wilcoxon",
-        "rank-sum test for the two means, Fisher's exact test for the criteria; unadjusted;",
-        "* P < 0.05, ** P < 0.01, *** P < 0.001, ns not significant). Some contrasts follow",
-        "from the classification rules: every CT-only participant with preserved spirometry",
-        "meets both visual CT criteria, no ESI-only participant with airflow limitation",
-        "meets either, and with airflow limitation neither discordant group meets any symptom",
-        "criterion, so those contrasts carry no bracket. Group sizes with preserved spirometry:", paste0(nn("Preserved spirometry"), ";"),
+        "(ESI, %LAA-950HU) or the percentage of the group meeting each criterion. Brackets compare",
+        "the CT-only and ESI-only groups (Wilcoxon rank-sum test for the two means, Fisher's exact",
+        "test for the criteria; unadjusted; * P < 0.05, ** P < 0.01, *** P < 0.001, ns = not",
+        "significant). Contrasts fixed by the classification rules carry no bracket.",
+        "Group sizes with preserved spirometry:", paste0(nn("Preserved spirometry"), ";"),
         "with airflow limitation:", paste0(nn("Airflow limitation"), "."),
-        "%LAA-950HU, percentage of lung below -950 Hounsfield units; mMRC, modified Medical",
-        "Research Council dyspnea scale; SGRQ, St. George's Respiratory Questionnaire.")),
+        "Both-COPD = diagnosed as COPD under both; CT-only = diagnosed as COPD under MD-COPD only;",
+        "ESI-only = diagnosed as COPD under the ESI classification only; %LAA-950HU = percentage of",
+        "lung below -950 Hounsfield units; mMRC = modified Medical Research Council dyspnea scale;",
+        "SGRQ = St. George's Respiratory Questionnaire.")),
   file.path(HERE, "figure4_profile_legend.md"))
 cat("wrote", out, "\n")

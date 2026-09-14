@@ -28,7 +28,7 @@ sys.path.insert(0, HERE)
 
 from docx.shared import Pt                                   # noqa: E402
 from build_manuscript import (init_document, add_table, legend,  # noqa: E402
-                              emphasis, ASSETS, CATS, SCHEMA_NAME,
+                              emphasis, ASSETS, CATS, read_titlepage,
                               t_risk_common_ref, t_discord_risk, Section,
                               add_figure, read_legend, figure_width, FIGS)
 
@@ -62,10 +62,8 @@ def s1_baseline(doc, num):
     n_overall = next(r["n"] for r in rows if r["stratum"] == "Overall")
     legend(doc, f"Table {num}.",
            f"Baseline characteristics of the {int(n_overall):,} analytic cohort "
-           "participants by GOLD stratum. Values are mean (SD) unless marked as a "
-           "percentage. The cohort follows the exclusion chain of the source MD-COPD "
-           "report, which removes never-smokers, so there is no never-smoker stratum. "
-           "PRISm is preserved ratio impaired spirometry.")
+           "subjects by GOLD stratum. Values are mean (SD) unless marked as a "
+           "percentage. PRISm = preserved ratio impaired spirometry.")
 
 
 def s4_sweep(doc, num):
@@ -82,15 +80,18 @@ def s4_sweep(doc, num):
     add_table(doc, ["Rule", "noCOPD", "AFL-only", "COPD-minor", "COPD-major",
                     "Macro-F1", "Balanced accuracy", "Cohen's κ"],
               rows, [1.42, 0.68, 0.72, 0.80, 0.80, 0.72, 0.72, 0.64])
+    # The legend says the selected rule has the highest macro-F1 of its schema.
+    for sch in ("S3", "S4"):
+        rs = [r for r in load(ASSETS, "metric_sweep.csv") if r["schema"] == sch]
+        sel = [r for r in rs if r["selected"].upper() == "TRUE"]
+        assert len(sel) == 1 and float(sel[0]["macroF1"]) == max(float(r["macroF1"]) for r in rs), \
+            f"{sch}: selected rule is not the macro-F1 maximum"
     legend(doc, f"Table {num}.",
            "Category sizes and each candidate selection metric across the "
            "thresholds examined, against the MD-COPD reference in the first row. "
-           "Macro-averaged F1 weights the four categories equally and penalizes "
-           "both over- and under-assignment; balanced accuracy averages recall "
-           "alone and Cohen's κ is not category-weighted, so neither penalizes "
-           "over-assignment, and their optima sit where AFL-only is respectively "
-           "almost empty and more than triple the reference. "
-           "AFL-only, airflow limitation without other criteria.")
+           "The selected rules had the highest macro-averaged F1, which weights "
+           "the four categories equally. "
+           "AFL-only = airflow limitation without other criteria.")
 
 
 def cell_n(rows, schema, row_cat, col_cat):
@@ -102,74 +103,22 @@ def cell_n(rows, schema, row_cat, col_cat):
     raise SystemExit(f"crossclass.csv has no {schema} {row_cat}/{col_cat} cell")
 
 
-def s4_fitting(doc, num):
-    heading(doc, f"Supplemental Table {num}. Fitted rules and cross-validated performance")
-    fit = load(ASSETS, "schema_fit.csv")
-    cvd = load(ASSETS, "schema_fit_cv_diff.csv")[0]
-    nm = {"S3": "NoCT classification", "S4": "ESI classification"}
-    rows = [[nm[r["schema"]], f"≥ {int(float(r['k']))}",
-             "—" if r["t_low"] in ("", "NA") else f"{float(r['t_low']):.2f}",
-             f"{float(r['macroF1_insample']):.4f}",
-             f"{float(r['macroF1_heldout']):.4f}"]
-            for r in fit if r["schema"] in nm]
-    add_table(doc, ["Schema", "Count threshold", "ESI threshold",
-                    "In-sample macro-F1", "Held-out macro-F1"], rows,
-              [1.55, 1.20, 1.05, 1.32, 1.38])
-    tst = load(ASSETS, "schema_fit_cv_test.csv")[0]
-    p_txt = ("< 0.001" if float(tst["p_value"]) < 0.001
-             else f"= {float(tst['p_value']):.3f}")
-    legend(doc, f"Table {num}.",
-           "Thresholds fitted to approximate the CT-based classification, by "
-           "macro-averaged F1 across the four groups, over the full parameter "
-           "space of each schema. Held-out values are from "
-           f"{int(tst['n_repeats'])} repeats of {int(tst['k'])}-fold "
-           "cross-validation stratified on the CT-based categories, with "
-           "thresholds refitted inside every training fold. The ESI-based schema "
-           f"exceeds the symptoms-only schema by {float(tst['diff_mean']):.4f} "
-           f"(95% CI: {float(tst['ci_lo']):.4f} to {float(tst['ci_hi']):.4f}; "
-           f"P {p_txt}), and did so in {int(tst['folds_favoring_S4'])} of "
-           f"{int(tst['n_folds'])} held-out folds. The interval and P value are "
-           "from the corrected resampled t-test: cross-validation folds share "
-           "training data, so a paired t-test on the per-fold differences treats "
-           "that shared data as new information; the correction inflates the "
-           "variance accordingly. The range of the per-fold differences "
-           f"themselves was {float(cvd['diff_lo']):.4f} to "
-           f"{float(cvd['diff_hi']):.4f}.")
-
-
-def s5_discrimination(doc, num):
-    heading(doc, f"Supplemental Table {num}. Discrimination under each schema")
-    d = load(ASSETS, "schema_discrimination.csv")
-    add_table(doc, ["Schema", "All-cause C-index", "Respiratory C-index",
-                    "Exacerbation AIC"],
-              [[SCHEMA_NAME[r["schema"]], f"{float(r['c_allcause']):.4f}",
-                f"{float(r['c_resp']):.4f}", f"{float(r['exac_AIC']):.0f}"] for r in d],
-              [1.70, 1.60, 1.65, 1.55])
-    hr = [float(r["resp_HR"]) for r in load(ASSETS, "schema_risk.csv")
-          if r["schema"] == "S3" and r["category"] == "AFL-only"][0]
-    legend(doc, f"Table {num}.",
-           "Discrimination for each schema, every model carrying the same "
-           "covariates. The symptoms-only schema has the highest C-index for both "
-           "mortality outcomes and the lowest exacerbation AIC. Figures 2 to 4 and "
-           "Supplemental Tables S3a to S3c show what that costs: its AFL-only "
-           f"category carries {hr:.1f} times the respiratory mortality of its own "
-           "reference after adjustment.")
-
-
 def data_files(doc):
     heading(doc, "COPDGene files used")
     para(doc, "Analyses in this manuscript draw on the following COPDGene "
               "distribution files.")
     for line in [
-        "**COPDGene_VitalStatus_SM_NS_Sep23.csv** — vital status and follow-up time, "
+        "**COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24**: the main COPD phenotype file in "
+        "long format, used for baseline characteristics, spirometry, the visual CT "
+        "scores, the symptom criteria and the cohort exclusions.",
+        "**COPDGene_Multidimensional_COPD_plus**: the per-subject MD-COPD "
+        "classification from the source report (11), used as the MD-COPD reference.",
+        "**COPDGene_VitalStatus_SM_NS_Sep23**: vital status and follow-up time, "
         "used for all-cause mortality.",
-        "**COPDGene_Mort_COD_Adj.csv** — adjudicated underlying cause of death, used "
+        "**COPDGene_Mort_COD_Adj**: adjudicated underlying cause of death, used "
         "for respiratory mortality.",
-        "**LFU_SidLevel_Comorbid_SM_30SEP21.txt** — the COPDGene Longitudinal "
-        "Follow-up program dataset, used for prospective exacerbation counts and "
-        "person-time at risk.",
-        "**COPDGene_P1P2P3_SM_NS_Long_Sep24.csv** — the main COPD phenotype file in "
-        "long format, used for baseline characteristics and the diagnostic criteria.",
+        "**LFU_SidLevel_Comorbd**: the COPDGene Longitudinal Follow-up program "
+        "dataset, used for prospective exacerbation counts and years of follow-up.",
     ]:
         para(doc, line)
     para(doc, "Emphysema Severity Index values were computed from the COPDGene "
@@ -196,14 +145,10 @@ def s6_fev1_decline(doc, num):
     legend(doc, f"Table {num}.",
            "Difference in annual FEV\u2081 change against the common noCOPD "
            "reference, from linear mixed models over visits 1 to 3 with a "
-           "random intercept per participant, adjusted for height, sex, race, age, "
+           "random intercept per subject, adjusted for height, sex, race, age, "
            "smoking status, pack-years and baseline post-bronchodilator "
-           "FEV\u2081, as the source MD-COPD report was. Baseline FEV\u2081 enters "
-           "through its interaction with time; a main effect would have the "
-           "visit 1 outcome predicting itself. Because the groups differ sharply "
-           "in baseline lung function, the estimate asks whether a group declines "
-           "faster than others starting from the same FEV\u2081. A negative value "
-           "is faster decline.")
+           "FEV\u2081, entered as its interaction with follow-up time. A negative "
+           "value is faster decline.")
 
 
 def s12_esi_ct_levels(doc, num):
@@ -218,11 +163,10 @@ def s12_esi_ct_levels(doc, num):
     add_table(doc, ["CT criterion", "Level", "n", "Mean ESI"],
               rows, [1.70, 1.90, 1.30, 1.60])
     legend(doc, f"Table {num}.",
-           "Mean ESI at each level of the two visual CT criteria. ESI rises "
-           "monotonically across both scales. The MD-COPD framework treats "
+           "Mean ESI at each level of the two visual CT criteria. The MD-COPD framework treats "
            "emphysema as present at mild or greater and wall thickening as "
-           "present when definite. Discrimination of these criteria by ESI and "
-           "by FEV\u2081/FVC is given in Table 4 of the main text.")
+           "present when definite. Discrimination of these criteria by ESI is "
+           "given in Table 2 of the main text.")
 
 
 def s_crossclass_agreement(doc, num):
@@ -252,13 +196,12 @@ def s_crossclass_agreement(doc, num):
     legend(doc, f"Table {num}.",
            "Each CT-free classification cross-classified against MD-COPD. Rows are the "
            "group each classification assigned, columns the MD-COPD group, and the "
-           "diagonal is agreement. Agreement is the percentage of participants assigned "
+           "diagonal is agreement. Agreement is the percentage of subjects assigned "
            "to a group that MD-COPD places in the same group. F1 is the harmonic mean of "
            "that percentage and its converse, the percentage of the MD-COPD group the "
-           "classification reproduces; the mean of the four F1 values is the "
-           "macro-averaged F1 the thresholds were fitted on. Agreement differed between "
+           "classification reproduces. Agreement differed between "
            f"the ESI and NoCT classifications by paired bootstrap ({p_txt}). "
-           "AFL-only, airflow limitation without other criteria.")
+           "AFL-only = airflow limitation without other criteria.")
 
 
 def s_groups_crude(doc, num):
@@ -302,7 +245,7 @@ def s_groups_crude(doc, num):
               rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
     legend(doc, f"Table {num}.",
            "Each diagnostic group of the three multidimensional classifications against the common "
-           f"reference, the {int(ref['n_cohort']):,} participants all three classifications assign to "
+           f"reference, the {int(ref['n_cohort']):,} subjects all three classifications assign to "
            "noCOPD. Crude rate ratios are the observed event rate in the group divided by the rate in "
            "the reference, with exact Poisson intervals for deaths and subject-bootstrap intervals for "
            "exacerbations. The ratio versus MD-COPD divides each CT-free classification's crude ratio by "
@@ -310,8 +253,8 @@ def s_groups_crude(doc, num):
            "subject bootstrap of 1,000 resamples, refitting every classification on the same draw. "
            f"{FLAG} fewer than 10 events in the group, or, for a ratio versus MD-COPD, in either group "
            "compared: the estimate is given without an interval or P. Events are deaths for the "
-           "mortality outcomes and exacerbations for the exacerbation outcome. AFL-only, airflow "
-           "limitation without other criteria; CI, confidence interval.")
+           "mortality outcomes and exacerbations for the exacerbation outcome. AFL-only = airflow "
+           "limitation without other criteria; CI = confidence interval.")
 
 
 def s_risk_common_ref(doc, num):
@@ -321,14 +264,12 @@ def s_risk_common_ref(doc, num):
 
 
 def s_discord_risk(doc, num):
-    heading(doc, f"Supplemental Table {num}. Risk in the groups on which MD-COPD and "
-                 "the ESI classification agree or disagree")
+    heading(doc, f"Supplemental Table {num}. Risk in the COPD-diagnosed subjects grouped by "
+                 "agreement of MD-COPD and ESI classifications")
     t_discord_risk(doc, label=f"Table {num}.")
 
 
-# Registered in citation order; numbers come from position. s5_discrimination
-# and s4_fitting stay defined but unregistered: Methods still describes the
-# analyses behind them and no result cites them, pending Pete's ruling.
+# Registered in citation order; numbers come from position.
 SUPP_TABLES = [("baseline", s1_baseline), ("thresholds", s4_sweep),
                ("crossclass", s_crossclass_agreement),
                ("groups_vs_mdcopd", s_groups_crude),
@@ -392,11 +333,14 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = init_document()
     p = doc.add_paragraph()
-    r = p.add_run("Supplement: Preserving the diagnostic benefit of a "
-                  "multidimensional COPD framework without chest CT")
+    r = p.add_run("Supplement")
     r.bold = True
     r.font.size = Pt(14)
-    doc.add_paragraph("Draft v1. All tables generated from ctfree/assets/.")
+    r.add_break()
+    # Same source as the manuscript title, so the two cannot drift apart.
+    r = p.add_run(read_titlepage()["TITLE"][0])
+    r.bold = True
+    r.font.size = Pt(14)
     for i, (_, fn) in enumerate(SUPP_TABLES, 1):
         fn(doc, f"S{i}")
         doc.add_paragraph()

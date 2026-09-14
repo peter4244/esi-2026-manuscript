@@ -50,7 +50,7 @@ clipping and says so in its own header.
 
 | Script | Produces | Notes |
 |---|---|---|
-| `ESI_ctfree_analysis_2026.9.3.Rmd` | `cohort.txt`, `cohort_flow.csv`, `mdcopd_validation.csv`, `schema_*.csv`, `schema_labels.rds`, `cv_schema_fits.csv`, `objective_selection.csv`, `reclassification.csv`, `crossclass.csv`, `gate_*.csv`, `SELFCHECK.csv`, `PROVENANCE.txt` | The full analysis report. Cohort construction (validated exactly against Bhatt et al. Table 1 via `MDCOPD_PATH`), schema fitting, 5x5 stratified cross-validation, fixed-ratio nested LR gate, adjusted and crude risk, self-check. |
+| `ESI_ctfree_analysis_2026.9.3.Rmd` | `cohort.txt`, `cohort_flow.csv`, `mdcopd_validation.csv`, `schema_*.csv`, `schema_labels.rds`, `cv_schema_fits.csv`, `objective_selection.csv`, `reclassification.csv`, `crossclass.csv`, `gate_*.csv`, `PROVENANCE.txt` | The full analysis report. Cohort construction (validated exactly against Bhatt et al. Table 1 via `MDCOPD_PATH`), schema fitting, 5x5 stratified cross-validation, fixed-ratio nested LR gate, adjusted and crude risk. |
 | `render_ctfree_2026.9.3.R` | (render wrapper) | Sets a headless-safe raster device before knitting the report. Runs from any working directory including the Channing cluster. |
 | `draft_tables.R` | `DRAFT_TABLES.md` | Reads artifacts only; no number is typed. |
 | `figures/figure1_flow.R` | `figure1_flow.png`, `figure1_flow_legend.md` | |

@@ -238,7 +238,11 @@ def t_classifications(doc, label="Table 1."):
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, label,
-           f"The four classifications applied to the same {n_total:,} participants.")
+           f"The four classifications applied to the same {n_total:,} subjects. "
+           "In subjects with coronary artery disease or congestive heart failure, the "
+           "COPD minor pathway requires both CT criteria under MD-COPD, is not available "
+           "under the NoCT classification, and requires the ESI criterion under the ESI "
+           "classification.")
 
 
 def t_risk_common_ref(doc, label="Table 3."):
@@ -276,15 +280,15 @@ def t_risk_common_ref(doc, label="Table 3."):
     flagged = any(FLAG in str(v) for r_ in rows if not isinstance(r_, Section) for v in r_)
     legend(doc, label,
            "Adjusted risk of each group of the three multidimensional classifications against "
-           f"a common reference, the {int(ref['n_cohort']):,} participants all three "
+           f"a common reference, the {int(ref['n_cohort']):,} subjects all three "
            "classifications assign to noCOPD. Adjusted models carry age, sex, race, current "
            "smoking status, pack-years and body mass index, with prior exacerbation frequency "
            "added for exacerbations. Crude rate ratios for the same groups are given in "
            f"Supplemental Table {supp_num('groups_vs_mdcopd')}. "
            + (f"{FLAG} fewer than 10 events in the group: the estimate is given without an "
               "interval. " if flagged else "")
-           + "AFL-only, airflow limitation without other criteria; HR, hazard ratio; IRR, "
-           "incidence rate ratio; CI, confidence interval.")
+           + "AFL-only = airflow limitation without other criteria; HR = hazard ratio; IRR = "
+           "incidence rate ratio; CI = confidence interval.")
 
 def t_discord_risk(doc, label="Table 4."):
     """Cross-classification of MD-COPD and the ESI classification: each group
@@ -307,7 +311,7 @@ def t_discord_risk(doc, label="Table 4."):
             return f"{float(r['rr']):.2f}{FLAG}"
         return f"{float(r['rr']):.2f} ({float(r['lo']):.2f}\u2013{float(r['hi']):.2f})"
 
-    rows, resp = [], {}
+    rows = []
     for title, rf, refg in STRATA:
         rates = {r["group"]: r for r in load(rf)}
         R = rates[refg]
@@ -315,7 +319,6 @@ def t_discord_risk(doc, label="Table 4."):
         rows.append(Section(title))
         rows.append([f"\u2003{refg} (reference)", f"{int(R['n']):,}", f"{int(R['deaths']):,}", "1.00",
                      "1.00"])
-        resp[title] = [(refg, int(R["resp_deaths"]))]
         for g in ORDER:
             c = {o: cru[(title, g, o)] for o in ("all", "resp", "exac")}
             ev = {o: int(float(c[o]["events"])) for o in c}
@@ -323,7 +326,6 @@ def t_discord_risk(doc, label="Table 4."):
             rows.append(["\u2003" + g, f"{int(rates[g]['n']):,}", f"{ev['all']:,}",
                          cell(c["all"], ev["all"], ref_ev["all"]),
                          cell(c["exac"], ev["exac"], ref_ev["exac"])])
-            resp[title].append((g, ev["resp"]))
     # With respiratory mortality out, every cell clears the floor; the legend
     # carries no flag note, so a flagged cell appearing later must stop the build.
     assert not any(FLAG in str(v) for r in rows if not isinstance(r, Section) for v in r), \
@@ -331,21 +333,18 @@ def t_discord_risk(doc, label="Table 4."):
     add_table(doc, ["Group", "n", "Deaths", "All-cause mortality RR (95% CI)",
                     "Exacerbation RR (95% CI)"],
               rows, [2.00, 0.70, 0.80, 1.50, 1.50])
-    resp_txt = "; ".join(
-        f"with {st[0].lower() + st[1:]}, " + ", ".join(f"{n} in {g}" for g, n in v)
-        for st, v in resp.items())
     legend(doc, label,
-           "Participants cross-classified by MD-COPD and the ESI classification within each "
-           "stratum of airflow limitation. CT-only-COPD is COPD under MD-COPD only, "
-           "ESI-only-COPD COPD under the ESI classification only, and Both-COPD COPD under "
-           "both. Each stratum is estimated against its own reference row, so estimates are "
-           "comparable within a stratum and not between strata. Crude rate ratios (RR) are "
-           "the observed event rate in the group divided by the rate in the reference; "
-           "intervals are exact Poisson intervals for deaths and subject-bootstrap intervals "
-           "for exacerbations. "
-           "Respiratory mortality is not shown because the numbers of respiratory deaths "
-           f"are too small for estimation: {resp_txt}. AFL-only, airflow limitation "
-           "without other criteria; CI, confidence interval.")
+           "Subjects cross-classified by MD-COPD and the ESI classification within each "
+           "stratum of airflow limitation. Reference groups are the subjects classified as "
+           "noCOPD by both methods among those with preserved spirometry and the subjects "
+           "classified as AFL-only by both methods among those with airflow limitation. "
+           "Crude rate ratios (RR) are the observed event rate in the group divided by the "
+           "rate in the reference; intervals are exact Poisson intervals for deaths and "
+           "subject-bootstrap intervals for exacerbations. CT-only-COPD = diagnosed as COPD "
+           "under MD-COPD only; ESI-only-COPD = diagnosed as COPD under the ESI classification "
+           "only; Both-COPD = diagnosed as COPD under both; AFL-only = airflow limitation "
+           "without other criteria; CI = confidence interval. Respiratory mortality is not "
+           "shown because the numbers of respiratory deaths are too small for estimation.")
 
 def t_esi_auc(doc, label="Table 2."):
     """ESI's discrimination of the two visual CT criteria, by stratum. This is
@@ -359,7 +358,7 @@ def t_esi_auc(doc, label="Table 2."):
     for crit in ("Visual emphysema", "Airway wall thickening"):
         for st in ORDER:
             r = next(x for x in au if x["criterion"] == crit and x["stratum"] == st)
-            rows.append([crit if crit not in seen else "", st,
+            rows.append([crit if crit not in seen else "", st.replace("participants", "subjects"),
                          f"{int(r['n']):,}", f"{float(r['prevalence']):.1f}",
                          f"{float(r['auc_ESI']):.2f}"])
             seen.add(crit)
@@ -369,7 +368,7 @@ def t_esi_auc(doc, label="Table 2."):
     legend(doc, label,
            "Discrimination capability of ESI for the two visual CT criteria it "
            "replaces, shown overall and within stratum of airflow limitation. "
-           "AUC, area under the receiver operating characteristic curve.")
+           "AUC = area under the receiver operating characteristic curve.")
 
 
 def figure_width(meta_path, default=CONTENT_WIDTH_IN):

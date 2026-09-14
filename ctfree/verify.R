@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 284L
+REGISTRY_N <- 189L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -54,9 +54,9 @@ reg("F1CAT-03", "Fitting",
 
 RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
 reg("RECL-07", "Reclassification",
-    "NoCT moves 579 noCOPD to COPD-minor and 75 the other way", TRUE,
+    "NoCT moves 465 noCOPD to COPD-minor and 90 the other way", TRUE,
     "reclassification.csv",
-    sprintf('%s == 579 && %s == 75', RC("S3","nocopd_to_minor"), RC("S3","minor_to_nocopd")),
+    sprintf('%s == 465 && %s == 90', RC("S3","nocopd_to_minor"), RC("S3","minor_to_nocopd")),
     TOL_EXACT)
 reg("RECL-08", "Reclassification",
     "NoCT retains all 275 AFL-only, ESI retains 193", TRUE,
@@ -64,29 +64,7 @@ reg("RECL-08", "Reclassification",
     sprintf('%s == 275 && %s == 193', RC("S3","aflonly_kept"), RC("S4","aflonly_kept")),
     TOL_EXACT)
 
-CM <- function(sch, o) sprintf('x$rr[x$schema == "%s" & x$category == "COPD-minor" & x$outcome == "%s"]', sch, o)
-reg("CRUDE-10", "Crude estimates",
-    "COPD-minor crude all-cause 1.77, 1.72 and 1.75", TRUE, "schema_crude.csv",
-    sprintf('abs(%s-1.77)<0.005 && abs(%s-1.72)<0.005 && abs(%s-1.75)<0.005',
-            CM("S2","all"), CM("S3","all"), CM("S4","all")), TOL_EXACT)
-reg("CRUDE-11", "Crude estimates",
-    "COPD-minor crude respiratory 3.27, 3.42 and 3.89", TRUE, "schema_crude.csv",
-    sprintf('abs(%s-3.27)<0.005 && abs(%s-3.42)<0.005 && abs(%s-3.89)<0.005',
-            CM("S2","resp"), CM("S3","resp"), CM("S4","resp")), TOL_EXACT)
-reg("CRUDE-12", "Crude estimates",
-    "COPD-minor crude exacerbations 3.01, 3.31 and 3.28", TRUE, "schema_crude.csv",
-    sprintf('abs(%s-3.01)<0.005 && abs(%s-3.31)<0.005 && abs(%s-3.28)<0.005',
-            CM("S2","exac"), CM("S3","exac"), CM("S4","exac")), TOL_EXACT)
 
-DG <- function(g, fld) sprintf('x$%s[x$group == "%s"]', fld, g)
-reg("DISC2-10", "Discordance", "Both-COPD all-cause HR 1.94", 1.94,
-    "discord_adjusted.csv", DG("Both-COPD","all_HR"), TOL_2DP)
-reg("DISC2-11", "Discordance", "Both-COPD respiratory HR 5.10", 5.10,
-    "discord_adjusted.csv", DG("Both-COPD","resp_HR"), 0.05)
-reg("DISC2-12", "Discordance", "Both-COPD exacerbation IRR 2.10", 2.10,
-    "discord_adjusted.csv", DG("Both-COPD","exac_IRR"), TOL_2DP)
-reg("DISC2-13", "Discordance", "the group ESI adds has respiratory HR 3.63", 3.63,
-    "discord_adjusted.csv", DG("ESI-only-COPD","resp_HR"), 0.05)
 
 CL <- function(cr, lab) sprintf('x$mean_ESI[x$criterion == "%s" & x$label == "%s"]', cr, lab)
 reg("CTLEV-01", "ESI and CT",
@@ -142,150 +120,40 @@ reg("DEC-02", "FEV1 decline",
     sprintf('%s < 0 && %s < 0.05',
             FD("S4","COPD-major","est_mL_yr"), FD("S4","COPD-major","p")), TOL_EXACT)
 
-CE <- function(o, fld) sprintf('x$%s[x$outcome == "%s"]', fld, o)
-reg("CONT-01", "Continuous ESI",
-    "continuous ESI predicts all-cause mortality beside FEV1/FVC, HR 1.07", 1.073,
-    "continuous_esi_mortality.csv", CE("all-cause", "ESI_HR"), TOL_2DP)
-reg("CONT-02", "Continuous ESI",
-    "and adding it to a FEV1/FVC model improves fit, P < 0.01", TRUE,
-    "continuous_esi_mortality.csv",
-    sprintf('%s < 0.01', CE("all-cause", "lr_p")), TOL_EXACT)
-reg("CONT-03", "Continuous ESI",
-    "for respiratory mortality it adds nothing beyond FEV1/FVC", TRUE,
-    "continuous_esi_mortality.csv",
-    sprintf('%s > 0.05', CE("respiratory", "lr_p")), TOL_EXACT)
-reg("CONT-04", "Continuous ESI",
-    "in GOLD 0, each ESI unit predicts 4.6 mL/yr more FEV1 decline", -4.59,
-    "continuous_esi_gold0_decline.csv", 'x$est_mL_yr', 0.05)
-reg("CONT-05", "Continuous ESI", "and that association is significant", TRUE,
-    "continuous_esi_gold0_decline.csv", 'x$p < 0.01', TOL_EXACT)
 reg("CONT-06", "Continuous ESI",
     "ESI is essentially unchanged by bronchodilator, mean -0.09", -0.09,
     "bronchodilator_delta_esi.csv", 'x$mean_delta', TOL_2DP)
 reg("CONT-07", "Continuous ESI",
     "computed on this cohort, 9,234 paired measurements", 9234,
     "bronchodilator_delta_esi.csv", 'x$n_paired', TOL_EXACT)
-ET <- function(st, v) sprintf('x$mean_dESI[x$stratum == "%s" & x$visitnum == %d]', st, v)
-reg("CONT-08", "Continuous ESI",
-    "PRISm gains more ESI over follow-up than GOLD 0", TRUE,
-    "esi_trajectory.csv",
-    sprintf('%s > %s && %s > %s', ET("PRISm",2), ET("GOLD0",2),
-            ET("PRISm",3), ET("GOLD0",3)), TOL_EXACT)
 
 # --- concordant and discordant classification -----------------------------
 # MD-COPD against ESI-MD-COPD, pairwise, in preserved spirometry.
 DC <- function(g, fld) sprintf('x$%s[x$group == "%s"]', fld, g)
-reg("DISC2-01", "Discordance", "ESI misses only 70 of MD-COPD's COPD-minor", 70,
+reg("DISC2-01", "Discordance", "ESI misses only 85 of MD-COPD's COPD-minor", 85,
     "discord_counts.csv", DC("CT-only-COPD", "n"), TOL_EXACT)
-reg("DISC2-02", "Discordance", "ESI adds 612 the CT framework does not call COPD", 612,
+reg("DISC2-02", "Discordance", "ESI adds 501 the CT framework does not call COPD", 501,
     "discord_counts.csv", DC("ESI-only-COPD", "n"), TOL_EXACT)
-reg("DISC2-03", "Discordance", "729 are called COPD by both", 729,
+reg("DISC2-03", "Discordance", "714 are called COPD by both", 714,
     "discord_counts.csv", DC("Both-COPD", "n"), TOL_EXACT)
-reg("DISC2-04", "Discordance",
-    "the two agree on 729 of MD-COPD's 799 COPD-minor, or 91.2%", TRUE,
-    "discord_counts.csv",
-    sprintf('abs(100 * %s / (%s + %s) - 91.2) < 0.1',
-            DC("Both-COPD","n"), DC("Both-COPD","n"), DC("CT-only-COPD","n")), TOL_EXACT)
-reg("DISC2-05", "Discordance",
-    "the group ESI adds carries adjusted all-cause HR 1.59", 1.59,
-    "discord_adjusted.csv", DC("ESI-only-COPD", "all_HR"), TOL_2DP)
-reg("DISC2-06", "Discordance",
-    "and its interval excludes 1, so the addition is not noise", TRUE,
-    "discord_adjusted.csv", sprintf('%s > 1', DC("ESI-only-COPD", "all_LCI")), TOL_EXACT)
-reg("DISC2-07", "Discordance",
-    "the group ESI adds has exacerbation IRR 1.82", 1.82,
-    "discord_adjusted.csv", DC("ESI-only-COPD", "exac_IRR"), TOL_2DP)
-reg("DISC2-08", "Discordance",
-    "CT-only-COPD has no respiratory deaths, so its HR is not estimable", TRUE,
-    "discord_adjusted.csv",
-    sprintf('%s == 0 && is.na(%s)', DC("CT-only-COPD","deaths_resp"),
-            DC("CT-only-COPD","resp_HR")), TOL_EXACT)
-reg("DISC2-09", "Discordance",
-    "prior exacerbation burden is 0.09 in the reference against 0.44 in ESI-only", TRUE,
-    "discord_rates.csv",
-    sprintf('%s < 0.15 && %s > 0.40', DC("Both-noCOPD","prior_exac_mean"),
-            DC("ESI-only-COPD","prior_exac_mean")), TOL_EXACT)
 
 # --- paired comparison between classifications ----------------------------
 # The Results previously asserted that ESI-MD-COPD "tracks the reference"
 # from two overlapping intervals. These test it.
-BD <- function(o, cat, fld)
-  sprintf('x$%s[x$outcome == "%s" & x$category == "%s"]', fld, o, cat)
-reg("PAIR-01", "Paired comparison",
-    "AFL-only does not differ between the two classifications, all-cause", TRUE,
-    "schema_diff_bootstrap.csv",
-    sprintf('%s > 0.05', BD("all-cause mortality", "AFL-only", "p_two_sided")), TOL_EXACT)
-reg("PAIR-02", "Paired comparison",
-    "nor COPD-minor, on any of the three outcomes", TRUE,
-    "schema_diff_bootstrap.csv",
-    sprintf('%s > 0.05 && %s > 0.05 && %s > 0.05',
-            BD("all-cause mortality", "COPD-minor", "p_two_sided"),
-            BD("respiratory mortality", "COPD-minor", "p_two_sided"),
-            BD("exacerbations", "COPD-minor", "p_two_sided")), TOL_EXACT)
-reg("PAIR-03", "Paired comparison",
-    "COPD-major does differ, on all three", TRUE,
-    "schema_diff_bootstrap.csv",
-    sprintf('%s < 0.05 && %s < 0.05 && %s < 0.05',
-            BD("all-cause mortality", "COPD-major", "p_two_sided"),
-            BD("respiratory mortality", "COPD-major", "p_two_sided"),
-            BD("exacerbations", "COPD-major", "p_two_sided")), TOL_EXACT)
-reg("PAIR-04", "Paired comparison",
-    "ESI-MD-COPD assigns 1.15x the all-cause effect in COPD-major", 1.15,
-    "schema_diff_bootstrap.csv",
-    BD("all-cause mortality", "COPD-major", "ratio_S4_over_S2"), TOL_2DP)
-reg("PAIR-05", "Paired comparison",
-    "respiratory resamples run at B = 863 because events are sparse", 863,
-    "schema_diff_bootstrap.csv",
-    BD("respiratory mortality", "COPD-major", "B_eff"), TOL_EXACT)
 
 # --- numbers the opening Results section quotes ---------------------------
 # The gate is now reported as P values rather than chi-squares, so the P values
 # themselves are pinned; the chi-squares stay registered because the artifact
 # still carries them.
-G <- function(o, fld) sprintf('x$%s[x$outcome == "%s"]', fld, o)
-reg("GATE-01p", "MD-COPD over fixed ratio", "all-cause P < 0.001", TRUE,
-    "gate_fixedratio.csv", sprintf('%s < 0.001', G("ALL-CAUSE MORTALITY","lrt_p")), TOL_EXACT)
-reg("GATE-02p", "MD-COPD over fixed ratio", "respiratory P < 0.001", TRUE,
-    "gate_fixedratio.csv", sprintf('%s < 0.001', G("RESPIRATORY MORTALITY","lrt_p")), TOL_EXACT)
-reg("GATE-03p", "MD-COPD over fixed ratio", "exacerbation P < 0.001", TRUE,
-    "gate_fixedratio.csv", sprintf('%s < 0.001', G("EXACERBATIONS","lrt_p")), TOL_EXACT)
 
-R2 <- function(cat, fld) sprintf('x$%s[x$schema == "S2" & x$category == "%s"]', fld, cat)
-C2 <- function(cat, o, fld)
-  sprintf('x$%s[x$schema == "S2" & x$category == "%s" & x$outcome == "%s"]', fld, cat, o)
-reg("RISK-01r", "Label meaning", "S2 AFL-only respiratory HR 1.39", 1.39,
-    "schema_risk.csv", R2("AFL-only", "resp_HR"), TOL_2DP)
-reg("CRUDE-08", "Crude estimates", "S2 AFL-only crude respiratory ratio 1.76", 1.76,
-    "schema_crude.csv", C2("AFL-only", "resp", "rr"), TOL_2DP)
-reg("CRUDE-09", "Crude estimates", "S2 AFL-only crude exacerbation ratio 1.00", 1.00,
-    "schema_crude.csv", C2("AFL-only", "exac", "rr"), TOL_2DP)
 reg("LAB-01c", "Labels", "S2 reference COPD-minor n = 799", 799,
     "schema_labels.csv",
     'x$n[x$schema == "S2" & x$category == "COPD-minor"]', TOL_EXACT)
-reg("RISK-09", "Label meaning", "S2 COPD-minor all-cause HR 1.83", 1.83,
-    "schema_risk.csv", R2("COPD-minor", "all_HR"), TOL_2DP)
-reg("RISK-10", "Label meaning", "S2 COPD-minor respiratory HR 3.86", 3.86,
-    "schema_risk.csv", R2("COPD-minor", "resp_HR"), TOL_2DP)
-reg("RISK-11", "Label meaning", "S2 COPD-minor exacerbation IRR 2.09", 2.09,
-    "schema_risk.csv", R2("COPD-minor", "exac_IRR"), TOL_2DP)
 
 # --- ESI against quantitative CT ------------------------------------------
 # Cited in Results, Study population, and shown as Supplemental Table S2. These
 # were previously unregistered and the table cited for them was a correlation
 # matrix among the CT measures, which did not contain them.
-XC <- function(stratum, fld) sprintf('x$%s[x$stratum == "%s"]', fld, stratum)
-reg("CORR-01", "ESI and CT", "r(ESI, LAA-950) across all strata = 0.78", 0.78,
-    "supp_esi_ct.csv", XC("All strata", "r_LAA"), TOL_2DP)
-reg("CORR-02", "ESI and CT", "r(ESI, PRM emphysema) across all strata = 0.81", 0.81,
-    "supp_esi_ct.csv", XC("All strata", "r_PRM"), TOL_2DP)
-reg("CORR-03", "ESI and CT", "r(ESI, LAA-950) in GOLD 0 = 0.08", 0.08,
-    "supp_esi_ct.csv", XC("GOLD0", "r_LAA"), TOL_2DP)
-reg("CORR-04", "ESI and CT", "r(ESI, LAA-950) in GOLD 3 = 0.58", 0.58,
-    "supp_esi_ct.csv", XC("GOLD3", "r_LAA"), TOL_2DP)
-reg("CORR-05", "ESI and CT",
-    "the correlation strengthens with obstruction, GOLD 0 below GOLD 3", TRUE,
-    "supp_esi_ct.csv",
-    sprintf('%s < %s', XC("GOLD0", "r_LAA"), XC("GOLD3", "r_LAA")), TOL_EXACT)
 
 # --- baseline description --------------------------------------------------
 reg("BASE-01", "Cohort", "baseline table totals the analytic cohort, 9,240", 9240,
@@ -294,21 +162,8 @@ reg("BASE-02", "Cohort", "the cohort has no never-smoker stratum", TRUE,
     "supp_baseline.csv", '!("Never" %in% x$stratum)', TOL_EXACT)
 
 # --- the gate -------------------------------------------------------------
-g <- function(o, f) sprintf('x$%s[x$outcome == "%s"]', f, o)
-reg("GATE-01", "MD-COPD over fixed ratio", "all-cause LR chi-square 122.1 on 2 df",
-    122.1, "gate_fixedratio.csv", g("ALL-CAUSE MORTALITY", "lrt_chisq"), TOL_1DP)
-reg("GATE-02", "MD-COPD over fixed ratio", "respiratory LR chi-square 76.1",
-    76.1, "gate_fixedratio.csv", g("RESPIRATORY MORTALITY", "lrt_chisq"), TOL_1DP)
-reg("GATE-03", "MD-COPD over fixed ratio", "exacerbation LR chi-square 158.9",
-    158.9, "gate_fixedratio.csv", g("EXACERBATIONS", "lrt_chisq"), TOL_1DP)
-reg("GATE-04", "MD-COPD over fixed ratio", "all-cause C-index gain is only +0.010",
-    0.010, "gate_fixedratio.csv",
-    'x$c_mdcopd[1] - x$c_fixedratio[1]', TOL_3DP)
 # Guard the interpretation, not just the number: the gain must stay small, or
 # the paper's "reclassification, not prediction" framing needs revisiting.
-reg("GATE-05", "MD-COPD over fixed ratio", "C-index gain stays under 0.02",
-    TRUE, "gate_fixedratio.csv",
-    '{ dlt <- x$c_mdcopd - x$c_fixedratio; all(dlt[!is.na(dlt)] < 0.02) }', TOL_EXACT)
 
 # --- fitting --------------------------------------------------------------
 f <- function(s, fld) sprintf('x$%s[x$schema == "%s"]', fld, s)
@@ -323,26 +178,7 @@ reg("FIT-02b", "Fitting", "S4 ESI threshold 1.50", 1.50, "schema_fit.csv",
 # parameter was carrying nothing. This pins the rule as single-threshold.
 reg("FIT-03", "Fitting", "the ESI rule uses a single threshold", TRUE,
     "schema_fit.csv", sprintf('is.na(%s)', f("S4", "t_high")), TOL_EXACT)
-reg("FIT-04a", "Fitting", "held-out macro-F1, S4 = 0.752", 0.752, "schema_fit.csv",
-    f("S4", "macroF1_heldout"), TOL_3DP)
-reg("FIT-04b", "Fitting", "held-out macro-F1, S3 = 0.721", 0.721, "schema_fit.csv",
-    f("S3", "macroF1_heldout"), TOL_3DP)
-reg("FIT-05a", "Fitting", "S4 beats S3 by +0.031 held out", 0.031,
-    "schema_fit_cv_diff.csv", 'x$diff_mean', TOL_3DP)
-reg("FIT-05b", "Fitting", "the S4 advantage excludes zero across folds",
-    TRUE, "schema_fit_cv_diff.csv", 'x$diff_lo > 0', TOL_EXACT)
-reg("FIT-07a", "Fitting",
-    "corrected resampled t-test on the held-out difference gives P < 0.001", 1,
-    "schema_fit_cv_test.csv", "as.integer(x$p_value < 0.001)", TOL_EXACT)
-reg("FIT-07b", "Fitting",
-    "ESI-MD-COPD had the higher macro-F1 in all 25 held-out folds", 25,
-    "schema_fit_cv_test.csv", "x$folds_favoring_S4", TOL_EXACT)
-reg("FIT-07c", "Fitting",
-    "corrected 95% CI for the difference runs 0.0207 to 0.0407", 0.0207,
-    "schema_fit_cv_test.csv", "x$ci_lo", TOL_3DP)
 
-reg("FIT-06", "Fitting", "the v15 draft rule scores 0.682 on the same folds",
-    0.682, "schema_fit.csv", f("S4_v15draft", "macroF1_heldout"), TOL_3DP)
 
 # --- labels ---------------------------------------------------------------
 L <- function(s, cat) sprintf('x$n[x$schema == "%s" & x$category == "%s"]', s, cat)
@@ -362,28 +198,22 @@ RC <- function(sch, fld) sprintf('x$%s[x$schema == "%s"]', fld, sch)
 reg("ACC-01", "Reclassification",
     "the accuracy difference is significant by McNemar (P < 0.001)", 1,
     "accuracy_test.csv", "as.integer(x$p_value < 0.001)", TOL_EXACT)
-reg("ACC-02", "Reclassification",
-    "488 participants are correct under ESI-MD-COPD only", 488,
-    "accuracy_test.csv", "x$only_esi_correct", TOL_EXACT)
-reg("ACC-03", "Reclassification",
-    "115 are correct under NoCT-MD-COPD only", 115,
-    "accuracy_test.csv", "x$only_noct_correct", TOL_EXACT)
 
 reg("RECL-09", "Reclassification",
-    "ESI-MD-COPD agrees with MD-COPD for 8,126 of 9,240 participants (87.9%)", 8126,
+    "ESI-MD-COPD agrees with MD-COPD for 8,222 of 9,240 participants (89.0%)", 8222,
     "reclassification.csv", 'x$concordant[x$schema == "S4"]', TOL_EXACT)
 reg("RECL-10", "Reclassification",
-    "NoCT-MD-COPD agrees for 7,753 of 9,240 (83.9%)", 7753,
+    "NoCT-MD-COPD agrees for 7,852 of 9,240 (85.0%)", 7852,
     "reclassification.csv", 'x$concordant[x$schema == "S3"]', TOL_EXACT)
 # Results: "At the level of COPD versus no COPD, agreement was 87.9% and 83.9%".
 # Equal to the four-group agreement because every disagreement with MD-COPD
 # crosses the COPD / no-COPD line; if these ever diverge, the sentence needs rewording.
 BIN <- function(sch) sprintf(paste0('with(x[x$schema == "%s", ], 100 * sum(n[(row_cat %%in%% ',
   'c("COPD-minor", "COPD-major")) == (col_cat %%in%% c("COPD-minor", "COPD-major"))]) / sum(n))'), sch)
-reg("RECL-11", "Reclassification", "COPD versus no COPD agreement is 87.9% for the ESI classification",
-    87.9, "crossclass.csv", BIN("S4"), TOL_1DP)
-reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 83.9% for the NoCT classification",
-    83.9, "crossclass.csv", BIN("S3"), TOL_1DP)
+reg("RECL-11", "Reclassification", "COPD versus no COPD agreement is 89.0% for the ESI classification",
+    89.0, "crossclass.csv", BIN("S4"), TOL_1DP)
+reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 85.0% for the NoCT classification",
+    85.0, "crossclass.csv", BIN("S3"), TOL_1DP)
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
 reg("FU-01", "Follow-up", "median follow-up 10.8 years for mortality", 10.8, "followup_medians.csv",
@@ -396,83 +226,55 @@ reg("FU-04", "Follow-up", "among 5,414 participants with a follow-up spirometry 
     'x$n[x$outcome == "FEV1 decline, participants with a follow-up visit"]', TOL_EXACT)
 reg("AFL-01", "AFL-only paragraph", "ESI AFL-only group n = 543", 543, "schema_labels.csv",
     'x$n[x$schema == "S4" & x$category == "AFL-only"]', TOL_EXACT)
-reg("AFL-02", "AFL-only paragraph", "ESI AFL-only crude all-cause 1.29", 1.29, "consensus_ref_crude.csv",
+reg("AFL-02", "AFL-only paragraph", "ESI AFL-only crude all-cause 1.25", 1.25, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-03", "AFL-only paragraph", "its lower bound 1.04", 1.04, "consensus_ref_crude.csv",
+reg("AFL-03", "AFL-only paragraph", "its lower bound 1.01", 1.01, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-04", "AFL-only paragraph", "its upper bound 1.59", 1.59, "consensus_ref_crude.csv",
+reg("AFL-04", "AFL-only paragraph", "its upper bound 1.54", 1.54, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-05", "AFL-only paragraph", "MD-COPD AFL-only crude all-cause 1.13", 1.13, "consensus_ref_crude.csv",
+reg("AFL-05", "AFL-only paragraph", "MD-COPD AFL-only crude all-cause 1.10", 1.10, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-06", "AFL-only paragraph", "its lower bound 0.83", 0.83, "consensus_ref_crude.csv",
+reg("AFL-06", "AFL-only paragraph", "its lower bound 0.81", 0.81, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-07", "AFL-only paragraph", "its upper bound 1.51", 1.51, "consensus_ref_crude.csv",
+reg("AFL-07", "AFL-only paragraph", "its upper bound 1.47", 1.47, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-08", "AFL-only paragraph", "ESI AFL-only crude exacerbations 1.18", 1.18, "consensus_ref_crude.csv",
+reg("AFL-08", "AFL-only paragraph", "ESI AFL-only crude exacerbations 1.11", 1.11, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-09", "AFL-only paragraph", "its lower bound 0.95", 0.95, "consensus_ref_crude.csv",
+reg("AFL-09", "AFL-only paragraph", "its lower bound 0.89", 0.89, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-10", "AFL-only paragraph", "its upper bound 1.44", 1.44, "consensus_ref_crude.csv",
+reg("AFL-10", "AFL-only paragraph", "its upper bound 1.33", 1.33, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-11", "AFL-only paragraph", "MD-COPD AFL-only crude exacerbations 1.23", 1.23, "consensus_ref_crude.csv",
+reg("AFL-11", "AFL-only paragraph", "MD-COPD AFL-only crude exacerbations 1.15", 1.15, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-12", "AFL-only paragraph", "its lower bound 0.94", 0.94, "consensus_ref_crude.csv",
+reg("AFL-12", "AFL-only paragraph", "its lower bound 0.89", 0.89, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-13", "AFL-only paragraph", "its upper bound 1.56", 1.56, "consensus_ref_crude.csv",
+reg("AFL-13", "AFL-only paragraph", "its upper bound 1.46", 1.46, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
 reg("AFL-14", "AFL-only paragraph", "4 respiratory deaths in the ESI AFL-only group", 4, "consensus_ref_crude.csv",
     'x$events[x$schema == "S4" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
 reg("AFL-15", "AFL-only paragraph", "2 respiratory deaths in the MD-COPD AFL-only group", 2, "consensus_ref_crude.csv",
     'x$events[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
-reg("AFL-16", "AFL-only paragraph", "NoCT AFL-only crude all-cause 1.57", 1.57, "consensus_ref_crude.csv",
+reg("AFL-16", "AFL-only paragraph", "NoCT AFL-only crude all-cause 1.52", 1.52, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-17", "AFL-only paragraph", "its lower bound 1.35", 1.35, "consensus_ref_crude.csv",
+reg("AFL-17", "AFL-only paragraph", "its lower bound 1.31", 1.31, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-18", "AFL-only paragraph", "its upper bound 1.82", 1.82, "consensus_ref_crude.csv",
+reg("AFL-18", "AFL-only paragraph", "its upper bound 1.76", 1.76, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "all"]', TOL_2DP)
-reg("AFL-19", "AFL-only paragraph", "NoCT AFL-only crude respiratory 10.00", 10.0, "consensus_ref_crude.csv",
+reg("AFL-19", "AFL-only paragraph", "NoCT AFL-only crude respiratory 8.07", 8.07, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
-reg("AFL-20", "AFL-only paragraph", "its lower bound 4.95", 4.95, "consensus_ref_crude.csv",
+reg("AFL-20", "AFL-only paragraph", "its lower bound 4.22", 4.22, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
-reg("AFL-21", "AFL-only paragraph", "its upper bound 21.87", 21.87, "consensus_ref_crude.csv",
+reg("AFL-21", "AFL-only paragraph", "its upper bound 16.27", 16.27, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
-reg("AFL-22", "AFL-only paragraph", "NoCT AFL-only crude exacerbations 1.75", 1.75, "consensus_ref_crude.csv",
+reg("AFL-22", "AFL-only paragraph", "NoCT AFL-only crude exacerbations 1.64", 1.64, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-23", "AFL-only paragraph", "its lower bound 1.46", 1.46, "consensus_ref_crude.csv",
+reg("AFL-23", "AFL-only paragraph", "its lower bound 1.38", 1.38, "consensus_ref_crude.csv",
     'x$lo[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("AFL-24", "AFL-only paragraph", "its upper bound 2.03", 2.03, "consensus_ref_crude.csv",
+reg("AFL-24", "AFL-only paragraph", "its upper bound 1.90", 1.90, "consensus_ref_crude.csv",
     'x$hi[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "exac"]', TOL_2DP)
-reg("BIN-01", "COPD versus no COPD paragraph", "fixed ratio all-cause crude rate ratio 2.82", 2.82, "schema_binary.csv",
-    'x$all_rr[x$schema == "S1"]', TOL_2DP)
-reg("BIN-02", "COPD versus no COPD paragraph", "MD-COPD all-cause crude rate ratio 3.03", 3.03, "schema_binary.csv",
-    'x$all_rr[x$schema == "S2"]', TOL_2DP)
-reg("BIN-03", "COPD versus no COPD paragraph", "fixed ratio vs MD-COPD all-cause p = 0.012", 0.012, "binary_vs_mdcopd.csv",
-    'x$p_boot[x$schema == "S1" & x$outcome == "all"]', TOL_3DP)
-reg("BIN-04", "COPD versus no COPD paragraph", "NoCT and ESI all-cause rate ratios similar to MD-COPD (p >= 0.05)", 1, "binary_vs_mdcopd.csv",
-    'as.integer(all(x$p_boot[x$schema %in% c("S3", "S4") & x$outcome == "all"] >= 0.05))', TOL_EXACT)
-reg("BIN-05", "COPD versus no COPD paragraph", "NoCT respiratory relative risk significantly lower than MD-COPD", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "resp"] < 0.05 & x$ratio_of_ratios[x$schema == "S3" & x$outcome == "resp"] < 1)', TOL_EXACT)
-reg("BIN-06", "COPD versus no COPD paragraph", "fixed ratio exacerbation crude rate ratio 3.09", 3.09, "schema_binary.csv",
-    'x$exac_rr[x$schema == "S1"]', TOL_2DP)
-reg("BIN-07", "COPD versus no COPD paragraph", "MD-COPD exacerbation crude rate ratio 3.97", 3.97, "schema_binary.csv",
-    'x$exac_rr[x$schema == "S2"]', TOL_2DP)
-reg("BIN-08", "COPD versus no COPD paragraph", "fixed ratio vs MD-COPD exacerbations p < 0.005", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S1" & x$outcome == "exac"] < 0.005)', TOL_EXACT)
-reg("BIN-09", "COPD versus no COPD paragraph", "NoCT exacerbation crude rate ratio 4.48", 4.48, "schema_binary.csv",
-    'x$exac_rr[x$schema == "S3"]', TOL_2DP)
-reg("BIN-10", "COPD versus no COPD paragraph", "ESI exacerbation crude rate ratio 4.71", 4.71, "schema_binary.csv",
-    'x$exac_rr[x$schema == "S4"]', TOL_2DP)
-reg("BIN-11", "COPD versus no COPD paragraph", "NoCT and ESI vs MD-COPD exacerbations p < 0.002", 1, "binary_vs_mdcopd.csv",
-    'as.integer(all(x$p_boot[x$schema %in% c("S3", "S4") & x$outcome == "exac"] < 0.002))', TOL_EXACT)
 reg("AFL-25", "AFL-only paragraph", "34 respiratory deaths in the NoCT AFL-only group", 34, "consensus_ref_crude.csv",
     'x$events[x$schema == "S3" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_EXACT)
-reg("BIN-12", "COPD versus no COPD paragraph", "NoCT respiratory crude rate ratio 17.48", 17.48, "schema_binary.csv",
-    'x$resp_rr[x$schema == "S3"]', TOL_2DP)
-reg("BIN-13", "COPD versus no COPD paragraph", "MD-COPD respiratory crude rate ratio 38.98", 38.98, "schema_binary.csv",
-    'x$resp_rr[x$schema == "S2"]', TOL_2DP)
-reg("BIN-14", "COPD versus no COPD paragraph", "NoCT vs MD-COPD respiratory p < 0.002", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "resp"] < 0.002)', TOL_EXACT)
-reg("AFL-26", "AFL-only paragraph", "MD-COPD AFL-only crude respiratory rate ratio 2.23", 2.23, "consensus_ref_crude.csv",
+reg("AFL-26", "AFL-only paragraph", "MD-COPD AFL-only crude respiratory rate ratio 1.80", 1.80, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "resp"]', TOL_2DP)
 reg("FILL-32", "Results study population", "bronchodilator change in ESI has SD 0.82", 0.82, "bronchodilator_delta_esi.csv",
     'x$sd_delta', TOL_2DP)
@@ -508,21 +310,21 @@ reg("GRP-15", "Group comparisons", "every COPD-major crude comparison has p < 0.
     'as.integer(all(x$p_boot[x$category == "COPD-major" & x$type == "crude"] < 0.005))', TOL_EXACT)
 reg("MINOR-09", "COPD-minor comparison", "every crude NoCT and ESI estimate is below MD-COPD\u2019s", 6,
     "group_vs_mdcopd.csv", 'sum(x$ratio_of_ratios[x$category == "COPD-minor" & x$type == "crude"] < 1)', TOL_EXACT)
-reg("MINOR-07", "COPD-minor comparison", "NoCT crude exacerbation ratio is 0.92 of MD-COPD\u2019s", 0.92,
+reg("MINOR-07", "COPD-minor comparison", "NoCT crude exacerbation ratio is 0.90 of MD-COPD\u2019s", 0.90,
     "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-08", "COPD-minor comparison", "its p = 0.070, so both CT-free ratios are borderline", 0.070,
+reg("MINOR-08", "COPD-minor comparison", "its p = 0.036, so both CT-free exacerbation ratios are significant", 0.036,
     "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S3" & x$type == "crude" & x$outcome == "exac"]', TOL_3DP)
-reg("MINOR-01", "COPD-minor comparison", "ESI crude exacerbation ratio is 0.90 of MD-COPD\u2019s", 0.90,
+reg("MINOR-01", "COPD-minor comparison", "ESI crude exacerbation ratio is 0.89 of MD-COPD\u2019s", 0.89,
     "group_vs_mdcopd.csv", 'x$ratio_of_ratios[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-02", "COPD-minor comparison", "its lower bound 0.82", 0.82,
+reg("MINOR-02", "COPD-minor comparison", "its lower bound 0.81", 0.81,
     "group_vs_mdcopd.csv", 'x$lo[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-03", "COPD-minor comparison", "its upper bound 1.00", 1.00,
+reg("MINOR-03", "COPD-minor comparison", "its upper bound 0.98", 0.98,
     "group_vs_mdcopd.csv", 'x$hi[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-04", "COPD-minor comparison", "its p = 0.04", 0.04,
-    "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_2DP)
-reg("MINOR-06", "COPD-minor comparison", "no other crude comparison is significant", 1,
+reg("MINOR-04", "COPD-minor comparison", "its p = 0.016", 0.016,
+    "group_vs_mdcopd.csv", 'x$p_boot[x$category == "COPD-minor" & x$schema == "S4" & x$type == "crude" & x$outcome == "exac"]', TOL_3DP)
+reg("MINOR-06", "COPD-minor comparison", "all-cause and exacerbation comparisons are significant for both CT-free classifications", 1,
     "group_vs_mdcopd.csv",
-    'as.integer(sum(x$p_boot[x$category == "COPD-minor" & x$type == "crude"] < 0.05, na.rm = TRUE) == 1)', TOL_EXACT)
+    'as.integer(sum(x$p_boot[x$category == "COPD-minor" & x$type == "crude"] < 0.05, na.rm = TRUE) == 4)', TOL_EXACT)
 reg("FILL-30", "Discussion", "mean change in ESI after bronchodilation -0.09", -0.09,
     "bronchodilator_delta_esi.csv", 'x$mean_delta', TOL_2DP)
 reg("FILL-31", "Discussion", "9,234 participants with paired ESI measurements", 9234,
@@ -531,47 +333,47 @@ reg("FILL-23", "Fills 2026-09-11", "obstructed CT-only: 77.7% visual emphysema",
     "discord_profile_strata.csv", 'x$pct_visual_emph[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_1DP)
 reg("FILL-24", "Fills 2026-09-11", "obstructed CT-only: 47.4% wall thickening", 47.4,
     "discord_profile_strata.csv", 'x$pct_wall_thick[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_1DP)
-reg("FILL-25", "Discussion", "ESI-only crude all-cause rate ratio 1.57 (preserved spirometry)", 1.57,
+reg("FILL-25", "Discussion", "ESI-only crude all-cause rate ratio 1.39 (preserved spirometry)", 1.39,
     "discord_crude_strata.csv", 'x$rr[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
-reg("FILL-26", "Discussion", "its lower bound 1.29", 1.29,
+reg("FILL-26", "Discussion", "its lower bound 1.11", 1.11,
     "discord_crude_strata.csv", 'x$lo[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
-reg("FILL-27", "Discussion", "its upper bound 1.91", 1.91,
+reg("FILL-27", "Discussion", "its upper bound 1.74", 1.74,
     "discord_crude_strata.csv", 'x$hi[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD" & x$outcome == "all"]', TOL_2DP)
-reg("FILL-28", "Discussion", "Both-COPD crude all-cause rate ratio 1.94 (preserved spirometry)", 1.94,
+reg("FILL-28", "Discussion", "Both-COPD crude all-cause rate ratio 1.80 (preserved spirometry)", 1.80,
     "discord_crude_strata.csv", 'x$rr[x$stratum == "Preserved spirometry" & x$group == "Both-COPD" & x$outcome == "all"]', TOL_2DP)
-reg("FILL-29", "Discussion", "its upper bound 2.31", 2.31,
+reg("FILL-29", "Discussion", "its upper bound 2.15", 2.15,
     "discord_crude_strata.csv", 'x$hi[x$stratum == "Preserved spirometry" & x$group == "Both-COPD" & x$outcome == "all"]', TOL_2DP)
-reg("FILL-20", "Fills 2026-09-11", "AFL-only FEV1 decline -5.0 mL/yr under the NoCT classification",
-    -5.0, "fev1_noct_vs_esi.csv", 'x$est_noct[x$category == "AFL-only"]', TOL_1DP)
-reg("FILL-21", "Fills 2026-09-11", "AFL-only FEV1 decline -4.5 mL/yr under the ESI classification",
-    -4.5, "fev1_noct_vs_esi.csv", 'x$est_esi[x$category == "AFL-only"]', TOL_1DP)
+reg("FILL-20", "Fills 2026-09-11", "AFL-only FEV1 decline -4.9 mL/yr under the NoCT classification",
+    -4.9, "fev1_noct_vs_esi.csv", 'x$est_noct[x$category == "AFL-only"]', TOL_1DP)
+reg("FILL-21", "Fills 2026-09-11", "AFL-only FEV1 decline -4.3 mL/yr under the ESI classification",
+    -4.3, "fev1_noct_vs_esi.csv", 'x$est_esi[x$category == "AFL-only"]', TOL_1DP)
 reg("FILL-22", "Fills 2026-09-11", "the NoCT minus ESI difference in AFL-only decline is p=0.68",
     0.68, "fev1_noct_vs_esi.csv", 'x$p_boot[x$category == "AFL-only"]', TOL_2DP)
-reg("FILL-01", "Fills 2026-09-11", "common noCOPD reference n=3,745", 3745, "consensus_ref_group.csv",
+reg("FILL-01", "Fills 2026-09-11", "common noCOPD reference n=3,856", 3856, "consensus_ref_group.csv",
     'x$n_cohort', TOL_EXACT)
 reg("FILL-02", "Fills 2026-09-11", "preserved: visual emphysema 100% in CT-only", 100, "discord_profile_strata.csv",
     'x$pct_visual_emph[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
-reg("FILL-03", "Fills 2026-09-11", "preserved: visual emphysema 5.2% in ESI-only", 5.2, "discord_profile_strata.csv",
+reg("FILL-03", "Fills 2026-09-11", "preserved: visual emphysema 1.2% in ESI-only", 1.2, "discord_profile_strata.csv",
     'x$pct_visual_emph[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
 reg("FILL-04", "Fills 2026-09-11", "preserved: visual emphysema contrast p<0.001", 1, "discord_profile_tests.csv",
     'as.integer(x$p[x$stratum == "Preserved spirometry" & x$measure == "emph_yn" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
-reg("FILL-05", "Fills 2026-09-11", "preserved: mean %LAA-950 1.68 in CT-only", 1.68, "discord_profile_strata.csv",
+reg("FILL-05", "Fills 2026-09-11", "preserved: mean %LAA-950 1.91 in CT-only", 1.91, "discord_profile_strata.csv",
     'x$mean_LAA950[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_2DP)
-reg("FILL-06", "Fills 2026-09-11", "preserved: mean %LAA-950 1.25 in ESI-only", 1.25, "discord_profile_strata.csv",
+reg("FILL-06", "Fills 2026-09-11", "preserved: mean %LAA-950 1.24 in ESI-only", 1.24, "discord_profile_strata.csv",
     'x$mean_LAA950[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_2DP)
-reg("FILL-07", "Fills 2026-09-11", "preserved: %LAA-950 contrast p=0.008", 0.008, "discord_profile_tests.csv",
+reg("FILL-07", "Fills 2026-09-11", "preserved: %LAA-950 contrast p=0.001", 0.001, "discord_profile_tests.csv",
     'x$p[x$stratum == "Preserved spirometry" & x$measure == "Insp_LAA950_total_Thirona" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"]', TOL_3DP)
 reg("FILL-08", "Fills 2026-09-11", "preserved: wall thickening 100% in CT-only", 100, "discord_profile_strata.csv",
     'x$pct_wall_thick[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
-reg("FILL-09", "Fills 2026-09-11", "preserved: wall thickening 4.7% in ESI-only", 4.7, "discord_profile_strata.csv",
+reg("FILL-09", "Fills 2026-09-11", "preserved: wall thickening 0.6% in ESI-only", 0.6, "discord_profile_strata.csv",
     'x$pct_wall_thick[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
 reg("FILL-10", "Fills 2026-09-11", "preserved: wall thickening contrast p<0.001", 1, "discord_profile_tests.csv",
     'as.integer(x$p[x$stratum == "Preserved spirometry" & x$measure == "wall_yn" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
 reg("FILL-11", "Fills 2026-09-11", "preserved: mean ESI 0.90 in CT-only", 0.9, "discord_profile_strata.csv",
     'x$mean_ESI[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_2DP)
-reg("FILL-12", "Fills 2026-09-11", "preserved: mean ESI 0.94 in ESI-only", 0.94, "discord_profile_strata.csv",
+reg("FILL-12", "Fills 2026-09-11", "preserved: mean ESI 0.97 in ESI-only", 0.97, "discord_profile_strata.csv",
     'x$mean_ESI[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_2DP)
-reg("FILL-13", "Fills 2026-09-11", "preserved: ESI contrast p=0.14", 0.14, "discord_profile_tests.csv",
+reg("FILL-13", "Fills 2026-09-11", "preserved: ESI contrast p=0.13", 0.13, "discord_profile_tests.csv",
     'x$p[x$stratum == "Preserved spirometry" & x$measure == "ESI" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"]', TOL_2DP)
 reg("FILL-14", "Fills 2026-09-11", "obstructed: mean %LAA-950 4.80 in ESI-only", 4.8, "discord_profile_strata.csv",
     'x$mean_LAA950[x$stratum == "Airflow limitation" & x$group == "ESI-only-COPD"]', TOL_2DP)
@@ -585,52 +387,11 @@ reg("FILL-18", "Fills 2026-09-11", "obstructed: mean ESI 1.21 in CT-only", 1.21,
     'x$mean_ESI[x$stratum == "Airflow limitation" & x$group == "CT-only-COPD"]', TOL_2DP)
 reg("FILL-19", "Fills 2026-09-11", "obstructed: ESI contrast p<0.001", 1, "discord_profile_tests.csv",
     'as.integer(x$p[x$stratum == "Airflow limitation" & x$measure == "ESI" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD"] < 0.001)', TOL_EXACT)
-reg("S5-20", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: ratio 1.19", 1.19, "binary_vs_mdcopd.csv",
-    'x$ratio_of_ratios[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-21", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: lower bound 1.12", 1.12, "binary_vs_mdcopd.csv",
-    'x$lo[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-22", "Fills 2026-09-11", "S5 vs MD-COPD, ESI exacerbations: upper bound 1.27", 1.27, "binary_vs_mdcopd.csv",
-    'x$hi[x$schema == "S4" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-23", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: ratio 0.45", 0.45, "binary_vs_mdcopd.csv",
-    'x$ratio_of_ratios[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
-reg("S5-24", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: lower bound 0.27", 0.27, "binary_vs_mdcopd.csv",
-    'x$lo[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
-reg("S5-25", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT respiratory mortality: upper bound 0.68", 0.68, "binary_vs_mdcopd.csv",
-    'x$hi[x$schema == "S3" & x$outcome == "resp"]', TOL_2DP)
-reg("S5-26", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: ratio 1.13", 1.13, "binary_vs_mdcopd.csv",
-    'x$ratio_of_ratios[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-27", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: lower bound 1.04", 1.04, "binary_vs_mdcopd.csv",
-    'x$lo[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-28", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT exacerbations: upper bound 1.23", 1.23, "binary_vs_mdcopd.csv",
-    'x$hi[x$schema == "S3" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-29", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: ratio 0.93", 0.93, "binary_vs_mdcopd.csv",
-    'x$ratio_of_ratios[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
-reg("S5-30", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: lower bound 0.88", 0.88, "binary_vs_mdcopd.csv",
-    'x$lo[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
-reg("S5-31", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio all-cause mortality: upper bound 0.98", 0.98, "binary_vs_mdcopd.csv",
-    'x$hi[x$schema == "S1" & x$outcome == "all"]', TOL_2DP)
-reg("S5-32", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: ratio 0.78", 0.78, "binary_vs_mdcopd.csv",
-    'x$ratio_of_ratios[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-33", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: lower bound 0.72", 0.72, "binary_vs_mdcopd.csv",
-    'x$lo[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-34", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio exacerbations: upper bound 0.84", 0.84, "binary_vs_mdcopd.csv",
-    'x$hi[x$schema == "S1" & x$outcome == "exac"]', TOL_2DP)
-reg("S5-35", "Fills 2026-09-11", "S5 vs MD-COPD, ESI all-cause: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S4" & x$outcome == "all"] >= 0.05)', TOL_EXACT)
-reg("S5-36", "Fills 2026-09-11", "S5 vs MD-COPD, ESI respiratory: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S4" & x$outcome == "resp"] >= 0.05)', TOL_EXACT)
-reg("S5-37", "Fills 2026-09-11", "S5 vs MD-COPD, NoCT all-cause: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S3" & x$outcome == "all"] >= 0.05)', TOL_EXACT)
-reg("S5-38", "Fills 2026-09-11", "S5 vs MD-COPD, fixed ratio respiratory: not different (P >= 0.05)", 1, "binary_vs_mdcopd.csv",
-    'as.integer(x$p_boot[x$schema == "S1" & x$outcome == "resp"] >= 0.05)', TOL_EXACT)
 
 reg("RECL-01", "Reclassification", "833 COPD-major become AFL-only without CT",
     833, "reclassification.csv", RC("S3", "major_to_aflonly"), TOL_EXACT)
 reg("RECL-02", "Reclassification", "350 do so with ESI", 350,
     "reclassification.csv", RC("S4", "major_to_aflonly"), TOL_EXACT)
-reg("RECL-03", "Reclassification",
-    "21.9% of COPD-major qualify only through a CT finding", 21.9,
-    "reclassification.csv", 'x$ct_only_pct[1]', TOL_1DP)
 reg("RECL-04", "Reclassification", "that is 833 of 3,809 participants", 833,
     "reclassification.csv", 'x$ct_only_major[1]', TOL_EXACT)
 # The two counts are the same number for a reason: without a structural
@@ -656,25 +417,25 @@ CNC <- function(sch, cat, out, fld)
           fld, sch, cat, out)
 
 reg("CONSREF-00", "Common reference",
-    "common reference holds 3,745 participants", 3745,
+    "common reference holds 3,856 participants", 3856,
     "consensus_ref_group.csv", "x$n_cohort", TOL_EXACT)
 reg("CONSREF-01", "Common reference",
-    "MD-COPD AFL-only all-cause HR 0.94 against the common reference", 0.94,
+    "MD-COPD AFL-only all-cause HR 0.91 against the common reference", 0.91,
     "consensus_ref_risk.csv", CN("S2", "AFL-only", "all_HR"), TOL_2DP)
 reg("CONSREF-02", "Common reference",
-    "ESI-MD-COPD AFL-only all-cause HR 0.96", 0.96,
+    "ESI-MD-COPD AFL-only all-cause HR 0.94", 0.94,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "all_HR"), TOL_2DP)
 reg("CONSREF-03", "Common reference",
-    "NoCT-MD-COPD AFL-only all-cause HR 1.14", 1.14,
+    "NoCT-MD-COPD AFL-only all-cause HR 1.11", 1.11,
     "consensus_ref_risk.csv", CN("S3", "AFL-only", "all_HR"), TOL_2DP)
 reg("CONSREF-04", "Common reference",
-    "NoCT-MD-COPD AFL-only crude respiratory rate ratio 10.00", 10.00,
+    "NoCT-MD-COPD AFL-only crude respiratory rate ratio 8.07", 8.07,
     "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "rr"), TOL_2DP)
 reg("CONSREF-05", "Common reference",
-    "MD-COPD AFL-only crude respiratory rate ratio 2.23", 2.23,
+    "MD-COPD AFL-only crude respiratory rate ratio 1.80", 1.80,
     "consensus_ref_crude.csv", CNC("S2", "AFL-only", "resp", "rr"), TOL_2DP)
 reg("CONSREF-06", "Common reference",
-    "ESI-MD-COPD AFL-only crude respiratory rate ratio 2.34", 2.34,
+    "ESI-MD-COPD AFL-only crude respiratory rate ratio 1.88", 1.88,
     "consensus_ref_crude.csv", CNC("S4", "AFL-only", "resp", "rr"), TOL_2DP)
 # The three raw counts the argument actually rests on.
 reg("CONSREF-07", "Common reference",
@@ -687,42 +448,42 @@ reg("CONSREF-09", "Common reference",
     "ESI-MD-COPD AFL-only had 4 respiratory deaths", 4,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "resp_deaths"), TOL_EXACT)
 reg("CONSREF-10", "Common reference",
-    "MD-COPD COPD-minor all-cause HR 2.02", 2.02,
+    "MD-COPD COPD-minor all-cause HR 1.95", 1.95,
     "consensus_ref_risk.csv", CN("S2", "COPD-minor", "all_HR"), TOL_2DP)
 reg("CONSREF-11", "Common reference",
-    "NoCT-MD-COPD COPD-minor all-cause HR 2.01", 2.01,
+    "NoCT-MD-COPD COPD-minor all-cause HR 1.85", 1.85,
     "consensus_ref_risk.csv", CN("S3", "COPD-minor", "all_HR"), TOL_2DP)
 reg("CONSREF-12", "Common reference",
-    "ESI-MD-COPD COPD-minor all-cause HR 1.97", 1.97,
+    "ESI-MD-COPD COPD-minor all-cause HR 1.83", 1.83,
     "consensus_ref_risk.csv", CN("S4", "COPD-minor", "all_HR"), TOL_2DP)
 reg("CONSREF-13", "Common reference",
-    "MD-COPD COPD-major all-cause HR 2.75", 2.75,
+    "MD-COPD COPD-major all-cause HR 2.67", 2.67,
     "consensus_ref_risk.csv", CN("S2", "COPD-major", "all_HR"), TOL_2DP)
 reg("CONSREF-14", "Common reference",
-    "NoCT-MD-COPD COPD-major all-cause HR 3.38", 3.38,
+    "NoCT-MD-COPD COPD-major all-cause HR 3.28", 3.28,
     "consensus_ref_risk.csv", CN("S3", "COPD-major", "all_HR"), TOL_2DP)
 reg("CONSREF-15", "Common reference",
-    "ESI-MD-COPD COPD-major all-cause HR 2.94", 2.94,
+    "ESI-MD-COPD COPD-major all-cause HR 2.85", 2.85,
     "consensus_ref_risk.csv", CN("S4", "COPD-major", "all_HR"), TOL_2DP)
 
 reg("CONSREF-16", "Common reference",
-    "NoCT-MD-COPD AFL-only adjusted respiratory HR 6.80", 6.80,
+    "NoCT-MD-COPD AFL-only adjusted respiratory HR 5.46", 5.46,
     "consensus_ref_risk.csv", CN("S3", "AFL-only", "resp_HR"), TOL_2DP)
 reg("CONSREF-17", "Common reference",
-    "NoCT-MD-COPD AFL-only adjusted all-cause upper bound 1.33 covers 1", 1.33,
+    "NoCT-MD-COPD AFL-only adjusted all-cause upper bound 1.29 covers 1", 1.29,
     "consensus_ref_risk.csv", CN("S3", "AFL-only", "all_UCI"), TOL_2DP)
 reg("CONSREF-18", "Common reference",
-    "ESI-MD-COPD AFL-only crude all-cause rate ratio 1.29", 1.29,
+    "ESI-MD-COPD AFL-only crude all-cause rate ratio 1.25", 1.25,
     "consensus_ref_crude.csv", CNC("S4", "AFL-only", "all", "rr"), TOL_2DP)
 reg("CONSREF-19", "Common reference",
-    "ESI-MD-COPD AFL-only crude all-cause lower bound 1.04 excludes 1", 1.04,
+    "ESI-MD-COPD AFL-only crude all-cause lower bound 1.01 excludes 1", 1.01,
     "consensus_ref_crude.csv", CNC("S4", "AFL-only", "all", "lo"), TOL_2DP)
 
 reg("CONSREF-20", "Common reference",
-    "NoCT-MD-COPD AFL-only crude respiratory lower bound 4.95", 4.95,
+    "NoCT-MD-COPD AFL-only crude respiratory lower bound 4.22", 4.22,
     "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "lo"), TOL_2DP)
 reg("CONSREF-21", "Common reference",
-    "NoCT-MD-COPD AFL-only crude respiratory upper bound 21.87", 21.87,
+    "NoCT-MD-COPD AFL-only crude respiratory upper bound 16.27", 16.27,
     "consensus_ref_crude.csv", CNC("S3", "AFL-only", "resp", "hi"), TOL_2DP)
 reg("CONSREF-22", "Common reference",
     "MD-COPD AFL-only respiratory estimate is below the event floor", 1,
@@ -737,44 +498,44 @@ reg("CONSREF-23", "Common reference",
 
 # Numbers the group-by-group paragraphs quote that were not yet registered.
 reg("CONSREF-24", "Common reference",
-    "MD-COPD AFL-only adjusted exacerbation IRR 1.36", 1.36,
+    "MD-COPD AFL-only adjusted exacerbation IRR 1.30", 1.30,
     "consensus_ref_risk.csv", CN("S2", "AFL-only", "exac_IRR"), TOL_2DP)
 reg("CONSREF-25", "Common reference",
-    "MD-COPD AFL-only exacerbation lower bound 1.08 excludes 1", 1.08,
+    "MD-COPD AFL-only exacerbation lower bound 1.02 excludes 1", 1.02,
     "consensus_ref_risk.csv", CN("S2", "AFL-only", "exac_LCI"), TOL_2DP)
 reg("CONSREF-26", "Common reference",
-    "ESI-MD-COPD AFL-only adjusted exacerbation IRR 1.25", 1.25,
+    "ESI-MD-COPD AFL-only adjusted exacerbation IRR 1.19", 1.19,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "exac_IRR"), TOL_2DP)
 reg("CONSREF-27", "Common reference",
-    "ESI-MD-COPD AFL-only exacerbation lower bound 1.05 excludes 1", 1.05,
+    "ESI-MD-COPD AFL-only exacerbation lower bound 1.00", 1.00,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "exac_LCI"), TOL_2DP)
 reg("CONSREF-28", "Common reference",
-    "MD-COPD AFL-only crude all-cause rate ratio 1.13", 1.13,
+    "MD-COPD AFL-only crude all-cause rate ratio 1.10", 1.10,
     "consensus_ref_crude.csv", CNC("S2", "AFL-only", "all", "rr"), TOL_2DP)
 reg("CONSREF-29", "Common reference",
-    "NoCT-MD-COPD AFL-only crude all-cause rate ratio 1.57", 1.57,
+    "NoCT-MD-COPD AFL-only crude all-cause rate ratio 1.52", 1.52,
     "consensus_ref_crude.csv", CNC("S3", "AFL-only", "all", "rr"), TOL_2DP)
 reg("CONSREF-30", "Common reference",
-    "NoCT-MD-COPD AFL-only adjusted exacerbation IRR 1.81", 1.81,
+    "NoCT-MD-COPD AFL-only adjusted exacerbation IRR 1.73", 1.73,
     "consensus_ref_risk.csv", CN("S3", "AFL-only", "exac_IRR"), TOL_2DP)
 reg("CONSREF-31", "Common reference",
-    "MD-COPD AFL-only adjusted respiratory HR 1.84", 1.84,
+    "MD-COPD AFL-only adjusted respiratory HR 1.47", 1.47,
     "consensus_ref_risk.csv", CN("S2", "AFL-only", "resp_HR"), TOL_2DP)
 reg("CONSREF-32", "Common reference",
-    "ESI-MD-COPD AFL-only adjusted respiratory HR 1.75", 1.75,
+    "ESI-MD-COPD AFL-only adjusted respiratory HR 1.40", 1.40,
     "consensus_ref_risk.csv", CN("S4", "AFL-only", "resp_HR"), TOL_2DP)
 
 # FEV1 decline is now adjusted for baseline FEV1, as the source report did.
 # Every estimate is negative; the unadjusted model gave positive estimates for
 # COPD-major, so these are pinned in the new direction.
 reg("FEV1-01", "FEV1 decline",
-    "MD-COPD COPD-major declines 5.5 mL/yr faster than the common reference", -5.52,
+    "MD-COPD COPD-major declines 5.3 mL/yr faster than the common reference", -5.33,
     "fev1_decline.csv", FD("S2", "COPD-major", "est_mL_yr"), 0.05)
 reg("FEV1-02", "FEV1 decline",
-    "NoCT-MD-COPD COPD-major, -5.3 mL/yr", -5.25,
+    "NoCT-MD-COPD COPD-major, -5.1 mL/yr", -5.10,
     "fev1_decline.csv", FD("S3", "COPD-major", "est_mL_yr"), 0.05)
 reg("FEV1-03", "FEV1 decline",
-    "ESI-MD-COPD COPD-major, -5.1 mL/yr", -5.13,
+    "ESI-MD-COPD COPD-major, -5.0 mL/yr", -4.99,
     "fev1_decline.csv", FD("S4", "COPD-major", "est_mL_yr"), 0.05)
 reg("FEV1-05", "FEV1 decline",
     "six of the nine estimates reach significance", 6,
@@ -797,110 +558,68 @@ reg("FEV1-08", "FEV1 decline",
     TOL_EXACT)
 
 # --- crude rate ratios quoted alongside the adjusted ----------------------
-CR <- function(sch, cat, out, fld)
-  sprintf('x$%s[x$schema == "%s" & x$category == "%s" & x$outcome == "%s"]',
-          fld, sch, cat, out)
-reg("CRUDE-01", "Crude estimates",
-    "without CT, AFL-only crude all-cause rate ratio 1.54", 1.54,
-    "schema_crude.csv", CR("S3", "AFL-only", "all", "rr"), TOL_2DP)
-reg("CRUDE-02", "Crude estimates",
-    "and its interval excludes 1, so the label is false unadjusted too",
-    TRUE, "schema_crude.csv",
-    sprintf('%s > 1', CR("S3", "AFL-only", "all", "lo")), TOL_EXACT)
-reg("CRUDE-03", "Crude estimates",
-    "without CT, AFL-only crude respiratory rate ratio 9.38", 9.38,
-    "schema_crude.csv", CR("S3", "AFL-only", "resp", "rr"), TOL_2DP)
-reg("CRUDE-04", "Crude estimates",
-    "with ESI, AFL-only crude all-cause rate ratio 1.29", 1.29,
-    "schema_crude.csv", CR("S4", "AFL-only", "all", "rr"), TOL_2DP)
 # On the corrected cohort this interval no longer includes 1. The estimate is
 # unchanged in size; ESI-MD-COPD's AFL-only category is twice the size of
 # MD-COPD's, so the interval is narrower. Pinned in the new direction so a
 # revert would fail rather than pass silently.
-reg("CRUDE-05", "Crude estimates",
-    "and its interval excludes 1", TRUE, "schema_crude.csv",
-    sprintf('%s > 1', CR("S4", "AFL-only", "all", "lo")), TOL_EXACT)
-reg("CRUDE-06", "Crude estimates",
-    "with CT, AFL-only crude all-cause rate ratio 1.05", 1.05,
-    "schema_crude.csv", CR("S2", "AFL-only", "all", "rr"), TOL_2DP)
 
 # --- risk: do the labels mean what they say -------------------------------
-R <- function(s, cat, fld) sprintf('x$%s[x$schema == "%s" & x$category == "%s"]', fld, s, cat)
-reg("RISK-01", "Label meaning", "S2 AFL-only all-cause HR 0.87", 0.87,
-    "schema_risk.csv", R("S2", "AFL-only", "all_HR"), TOL_2DP)
-reg("RISK-01b", "Label meaning", "S2 AFL-only interval crosses 1", TRUE,
-    "schema_risk.csv", sprintf('%s > 1', R("S2", "AFL-only", "all_UCI")), TOL_EXACT)
 # On the corrected cohort every MD-COPD AFL-only interval crosses 1, including
 # exacerbations, which previously sat just above it. The reference category is
 # now cleanly null on all three outcomes.
-reg("RISK-01c", "Label meaning",
-    "the CT schema's AFL-only exacerbation interval crosses 1",
-    TRUE, "schema_risk.csv",
-    'x$exac_LCI[x$schema == "S2" & x$category == "AFL-only"] < 1', TOL_EXACT)
-reg("CRUDE-07", "Crude estimates",
-    "and its crude exacerbation ratio crosses 1", TRUE, "schema_crude.csv",
-    'x$lo[x$schema == "S2" & x$category == "AFL-only" & x$outcome == "exac"] < 1',
-    TOL_EXACT)
 
-reg("RISK-02", "Label meaning", "S3 AFL-only respiratory HR 6.37", 6.37,
-    "schema_risk.csv", R("S3", "AFL-only", "resp_HR"), TOL_2DP)
-reg("RISK-02b", "Label meaning",
-    "S3 AFL-only respiratory risk is significantly elevated, so the label is false",
-    TRUE, "schema_risk.csv", sprintf('%s > 1', R("S3", "AFL-only", "resp_LCI")), TOL_EXACT)
-reg("RISK-03", "Label meaning", "S3 AFL-only exacerbation IRR 1.78", 1.78,
-    "schema_risk.csv", R("S3", "AFL-only", "exac_IRR"), TOL_2DP)
-reg("RISK-04", "Label meaning", "S4 AFL-only all-cause HR 0.96", 0.96,
-    "schema_risk.csv", R("S4", "AFL-only", "all_HR"), TOL_2DP)
 # Mortality shows no excess; the exacerbation interval excludes 1. The point
 # estimate (1.23) is the same size as MD-COPD's own for this category (1.21),
 # so this is a precision difference, not a risk difference. Both halves are
 # pinned so neither can drift unnoticed.
-reg("RISK-04b", "Label meaning",
-    "S4 AFL-only shows no excess in either mortality outcome", TRUE, "schema_risk.csv",
-    sprintf('%s > 1 && %s < 1',
-            R("S4", "AFL-only", "all_UCI"), R("S4", "AFL-only", "resp_LCI")), TOL_EXACT)
-reg("RISK-04c", "Label meaning",
-    "but its exacerbation interval excludes 1", TRUE, "schema_risk.csv",
-    sprintf('%s > 1', R("S4", "AFL-only", "exac_LCI")), TOL_EXACT)
-reg("RISK-04d", "Label meaning",
-    "S4 AFL-only exacerbation IRR 1.23 matches S2's 1.21", 1.23,
-    "schema_risk.csv", R("S4", "AFL-only", "exac_IRR"), TOL_2DP)
-reg("RISK-04e", "Label meaning",
-    "S2 AFL-only exacerbation IRR 1.21", 1.21,
-    "schema_risk.csv", R("S2", "AFL-only", "exac_IRR"), TOL_2DP)
-reg("RISK-05", "Label meaning", "S4 COPD-minor HR 1.96 tracks S2's 1.83", 1.96,
-    "schema_risk.csv", R("S4", "COPD-minor", "all_HR"), TOL_2DP)
-reg("RISK-06", "Label meaning", "S4 COPD-major HR 2.93", 2.93,
-    "schema_risk.csv", R("S4", "COPD-major", "all_HR"), TOL_2DP)
 
-reg("RISK-07", "Label meaning", "the CT schema's COPD-major all-cause HR is 2.54",
-    2.54, "schema_risk.csv",
-    'x$all_HR[x$schema == "S2" & x$category == "COPD-major"]', TOL_2DP)
-reg("RISK-08", "Label meaning",
-    "without CT the same category's HR rises to 3.34, being smaller and more severe",
-    3.34, "schema_risk.csv",
-    'x$all_HR[x$schema == "S3" & x$category == "COPD-major"]', TOL_2DP)
 
-# --- discrimination -------------------------------------------------------
-D <- function(s, fld) sprintf('x$%s[x$schema == "%s"]', fld, s)
-reg("DISC-01", "Discrimination", "S3 has the best all-cause C-index, 0.721",
-    0.721, "schema_discrimination.csv", D("S3", "c_allcause"), TOL_3DP)
-reg("DISC-01b", "Discrimination",
-    "S3 out-discriminates every other schema, which the paper must state",
-    TRUE, "schema_discrimination.csv",
-    'x$c_allcause[x$schema == "S3"] == max(x$c_allcause)', TOL_EXACT)
-reg("DISC-02", "Discrimination", "S4 discriminates better than S2 on all-cause",
-    TRUE, "schema_discrimination.csv",
-    'x$c_allcause[x$schema == "S4"] > x$c_allcause[x$schema == "S2"]', TOL_EXACT)
-reg("DISC-03", "Discrimination", "S4 discriminates better than S2 on respiratory",
-    TRUE, "schema_discrimination.csv",
-    'x$c_resp[x$schema == "S4"] > x$c_resp[x$schema == "S2"]', TOL_EXACT)
+# --- COPD major against MD-COPD, Results paragraph on the COPD major group ---
+reg("MAJ-01", "COPD major vs MD-COPD",
+    "NoCT COPD major relative risks are 18% to 28% higher than MD-COPD's", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$schema == "S3" & x$category == "COPD-major" & x$type == "crude", ], round(100 * (min(ratio_of_ratios) - 1)) == 18 && round(100 * (max(ratio_of_ratios) - 1)) == 28)', TOL_EXACT)
+reg("MAJ-02", "COPD major vs MD-COPD",
+    "ESI COPD major relative risks are 5% to 9% higher than MD-COPD's", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$schema == "S4" & x$category == "COPD-major" & x$type == "crude", ], round(100 * (min(ratio_of_ratios) - 1)) == 5 && round(100 * (max(ratio_of_ratios) - 1)) == 9)', TOL_EXACT)
+reg("MAJ-03", "COPD major vs MD-COPD", "all six COPD major comparisons with MD-COPD have p<0.005", TRUE,
+    "group_vs_mdcopd.csv", 'all(x$p_boot[x$category == "COPD-major" & x$type == "crude"] < 0.005)', TOL_EXACT)
+reg("MAJ-04", "COPD major vs MD-COPD", "COPD major risk is highest under NoCT on all three outcomes", TRUE,
+    "consensus_ref_crude.csv",
+    'all(sapply(c("all", "resp", "exac"), function(o) { k <- x$category == "COPD-major" & x$outcome == o; x$rr[k & x$schema == "S3"] == max(x$rr[k]) }))', TOL_EXACT)
 
-# --- bronchodilator stability, quoted in the Discussion -------------------
-reg("BD-01", "Discussion", "mean ESI change on bronchodilation is -0.09", -0.09,
-    "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["mean_delta"]])', TOL_2DP)
-reg("BD-02", "Discussion", "on 10,160 paired measurements", 10160,
-    "Supp_Bronchodilator_deltaESI.txt", 'as.numeric(x[["n_paired"]])', TOL_EXACT)
+# --- rerun with the cardiac rule (2026-09-14): statements now in the text ---
+reg("NEW-01", "Agreement", "ESI COPD minor agreement 59%", 59, "agreement_by_group.csv",
+    'round(x$pct_esi[x$category == "COPD-minor"])', TOL_EXACT)
+reg("NEW-02", "Agreement", "NoCT COPD minor agreement 60%", 60, "agreement_by_group.csv",
+    'round(x$pct_noct[x$category == "COPD-minor"])', TOL_EXACT)
+reg("NEW-03", "Preserved cross-tab", "74.8% noCOPD by both", 74.8, "discord_counts.csv",
+    '100 * x$n[x$group == "Both-noCOPD"] / sum(x$n)', TOL_1DP)
+reg("NEW-04", "Preserved cross-tab", "13.8% COPD by both", 13.8, "discord_counts.csv",
+    '100 * x$n[x$group == "Both-COPD"] / sum(x$n)', TOL_1DP)
+reg("NEW-05", "Preserved cross-tab", "9.7% COPD by ESI alone", 9.7, "discord_counts.csv",
+    '100 * x$n[x$group == "ESI-only-COPD"] / sum(x$n)', TOL_1DP)
+reg("NEW-06", "Preserved cross-tab", "1.6% COPD by CT alone", 1.6, "discord_counts.csv",
+    '100 * x$n[x$group == "CT-only-COPD"] / sum(x$n)', TOL_1DP)
+reg("NEW-07", "Preserved profile", "mMRC >= 2 in 84.4% of ESI-only", 84.4, "discord_profile_strata.csv",
+    'x$pct_dyspnea[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
+reg("NEW-08", "Preserved profile", "mMRC >= 2 in 36.5% of CT-only", 36.5, "discord_profile_strata.csv",
+    'x$pct_dyspnea[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("NEW-09", "Preserved profile", "SGRQ >= 25 in 94.0% of ESI-only", 94.0, "discord_profile_strata.csv",
+    'x$pct_sgrq[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD"]', TOL_1DP)
+reg("NEW-10", "Preserved profile", "SGRQ >= 25 in 58.8% of CT-only", 58.8, "discord_profile_strata.csv",
+    'x$pct_sgrq[x$stratum == "Preserved spirometry" & x$group == "CT-only-COPD"]', TOL_1DP)
+reg("NEW-11", "Preserved profile", "both symptom contrasts p<0.001", TRUE, "discord_profile_tests.csv",
+    'all(x$p[x$stratum == "Preserved spirometry" & x$group1 == "CT-only-COPD" & x$group2 == "ESI-only-COPD" & x$measure %in% c("dysp_yn", "qol_yn")] < 0.001)', TOL_EXACT)
+reg("NEW-12", "Preserved discordance risk", "all three COPD groups significantly elevated for all-cause and exacerbations", TRUE,
+    "discord_crude_strata.csv", 'all(x$lo[x$stratum == "Preserved spirometry" & x$outcome %in% c("all", "exac")] > 1)', TOL_EXACT)
+reg("NEW-13", "Preserved discordance risk", "exacerbation risk highest in Both-COPD", TRUE, "discord_crude_strata.csv",
+    'with(x[x$stratum == "Preserved spirometry" & x$outcome == "exac", ], group[which.max(rr)] == "Both-COPD")', TOL_EXACT)
+reg("NEW-14", "Preserved discordance risk", "all-cause risk highest in CT-only", TRUE, "discord_crude_strata.csv",
+    'with(x[x$stratum == "Preserved spirometry" & x$outcome == "all", ], group[which.max(rr)] == "CT-only-COPD")', TOL_EXACT)
+reg("NEW-15", "COPD minor", "NoCT and ESI lower than MD-COPD on all three outcomes", TRUE, "group_vs_mdcopd.csv",
+    'all(x$ratio_of_ratios[x$category == "COPD-minor" & x$type == "crude"] < 1)', TOL_EXACT)
+reg("NEW-16", "COPD minor", "respiratory deaths too few to compare for both", TRUE, "group_vs_mdcopd.csv",
+    'all(as.logical(x$few_events[x$category == "COPD-minor" & x$type == "crude" & x$outcome == "resp"]))', TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

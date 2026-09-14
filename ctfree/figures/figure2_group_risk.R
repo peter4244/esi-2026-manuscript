@@ -96,7 +96,7 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS
 common <- paste(
   "for each diagnostic group (rows) under MD-COPD, the ESI classification and the NoCT",
   "classification, for all-cause mortality, respiratory mortality and exacerbations (columns),",
-  sprintf("against a common reference of the %s participants assigned to noCOPD by all three",
+  sprintf("against a common reference of the %s subjects assigned to noCOPD by all three",
           format(ref$n_cohort, big.mark = ",")),
   "classifications. The x axis is on a log scale and differs between columns.")
 floor_note <- paste("A point drawn without an interval had fewer than 10 events in that group,",
@@ -107,7 +107,7 @@ writeLines(c(
   paste("Crude rate ratios with 95% confidence intervals", common,
         "The crude rate ratio is the event rate in the group divided by the event rate in the reference.",
         floor_note, "Adjusted estimates are shown in Supplemental Figure S1.",
-        "AFL-only, airflow limitation without other criteria.")),
+        "AFL-only = airflow limitation without other criteria.")),
   file.path(HERE, "figure2_group_risk_legend.md"))
 writeLines(c(
   "**Supplemental Figure S1. Crude and adjusted risk of each diagnostic group under the three multidimensional classifications.**",
@@ -117,6 +117,6 @@ writeLines(c(
         "Adjusted estimates are hazard ratios for mortality and incidence rate ratios for exacerbations,",
         "from models carrying age, sex, race, current smoking status, pack-years and body mass index,",
         "with prior exacerbation frequency added for exacerbations.", floor_note,
-        "AFL-only, airflow limitation without other criteria.")),
+        "AFL-only = airflow limitation without other criteria.")),
   file.path(HERE, "figureS1_group_risk_legend.md"))
 cat("wrote", out_main, "and", out_supp, "\n")
