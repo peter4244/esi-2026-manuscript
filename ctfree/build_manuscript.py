@@ -201,7 +201,28 @@ def add_table(doc, headers, rows, widths, body_fs=TBL_FS, pad_in=0.05):
             r.bold = (i == 0)
             r.font.name, r.font.size = FONT_NAME, Pt(body_fs)
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    keep_table_together(t)
     return t
+
+
+def keep_table_together(t):
+    """Keep a table on one page, and on the page of the legend that follows it.
+
+    Every row is marked cannot-split and every paragraph in it keep-with-next,
+    so Word moves the whole table to the next page rather than breaking it. A
+    table longer than a page still breaks, because the chain cannot be honored.
+    The last row keeps with the legend paragraph after the table, and the header
+    row repeats on the next page when a table is longer than a page."""
+    hdr = t.rows[0]._tr.get_or_add_trPr()
+    if hdr.find(qn("w:tblHeader")) is None:
+        hdr.append(OxmlElement("w:tblHeader"))
+    for row in t.rows:
+        trPr = row._tr.get_or_add_trPr()
+        if trPr.find(qn("w:cantSplit")) is None:
+            trPr.append(OxmlElement("w:cantSplit"))
+        for cell in row.cells:
+            for p in cell.paragraphs:
+                p.paragraph_format.keep_with_next = True
 
 
 def legend(doc, label, text):
@@ -411,6 +432,7 @@ def read_legend(stem):
 def add_figure(doc, png, label, text, width=CONTENT_WIDTH_IN):
     doc.add_picture(png, width=Inches(width))
     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.paragraphs[-1].paragraph_format.keep_with_next = True   # figure stays with its legend
     legend(doc, label, text)
 
 

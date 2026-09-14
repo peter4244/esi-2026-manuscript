@@ -26,11 +26,16 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 
-from docx.shared import Pt                                   # noqa: E402
+from docx.shared import Pt, Inches                           # noqa: E402
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER  # noqa: E402
+from docx.oxml import OxmlElement                            # noqa: E402
+from docx.oxml.ns import qn                                  # noqa: E402
 from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, read_titlepage,
                               t_risk_common_ref, t_discord_risk, Section,
-                              add_figure, read_legend, figure_width, FIGS)
+                              add_figure, read_legend, figure_width, FIGS,
+                              CONTENT_WIDTH_IN)
+import paginate                                              # noqa: E402
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v1.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
@@ -41,12 +46,68 @@ def load(path, name):
         return list(csv.DictReader(f))
 
 
-def heading(doc, text):
-    doc.add_paragraph(text, style="Heading 2")
-
-
 def para(doc, text):
     emphasis(doc.add_paragraph(), text)
+
+
+HEADINGS = []      # Heading 2 texts in document order, for the contents
+BS, TAB = chr(92), chr(9)
+
+
+def heading(doc, text):
+    p = doc.add_paragraph(text, style="Heading 2")
+    p.paragraph_format.keep_with_next = True
+    HEADINGS.append(text)
+
+
+def _field(par, kind, instr=None):
+    """One piece of a Word field: a begin, separate or end mark, or its instruction."""
+    r = par.add_run()
+    if instr is not None:
+        el = OxmlElement("w:instrText")
+        el.set(qn("xml:space"), "preserve")
+        el.text = instr
+    else:
+        el = OxmlElement("w:fldChar")
+        el.set(qn("w:fldCharType"), kind)
+    r._r.append(el)
+
+
+def add_page_numbers(doc):
+    p = doc.sections[0].footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _field(p, "begin")
+    _field(p, None, " PAGE ")
+    _field(p, "separate")
+    p.add_run("1")
+    _field(p, "end")
+
+
+def add_toc(doc, entries):
+    """A Word contents field over the Heading 2 headings. Its displayed result is
+    written with the page numbers found by rendering, so it reads correctly on
+    opening, and the document asks Word to refresh fields when it is opened."""
+    p = doc.add_paragraph()
+    r = p.add_run("Contents")
+    r.bold = True
+    r.font.size = Pt(12)
+    for k, (text, page) in enumerate(entries):
+        par = doc.add_paragraph()
+        fmt = par.paragraph_format
+        fmt.tab_stops.add_tab_stop(Inches(CONTENT_WIDTH_IN), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
+        fmt.space_after = Pt(3)
+        if k == 0:
+            _field(par, "begin")
+            _field(par, None, f' TOC {BS}o "2-2" {BS}h {BS}z {BS}u ')
+            _field(par, "separate")
+        par.add_run(f"{text}{TAB}{page}")
+        if k == len(entries) - 1:
+            _field(par, "end")
+
+
+def figure_title(stem):
+    """The title sentence of a figure's legend sidecar, without its final period."""
+    return read_legend(stem).split(". ", 1)[0].rstrip(".")
 
 
 # --------------------------------------------------------------------------
@@ -322,16 +383,12 @@ def check_citations(produced):
         print(f"  note: {unused} produced but never cited in the main text")
 
 
-def main():
-    pjc_guard.check("The supplement build")
-    word_guard.check([OUT], "The supplement build")
-    prose_guard.check("The supplement build")
-    prose_guard.check_owned("The supplement build")
-    display_order.check(HERE, {"Supplemental Table": SUPP_ORDER,
-                               "Supplemental Figure": [n for n, _ in SUPP_FIGURES]},
-                        "The supplement build")
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+def build(out, toc):
+    """Write the supplement to out with the given contents entries; return the
+    headings in document order."""
+    HEADINGS.clear()
     doc = init_document()
+    add_page_numbers(doc)
     p = doc.add_paragraph()
     r = p.add_run("Supplement")
     r.bold = True
@@ -341,18 +398,53 @@ def main():
     r = p.add_run(read_titlepage()["TITLE"][0])
     r.bold = True
     r.font.size = Pt(14)
+    if toc:
+        add_toc(doc, toc)
+        doc.add_page_break()
     for i, (_, fn) in enumerate(SUPP_TABLES, 1):
         fn(doc, f"S{i}")
         doc.add_paragraph()
     doc.add_page_break()
     for n, stem in SUPP_FIGURES:
+        heading(doc, f"Supplemental Figure {n}. {figure_title(stem)}")
         add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Supplemental Figure {n}.",
                    read_legend(stem), width=figure_width(os.path.join(FIGS, stem + ".meta")))
     data_files(doc)
-    doc.save(OUT)
+    upd = OxmlElement("w:updateFields")
+    upd.set(qn("w:val"), "true")
+    doc.settings.element.append(upd)
+    doc.save(out)
+    return list(HEADINGS)
+
+
+def main(out=OUT):
+    pjc_guard.check("The supplement build")
+    word_guard.check([out], "The supplement build")
+    prose_guard.check("The supplement build")
+    prose_guard.check_owned("The supplement build")
+    display_order.check(HERE, {"Supplemental Table": SUPP_ORDER,
+                               "Supplemental Figure": [n for n, _ in SUPP_FIGURES]},
+                        "The supplement build")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    # Page numbers exist only after a rendering. Pass 1 collects the headings;
+    # pass 2 lays out the contents with placeholder numbers so they take their
+    # final space; pass 3 writes the rendered pages; a last rendering confirms
+    # that no heading moved.
+    heads = build(out, [])
+    build(out, [(h, 99) for h in heads])
+    first = paginate.pdf_pages(out)
+    toc = [(h, paginate.last_page_of(first, h)) for h in heads]
+    build(out, toc)
+    final = paginate.pdf_pages(out)
+    moved = [(h, pg, paginate.last_page_of(final, h)) for h, pg in toc
+             if paginate.last_page_of(final, h) != pg]
+    if moved:
+        raise SystemExit(f"contents page numbers moved on the final rendering: {moved}")
     check_citations(SUPP_ORDER)
-    print(f"wrote {OUT}\n  {len(SUPP_ORDER)} supplemental tables")
+    for h, pg in toc:
+        print(f"  p{pg:>2}  {h}")
+    print(f"wrote {out}\n  {len(SUPP_ORDER)} supplemental tables; contents with {len(toc)} entries")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else OUT)
