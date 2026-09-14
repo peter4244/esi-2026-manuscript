@@ -130,6 +130,7 @@
 "BIN-09","COPD versus no COPD paragraph","NoCT exacerbation crude rate ratio 4.48","4.48","4.48451779295807","schema_binary.csv","PASS",""
 "BIN-10","COPD versus no COPD paragraph","ESI exacerbation crude rate ratio 4.71","4.71","4.71060693375817","schema_binary.csv","PASS",""
 "BIN-11","COPD versus no COPD paragraph","NoCT and ESI vs MD-COPD exacerbations p < 0.002","1","1","binary_vs_mdcopd.csv","PASS",""
+"AFL-25","AFL-only paragraph","34 respiratory deaths in the NoCT AFL-only group","34","34","consensus_ref_crude.csv","PASS",""
 "GRP-01","Group comparisons","AFL-only NoCT vs MD-COPD, crude all-cause 1.38","1.38","1.38308450774125","group_vs_mdcopd.csv","PASS",""
 "GRP-02","Group comparisons","its lower bound 1.10","1.1","1.09756909771239","group_vs_mdcopd.csv","PASS",""
 "GRP-03","Group comparisons","its upper bound 1.77","1.77","1.77219458399413","group_vs_mdcopd.csv","PASS",""
