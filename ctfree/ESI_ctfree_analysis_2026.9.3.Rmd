@@ -591,6 +591,11 @@ for (rep_i in seq_len(CV_REPEATS)) {
       k4 = b$k, tl = b$t_low,
       f4 = macroF1(rt, s4(te, b$k, b$t_low)),
       f_draft = macroF1(rt, s4_two(te, 3, 1.00, 2.50)),
+      # Held-out overall agreement, the out-of-sample counterpart of the
+      # agreement the Results quote, which is computed on the full cohort.
+      acc3 = mean(s3(te, a) == rt),
+      acc4 = mean(s4(te, b$k, b$t_low) == rt),
+      acc_draft = mean(s4_two(te, 3, 1.00, 2.50) == rt),
       stringsAsFactors = FALSE)
     .e3 <- s3(te, a); .e4 <- s4(te, b$k, b$t_low)
     for (g in O) {
@@ -605,6 +610,9 @@ write.csv(cv, file.path(OUT_DIR, "cv_schema_fits.csv"), row.names = FALSE)
 dd <- cv$f4 - cv$f3
 cat(sprintf("Held-out macro-F1: NoCT-MD-COPD %.4f | ESI-MD-COPD %.4f | v15 draft %.4f\n",
             mean(cv$f3), mean(cv$f4), mean(cv$f_draft)))
+cat(sprintf("Held-out overall agreement: NoCT-MD-COPD %.4f | ESI-MD-COPD %.4f (full cohort %.4f | %.4f)\n",
+            mean(cv$acc3), mean(cv$acc4),
+            mean(s3(d_b, k3) == d_b$S2), mean(s4(d_b, p4$k, p4$t_low) == d_b$S2)))
 cat(sprintf("ESI-MD-COPD minus NoCT-MD-COPD: %+.4f (%+.4f to %+.4f across folds)\n",
             mean(dd), quantile(dd, .025), quantile(dd, .975)))
 
@@ -617,6 +625,10 @@ write.csv(data.frame(
                        macroF1(d_b$S2, s4(d_b, p4$k, p4$t_low)),
                        macroF1(d_b$S2, s4_two(d_b, 3, 1.00, 2.50))),
   macroF1_heldout  = c(mean(cv$f3), mean(cv$f4), mean(cv$f_draft)),
+  agreement_insample = c(mean(s3(d_b, k3) == d_b$S2),
+                         mean(s4(d_b, p4$k, p4$t_low) == d_b$S2),
+                         mean(s4_two(d_b, 3, 1.00, 2.50) == d_b$S2)),
+  agreement_heldout  = c(mean(cv$acc3), mean(cv$acc4), mean(cv$acc_draft)),
   stringsAsFactors = FALSE),
   file.path(OUT_DIR, "schema_fit.csv"), row.names = FALSE)
 write.csv(data.frame(diff_mean = mean(dd),

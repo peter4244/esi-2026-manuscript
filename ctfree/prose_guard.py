@@ -96,11 +96,11 @@ DELETED = {
         "Methods overclaim: S5 and the cross-classification use other references; fixed 2026-09-13",
     "identifies clinically important disease that the fixed FEV₁/FVC ratio misses":
         "Abstract Rationale clause; Pete deleted it in the 2026-09-13 06:51 PJC",
-    "reclassifies a subset of subjects with COPD who do not carry increased risk for mortality":
+    "reclassifies a subset of participants with COPD who do not carry increased risk for mortality":
         "Abstract Rationale clause; deleted 2026-09-13 06:51",
     "Analysis of membership in each of the four MD-COPD diagnostic pathways showed that":
         "Abstract Results clause; deleted 2026-09-13 06:51",
-    "When compared against a common reference set of subjects without COPD":
+    "When compared against a common reference set of participants without COPD":
         "Abstract Results clause; deleted 2026-09-13 06:51",
     "avoided significant underdiagnosis that was observed in the absence of CT without ESI substitution":
         "Introduction closing clause; deleted 2026-09-13 06:51",
@@ -178,25 +178,33 @@ def check(build_name="this build"):
 # drafts ago. The build fails if a fingerprint no longer appears in the source.
 # When he supplies a new version, replace the entry in the same commit.
 OWNED = {
+    # Massimo's 2026-09-20 draft is the baseline (Pete, 2026-09-20). One
+    # fingerprint per section, so a wholesale regeneration of his text fails
+    # the build. When he supplies a new version, replace these in the same
+    # commit.
+    "ABSTRACT.md": {
+        "rationale (Massimo 2026-09-20)":
+            "Rationale. A recently proposed multidimensional diagnostic framework for COPD (MD-COPD) integrates spirometry",
+    },
+    "INTRODUCTION.md": {
+        "opening (Massimo 2026-09-20)":
+            "Chronic obstructive pulmonary disease (COPD) is a multidimensional disease in which airflow limitation, structural lung abnormalities, and respiratory symptoms provide complementary information on disease expression",
+    },
+    "METHODS.md": {
+        "study population (Massimo 2026-09-20)":
+            "We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers",
+    },
     "RESULTS.md": {
-        'agreement section opening (2026-09-10 16:48)':
-            'The cross-classification between MD-COPD and the two CT-free classifications is shown in Figure 1. The ESI classification correctly classified 89.0%',
-        'clinical outcomes opening (2026-09-13 18:30, slip fixed at his request)':
-            'The benefit of the MD-COPD classification over the fixed ratio results from removing the COPD diagnosis from low-risk individuals with airflow obstruc',
-        'AFL-only outcomes (crude only, rewritten at his request 2026-09-13)':
-            'Crude risks for the AFL-only pathway are shown in Figure 2, with crude and adjusted risks in Supplemental Figure S1 and Supplemental Tables S4 and S5.',
-        'FEV1 paragraph (2026-09-11 13:01)':
-            'While all three classifications had significant FEV₁ decline in COPD major pathway subjects, only MD-COPD also had significant decline in the COPD min',
-        'COPD-minor comparison (2026-09-11, his wording)':
-            'For the COPD minor pathway group, the three multidimensional classifications had similar risk profiles, with the NoCT and ESI estimates numerically lower than MD-COPD on all three outcomes.',
-        'cross-tabulation opening (2026-09-10 16:48)':
-            'Since the NoCT classification misdiagnosed high risk individuals as not having COPD, we discarded this classification and focused on the cross-tabulation of the',
-        'non-obstructed paragraph (2026-09-11 13:01)':
-            'In subjects with preserved spirometry (n = 5,156), COPD diagnoses occurred only via the COPD minor pathway.',
-        'obstructed paragraph (2026-09-11 13:01)':
-            'In subjects with airflow obstruction (n = 4,084), COPD diagnoses occurred only via the COPD major pathway in which only one minor criterion was necessary for diagnosis.',
-        'cross-tabulation outcomes (2026-09-11 13:01)':
-            'We also evaluated outcome risks for all-cause mortality and exacerbations by cross-tabulated diagnostic category within obstructed and non-obstructed subjects',
+        "agreement section (Massimo 2026-09-20)":
+            "Cross-classification with MD-COPD is shown in Figure 2 and Table S3.",
+        "discordance section (Massimo 2026-09-20)":
+            "Clinical outcomes among concordant and discordant MD-COPD and ESI classifications are shown in Figure 4 and Table S7",
+    },
+    "DISCUSSION.md": {
+        "opening (Massimo 2026-09-20)":
+            "In this study, we examined whether the Emphysema Severity Index (ESI), derived from the expiratory portion of the spirometric flow-volume curve",
+        "conclusion (Massimo 2026-09-20)":
+            "In conclusion, replacing the CT component of MD-COPD with ESI preserved much of the original multidimensional classification",
     },
 }
 

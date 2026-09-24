@@ -68,7 +68,7 @@ plot_risk <- function(d, both) {
     base + geom_point(aes(shape = type), size = 2.4, position = pd, fill = "white", stroke = 0.9) +
       scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL,
                          breaks = c("Crude", "Adjusted")) +
-      labs(x = "Ratio versus the common noCOPD reference (log scale)") +
+      labs(x = "Rate ratio or hazard ratio versus the common noCOPD reference (log scale)") +
       theme(legend.position = "bottom", legend.margin = margin(t = -2, b = 0))
   } else {
     base + geom_point(size = 2.4)
@@ -81,11 +81,11 @@ stopifnot(nrow(main) == 27, nrow(supp) == 54)
 # every panel must have points: an empty facet renders without error
 stopifnot(all(table(main$group, main$outcome) == 3), all(table(supp$group, supp$outcome) == 6))
 
-out_main <- file.path(HERE, "figure2_group_risk.png")
+out_main <- file.path(HERE, "figure3_group_risk.png")
 p_main <- plot_risk(main, both = FALSE)
 validate_layout(p_main, out_main)
 ggsave(out_main, p_main, width = NATIVE_W, height = 6.0, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure2_group_risk.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure3_group_risk.meta"))
 
 out_supp <- file.path(HERE, "figureS1_group_risk.png")
 p_supp <- plot_risk(supp, both = TRUE)
@@ -96,25 +96,25 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS
 common <- paste(
   "for each diagnostic group (rows) under MD-COPD, the ESI classification and the NoCT",
   "classification, for all-cause mortality, respiratory mortality and exacerbations (columns),",
-  sprintf("against a common reference of the %s subjects assigned to noCOPD by all three",
+  sprintf("against a common reference of the %s participants assigned to noCOPD by all three",
           format(ref$n_cohort, big.mark = ",")),
   "classifications. The x axis is on a log scale and differs between columns.")
 floor_note <- paste("A point drawn without an interval had fewer than 10 events in that group,",
                     "so no interval was estimated.")
 writeLines(c(
-  "**Figure 2. Crude risk of each diagnostic group under the three multidimensional classifications.**",
+  "**Figure 3. Crude risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
   "",
   paste("Crude rate ratios with 95% confidence intervals", common,
-        "The crude rate ratio is the event rate in the group divided by the event rate in the reference.",
-        floor_note, "Adjusted estimates are shown in Supplemental Figure S1.",
+        "The crude rate ratio is the event rate (events per 100 person-years) in the group divided by that in the reference.",
+        floor_note, "Adjusted hazard ratios and incidence rate ratios are shown in Supplemental Figure S1.",
         "AFL-only = airflow limitation without other criteria.")),
-  file.path(HERE, "figure2_group_risk_legend.md"))
+  file.path(HERE, "figure3_group_risk_legend.md"))
 writeLines(c(
   "**Supplemental Figure S1. Crude and adjusted risk of each diagnostic group under the three multidimensional classifications.**",
   "",
-  paste("Crude rate ratios (open circles) and adjusted estimates (filled circles), with 95% confidence intervals,",
+  paste("Crude rate ratios (open circles) and adjusted hazard ratios or incidence rate ratios (filled circles), with 95% confidence intervals,",
         common,
-        "Adjusted estimates are hazard ratios for mortality and incidence rate ratios for exacerbations,",
+        "Hazard ratios (mortality) and incidence rate ratios (exacerbations) are",
         "from models carrying age, sex, race, current smoking status, pack-years and body mass index,",
         "with prior exacerbation frequency added for exacerbations.", floor_note,
         "AFL-only = airflow limitation without other criteria.")),

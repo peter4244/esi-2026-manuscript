@@ -17,7 +17,7 @@
 # and each matrix gets half of it; the script checks that the two matrices and
 # their row labels fit side by side. Renders at the project's native width, so
 # every font lands at the same docx size as the other figures, and writes the
-# content width to figure1_flow.meta for the manuscript builder.
+# content width to figure2_flow.meta for the manuscript builder.
 #
 # Strata carry no text: the thin AFL-only strata cannot hold "AFL-only" at a
 # readable size. Category identity is carried by color, keyed by the labeled
@@ -180,34 +180,34 @@ stopifnot(lost_left  == rc$major_to_aflonly[rc$schema == "S3"],
           conc_left  == acc$correct_noct, conc_right == acc$correct_esi)
 
 # ---- Compose, validate, save -------------------------------------------------
-for (p in list(pA, pC, pL, pM, pR)) validate_layout(p, "figure1_flow.png", native_w = NATIVE_W_FIG)
+for (p in list(pA, pC, pL, pM, pR)) validate_layout(p, "figure2_flow.png", native_w = NATIVE_W_FIG)
 bottom <- (pA | plot_spacer() | pC) +
   plot_layout(widths = unit(c(MAT_W, 1, MAT_W), c("in", "null", "in")))
 fig <- (pB / bottom) + plot_layout(heights = unit(c(FLOW_H, PANEL_H), "in"))
 HEIGHT <- FLOW_H + PANEL_H + 1.9
-out <- file.path(HERE, "figure1_flow.png")
+out <- file.path(HERE, "figure2_flow.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = HEIGHT, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure1_flow.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure2_flow.meta"))
 
 p_txt <- if (acc$p_value < 0.001) "P < 0.001" else sprintf("P = %.3f", acc$p_value)
 writeLines(c(
-  "**Figure 1. Reclassification of the MD-COPD categories by the CT-free classifications.**",
+  "**Figure 2. Reclassification of MD-COPD categories by the CT-free classifications.**",
   "",
   sprintf(paste(
-    "(A) Subject flow from MD-COPD (center) to the NoCT classification (left) and",
+    "(A) Participant flow from MD-COPD (center) to the NoCT classification (left) and",
     "the ESI classification (right). Column heights and ribbon widths are proportional",
-    "to subject counts. Ribbons are colored by MD-COPD category, solid color where the",
-    "subject changes category and pale where it agrees. (B) The NoCT",
+    "to participant counts. Ribbons are colored by MD-COPD category, solid color where the",
+    "participant changes category and pale where it agrees. (B) The NoCT",
     "classification cross-classified against",
     "MD-COPD. Rows are MD-COPD categories and columns the NoCT classification; diagonal",
     "cells, which agree, are shaded in the category color with depth proportional to",
     "count, and off-diagonal cells are white. (C) The ESI classification cross-classified",
     "against MD-COPD, laid out as in (B). Overall, the",
-    "ESI classification agreed with MD-COPD for %s of %s subjects (%.1f%%) and the",
+    "ESI classification agreed with MD-COPD for %s of %s participants (%.1f%%) and the",
     "NoCT classification for %s (%.1f%%) (McNemar %s).",
     "AFL-only = airflow limitation without other criteria."),
     count_lab(conc_right), count_lab(N), 100 * conc_right / N,
     count_lab(conc_left), 100 * conc_left / N, p_txt)),
-  file.path(HERE, "figure1_flow_legend.md"))
+  file.path(HERE, "figure2_flow_legend.md"))
 cat(sprintf("wrote %s  (%.2f x %.2f in native; agreement ESI %d, NoCT %d; COPD-major lost %d / %d)\n",
             out, NATIVE_W_FIG, HEIGHT, conc_right, conc_left, lost_left, lost_right))

@@ -19,7 +19,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PJC = os.path.join(HERE, "manuscript",
-                   "CT-free MD-COPD manuscript draft v1_PJC.docx")
+                   "CT-free MD-COPD manuscript draft v3_PJC.docx")
 STAMP = os.path.join(HERE, ".pjc_adopted")
 
 

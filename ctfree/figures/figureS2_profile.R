@@ -97,17 +97,17 @@ panel <- function(i) {
   p
 }
 panels <- lapply(seq_along(MEAS), panel)
-for (p in panels) validate_layout(p, "figure4_profile.png", native_w = NATIVE_W_FIG)
+for (p in panels) validate_layout(p, "figureS2_profile.png", native_w = NATIVE_W_FIG)
 fig <- wrap_plots(panels, nrow = 1) +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
-out <- file.path(HERE, "figure4_profile.png")
+out <- file.path(HERE, "figureS2_profile.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = 4.6, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4_profile.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS2_profile.meta"))
 
 nn <- function(s) paste(sprintf("%s %s", SHOWN, formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")),
                         collapse = ", ")
 writeLines(c(
-  "**Figure 4. Profile of the COPD-diagnosed subjects grouped by agreement of MD-COPD and ESI classifications.**",
+  "**Supplemental Figure S2. Clinical, physiological, and CT characteristics according to concordance and discordance between MD-COPD and ESI classifications.**",
   "",
   paste("Within each stratum of airflow limitation, bars show group means with standard errors",
         "(ESI, %LAA-950HU) or the percentage of the group meeting each criterion. Brackets compare",
@@ -120,5 +120,5 @@ writeLines(c(
         "ESI-only = diagnosed as COPD under the ESI classification only; %LAA-950HU = percentage of",
         "lung below -950 Hounsfield units; mMRC = modified Medical Research Council dyspnea scale;",
         "SGRQ = St. George's Respiratory Questionnaire.")),
-  file.path(HERE, "figure4_profile_legend.md"))
+  file.path(HERE, "figureS2_profile_legend.md"))
 cat("wrote", out, "\n")

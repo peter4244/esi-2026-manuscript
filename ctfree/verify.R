@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 189L
+REGISTRY_N <- 213L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -620,6 +620,60 @@ reg("NEW-15", "COPD minor", "NoCT and ESI lower than MD-COPD on all three outcom
     'all(x$ratio_of_ratios[x$category == "COPD-minor" & x$type == "crude"] < 1)', TOL_EXACT)
 reg("NEW-16", "COPD minor", "respiratory deaths too few to compare for both", TRUE, "group_vs_mdcopd.csv",
     'all(as.logical(x$few_events[x$category == "COPD-minor" & x$type == "crude" & x$outcome == "resp"]))', TOL_EXACT)
+
+# --- sensitivity and positive predictive value (Pete, 2026-09-20) ----------
+AG <- function(cat, fld) sprintf('x$%s[x$category == "%s"]', fld, cat)
+reg("SENS-01", "Agreement", "ESI reproduces 70.2% of the MD-COPD AFL-only category", 70.2,
+    "agreement_by_group.csv", AG("AFL-only", "recall_esi"), TOL_1DP)
+reg("SENS-02", "Agreement", "NoCT reproduces all of it, 100%", 100,
+    "agreement_by_group.csv", AG("AFL-only", "recall_noct"), TOL_1DP)
+reg("SENS-03", "Agreement", "for COPD-major the values are 90.8% with ESI", 90.8,
+    "agreement_by_group.csv", AG("COPD-major", "recall_esi"), TOL_1DP)
+reg("SENS-04", "Agreement", "and 78.1% with NoCT", 78.1,
+    "agreement_by_group.csv", AG("COPD-major", "recall_noct"), TOL_1DP)
+reg("PPV-01", "Agreement", "193 of the 543 ESI AFL-only assignments are AFL-only under MD-COPD", 193,
+    "agreement_by_group.csv", AG("AFL-only", "agree_esi"), TOL_EXACT)
+reg("PPV-02", "Agreement", "against 275 of 1,108 under NoCT", 275,
+    "agreement_by_group.csv", AG("AFL-only", "agree_noct"), TOL_EXACT)
+reg("PPV-03", "Agreement", "ESI assigns 543 participants to AFL-only", 543,
+    "agreement_by_group.csv", AG("AFL-only", "n_esi"), TOL_EXACT)
+reg("PPV-04", "Agreement", "NoCT assigns 1,108", 1108,
+    "agreement_by_group.csv", AG("AFL-only", "n_noct"), TOL_EXACT)
+reg("CV-01", "Fitting", "held-out agreement 88.9% for the ESI classification", 0.889,
+    "schema_fit.csv", 'x$agreement_heldout[x$schema == "S4"]', TOL_3DP)
+reg("CV-02", "Fitting", "and 85.0% for NoCT, against 89.0% and 85.0% in the full cohort", TRUE,
+    "schema_fit.csv",
+    'abs(x$agreement_heldout[x$schema == "S3"] - 0.850) < 0.0005 && abs(x$agreement_insample[x$schema == "S4"] - 0.890) < 0.0005',
+    TOL_EXACT)
+
+# --- crude event rates behind the AFL-only rate ratios (Pete, 2026-09-24) ---
+RT <- function(sch, o) sprintf('x$rate_100py[x$schema == "%s" & x$category == "AFL-only" & x$outcome == "%s"]', sch, o)
+reg("RATE-01", "AFL-only outcomes", "NoCT AFL-only: 2.29 deaths per 100 person-years", 2.29, "consensus_ref_crude.csv", RT("S3", "all"), TOL_2DP)
+reg("RATE-02", "AFL-only outcomes", "MD-COPD AFL-only: 1.66 deaths per 100 person-years", 1.66, "consensus_ref_crude.csv", RT("S2", "all"), TOL_2DP)
+reg("RATE-03", "AFL-only outcomes", "ESI AFL-only: 1.90 deaths per 100 person-years", 1.90, "consensus_ref_crude.csv", RT("S4", "all"), TOL_2DP)
+reg("RATE-04", "AFL-only outcomes", "NoCT AFL-only: 19.5 exacerbations per 100 person-years", 19.5, "consensus_ref_crude.csv", RT("S3", "exac"), TOL_1DP)
+reg("RATE-05", "AFL-only outcomes", "MD-COPD AFL-only: 13.7 exacerbations per 100 person-years", 13.7, "consensus_ref_crude.csv", RT("S2", "exac"), TOL_1DP)
+reg("RATE-06", "AFL-only outcomes", "ESI AFL-only: 13.2 exacerbations per 100 person-years", 13.2, "consensus_ref_crude.csv", RT("S4", "exac"), TOL_1DP)
+reg("RATE-07", "AFL-only outcomes", "the rate ratio versus MD-COPD equals the ratio of the two rates (NoCT, all-cause)", TRUE, "consensus_ref_crude.csv",
+    sprintf('abs(%s / %s - 1.383) < 0.005', RT("S3", "all"), RT("S2", "all")), TOL_EXACT)
+
+# --- adjusted AFL-only comparisons with MD-COPD (Pete, 2026-09-24) ----------
+AD <- function(sch, o, fld) sprintf('x$%s[x$schema == "%s" & x$category == "AFL-only" & x$type == "adjusted" & x$outcome == "%s"]', fld, sch, o)
+reg("ADJ-01", "AFL-only outcomes", "NoCT vs MD-COPD, adjusted exacerbations: ratio of IRRs 1.33", 1.33, "group_vs_mdcopd.csv", AD("S3", "exac", "ratio_of_ratios"), TOL_2DP)
+reg("ADJ-02", "AFL-only outcomes", "its interval 1.07 to 1.70", TRUE, "group_vs_mdcopd.csv",
+    sprintf('abs(%s - 1.07) < 0.005 && abs(%s - 1.70) < 0.005', AD("S3", "exac", "lo"), AD("S3", "exac", "hi")), TOL_EXACT)
+reg("ADJ-03", "AFL-only outcomes", "P=0.008", 0.008, "group_vs_mdcopd.csv", AD("S3", "exac", "p_boot"), TOL_3DP)
+reg("ADJ-04", "AFL-only outcomes", "NoCT vs MD-COPD, adjusted all-cause: ratio of HRs 1.22 (0.97 to 1.55), P=0.098", TRUE, "group_vs_mdcopd.csv",
+    sprintf('abs(%s - 1.22) < 0.005 && abs(%s - 0.97) < 0.005 && abs(%s - 1.55) < 0.005 && abs(%s - 0.10) < 0.005',
+            AD("S3", "all", "ratio_of_ratios"), AD("S3", "all", "lo"), AD("S3", "all", "hi"), AD("S3", "all", "p_boot")), TOL_EXACT)
+reg("ADJ-05", "AFL-only outcomes", "ESI vs MD-COPD, adjusted all-cause: 1.03 (0.82 to 1.31), P=0.79", TRUE, "group_vs_mdcopd.csv",
+    sprintf('abs(%s - 1.03) < 0.005 && abs(%s - 0.82) < 0.005 && abs(%s - 1.31) < 0.005 && abs(%s - 0.79) < 0.005',
+            AD("S4", "all", "ratio_of_ratios"), AD("S4", "all", "lo"), AD("S4", "all", "hi"), AD("S4", "all", "p_boot")), TOL_EXACT)
+reg("ADJ-06", "AFL-only outcomes", "ESI vs MD-COPD, adjusted exacerbations: 0.92 (0.73 to 1.17), P=0.49", TRUE, "group_vs_mdcopd.csv",
+    sprintf('abs(%s - 0.92) < 0.005 && abs(%s - 0.73) < 0.005 && abs(%s - 1.17) < 0.005 && abs(%s - 0.49) < 0.005',
+            AD("S4", "exac", "ratio_of_ratios"), AD("S4", "exac", "lo"), AD("S4", "exac", "hi"), AD("S4", "exac", "p_boot")), TOL_EXACT)
+reg("ADJ-07", "AFL-only outcomes", "respiratory deaths: 2 in MD-COPD, 4 in ESI and 34 in NoCT AFL-only", TRUE, "consensus_ref_crude.csv",
+    'all(x$events[x$category == "AFL-only" & x$outcome == "resp"][match(c("S2","S4","S3"), x$schema[x$category == "AFL-only" & x$outcome == "resp"])] == c(2, 4, 34))', TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

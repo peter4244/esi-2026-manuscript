@@ -37,12 +37,14 @@ def cited_in_order(here):
     seq = {"Table": [], "Figure": [], "Supplemental Table": [], "Supplemental Figure": []}
     for m in CITE.finditer(text):
         head = m.group(1)
-        kind = (("Supplemental Figure" if "Figure" in head else "Supplemental Table")
-                if head.startswith("Supplemental")
-                else "Table" if head.startswith("Table") else "Figure")
+        figure = "Figure" in head
         items = _range(m.group(2), m.group(3)) if m.group(3) else [m.group(2)]
         items += re.findall(r"S?\d+[a-c]?", m.group(4) or "")
         for it in items:
+            # An S-prefixed identifier is supplemental whether or not the citation
+            # spells out "Supplemental": Massimo's draft writes "Table S4".
+            supp = it.startswith("S")
+            kind = (("Supplemental " if supp else "") + ("Figure" if figure else "Table"))
             if it not in seq[kind]:
                 seq[kind].append(it)
     return seq

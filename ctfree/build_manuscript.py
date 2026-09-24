@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v1.docx")
+                      "CT-free MD-COPD manuscript draft v3.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
@@ -259,57 +259,77 @@ def t_classifications(doc, label="Table 1."):
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
     legend(doc, label,
-           f"The four classifications applied to the same {n_total:,} subjects. "
-           "In subjects with coronary artery disease or congestive heart failure, the "
-           "COPD minor pathway requires both CT criteria under MD-COPD, is not available "
-           "under the NoCT classification, and requires the ESI criterion under the ESI "
-           "classification.")
+           f"Distribution of the {n_total:,} participants according to the four "
+           "classification approaches. "
+           "The fixed-ratio classification defines COPD by post-bronchodilator "
+           "FEV\u2081/FVC < 0.70 alone. MD-COPD incorporates airflow limitation as the major "
+           "criterion and visual emphysema, definite airway wall thickening, dyspnea, SGRQ, "
+           "and chronic bronchitis as minor criteria. The NoCT and ESI classifications use the "
+           "modified criteria shown in the table. In participants with coronary artery disease "
+           "or congestive heart failure, the COPD-minor pathway requires both CT criteria "
+           "under MD-COPD, is unavailable under the NoCT classification, and requires the ESI "
+           "criterion under the ESI classification. AFL-only = airflow limitation without other "
+           "criteria; ESI = Emphysema Severity Index; SGRQ = St. George\u2019s Respiratory "
+           "Questionnaire.")
 
 
 def t_risk_common_ref(doc, label="Table 3."):
     """Adjusted risk of every group of every multidimensional classification
-    against the common reference: the participants all three assign to noCOPD.
-    Adjusted only (Pete, 2026-09-13); the crude ratios for the same groups are
-    in the group comparison table. A cell under the event floor keeps its point
-    estimate and loses its interval."""
+    against the common reference, and each CT-free group against the same MD-COPD
+    group as a ratio of adjusted estimates. Laid out like the crude table (S4) so
+    the two read the same way (Pete, 2026-09-24). A cell under the event floor
+    keeps its point estimate and loses its interval and P."""
     adj = {(r["schema"], r["category"]): r for r in load("consensus_ref_risk.csv")}
+    cru = {(r["schema"], r["category"], r["outcome"]): r for r in load("consensus_ref_crude.csv")}
+    cmp_ = {(r["schema"], r["category"], r["outcome"]): r for r in load("group_vs_mdcopd.csv")
+            if r["type"] == "adjusted"}
     ref = load("consensus_ref_group.csv")[0]
-    NM_TITLE = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
-    ORDER = ["AFL-only", "COPD-minor", "COPD-major"]
+    NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
+    OUTC = (("all", "All-cause mortality", "all_HR", "all_LCI", "all_UCI", "all_few_events"),
+            ("resp", "Respiratory mortality", "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
+            ("exac", "Exacerbations", "exac_IRR", "exac_LCI", "exac_UCI", None))
     FLAG, TRUE = "\u2020", ("TRUE", "T")
-
-    def cell(r, est, lo, hi, few):
-        if few:
-            return f"{float(r[est]):.2f}{FLAG}"
-        return f"{float(r[est]):.2f} ({float(r[lo]):.2f}\u2013{float(r[hi]):.2f})"
-
-    rows = [["Common reference (noCOPD under all three)", f"{int(ref['deaths']):,}", "reference",
-             f"{int(ref['resp_deaths']):,}", "reference", "reference"]]
-    for s_ in ("S2", "S3", "S4"):
-        rows.append(Section(NM_TITLE[s_]))
-        for g in ORDER:
-            r = adj[(s_, g)]
-            rows.append([
-                "\u2003" + g, f"{int(r['deaths']):,}",
-                cell(r, "all_HR", "all_LCI", "all_UCI", r["all_few_events"].upper() in TRUE),
-                f"{int(r['resp_deaths']):,}",
-                cell(r, "resp_HR", "resp_LCI", "resp_UCI", r["resp_few_events"].upper() in TRUE),
-                cell(r, "exac_IRR", "exac_LCI", "exac_UCI", False)])
-    add_table(doc, ["Group", "Deaths", "All-cause HR (95% CI)", "Resp. deaths",
-                    "Resp. HR (95% CI)", "Exacerbation IRR (95% CI)"],
-              rows, [2.05, 0.65, 1.25, 0.65, 1.00, 0.90])
-    flagged = any(FLAG in str(v) for r_ in rows if not isinstance(r_, Section) for v in r_)
+    ci = lambda v, lo, hi: f"{float(v):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
+    rows = []
+    for g in ("AFL-only", "COPD-minor", "COPD-major"):
+        rows.append(Section(g))
+        for o, olab, est, lo, hi, fewcol in OUTC:
+            for k, s_ in enumerate(("S2", "S3", "S4")):
+                r = adj[(s_, g)]
+                few = fewcol is not None and r[fewcol].upper() in TRUE
+                own = f"{float(r[est]):.2f}{FLAG}" if few else ci(r[est], r[lo], r[hi])
+                events = f"{int(float(cru[(s_, g, o)]['events'])):,}"
+                lead = olab if k == 0 else ""
+                if s_ == "S2":
+                    rows.append([lead, NM[s_], events, own, "reference", ""])
+                    continue
+                x = cmp_[(s_, g, o)]
+                if x["few_events"].upper() in TRUE:
+                    vs, pt = f"{float(x['ratio_of_ratios']):.2f}{FLAG}", ""
+                else:
+                    p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
+                    vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
+                    pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
+                rows.append([lead, NM[s_], events, own, vs, pt])
+    add_table(doc, ["Outcome", "Classification", "Events",
+                    "HR or IRR versus the common reference (95% CI)",
+                    "Ratio of HRs or IRRs versus MD-COPD (95% CI)", "P"],
+              rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
     legend(doc, label,
-           "Adjusted risk of each group of the three multidimensional classifications against "
-           f"a common reference, the {int(ref['n_cohort']):,} subjects all three "
-           "classifications assign to noCOPD. Adjusted models carry age, sex, race, current "
-           "smoking status, pack-years and body mass index, with prior exacerbation frequency "
-           "added for exacerbations. Crude rate ratios for the same groups are given in "
-           f"Supplemental Table {supp_num('groups_vs_mdcopd')}. "
-           + (f"{FLAG} fewer than 10 events in the group: the estimate is given without an "
-              "interval. " if flagged else "")
-           + "AFL-only = airflow limitation without other criteria; HR = hazard ratio; IRR = "
-           "incidence rate ratio; CI = confidence interval.")
+           "Adjusted hazard ratios (HRs) for all-cause and respiratory mortality and incidence "
+           "rate ratios (IRRs) for respiratory exacerbations are shown relative to the common "
+           f"reference comprising the {int(ref['n_cohort']):,} participants classified as "
+           "noCOPD by all three classifications. Models were adjusted for age, sex, race, "
+           "current smoking status, pack-years, and body mass index; exacerbation models were "
+           "additionally adjusted for baseline exacerbation frequency. Ratios versus MD-COPD "
+           "divide the HR or IRR of each CT-free classification's group by that of the "
+           "corresponding MD-COPD group; 95% confidence intervals and two-sided P values were "
+           "obtained from 1,000 paired subject-level bootstrap resamples. Corresponding crude "
+           f"rate ratios are shown in Supplemental Table {supp_num('groups_vs_mdcopd')}. "
+           f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
+           "MD-COPD; the estimate is shown without a confidence interval or P value. "
+           "AFL-only = airflow limitation without other criteria; HR = hazard ratio; "
+           "IRR = incidence rate ratio; CI = confidence interval.")
 
 def t_discord_risk(doc, label="Table 4."):
     """Cross-classification of MD-COPD and the ESI classification: each group
@@ -351,46 +371,22 @@ def t_discord_risk(doc, label="Table 4."):
     # carries no flag note, so a flagged cell appearing later must stop the build.
     assert not any(FLAG in str(v) for r in rows if not isinstance(r, Section) for v in r), \
         "S7 has a cell under the event floor; restore the flag note in its legend"
-    add_table(doc, ["Group", "n", "Deaths", "All-cause mortality RR (95% CI)",
-                    "Exacerbation RR (95% CI)"],
+    add_table(doc, ["Group", "n", "Deaths", "All-cause mortality rate ratio (95% CI)",
+                    "Exacerbation rate ratio (95% CI)"],
               rows, [2.00, 0.70, 0.80, 1.50, 1.50])
     legend(doc, label,
-           "Subjects cross-classified by MD-COPD and the ESI classification within each "
-           "stratum of airflow limitation. Reference groups are the subjects classified as "
-           "noCOPD by both methods among those with preserved spirometry and the subjects "
-           "classified as AFL-only by both methods among those with airflow limitation. "
-           "Crude rate ratios (RR) are the observed event rate in the group divided by the "
-           "rate in the reference; intervals are exact Poisson intervals for deaths and "
-           "subject-bootstrap intervals for exacerbations. CT-only-COPD = diagnosed as COPD "
-           "under MD-COPD only; ESI-only-COPD = diagnosed as COPD under the ESI classification "
-           "only; Both-COPD = diagnosed as COPD under both; AFL-only = airflow limitation "
-           "without other criteria; CI = confidence interval. Respiratory mortality is not "
-           "shown because the numbers of respiratory deaths are too small for estimation.")
-
-def t_esi_auc(doc, label="Table 2."):
-    """ESI's discrimination of the two visual CT criteria, by stratum. This is
-    the claim that explains where an ESI criterion helps. The comparison with
-    FEV1/FVC belongs in the Supplement: FEV1/FVC cannot serve as the
-    replacement criterion at all, so putting the two side by side in the main
-    text invites a comparison the framework does not permit."""
-    au = load("esi_ct_auc.csv")
-    ORDER = ["All participants", "Airflow limitation", "Preserved spirometry"]
-    rows, seen = [], set()
-    for crit in ("Visual emphysema", "Airway wall thickening"):
-        for st in ORDER:
-            r = next(x for x in au if x["criterion"] == crit and x["stratum"] == st)
-            rows.append([crit if crit not in seen else "", st.replace("participants", "subjects"),
-                         f"{int(r['n']):,}", f"{float(r['prevalence']):.1f}",
-                         f"{float(r['auc_ESI']):.2f}"])
-            seen.add(crit)
-    add_table(doc, ["CT criterion", "Stratum", "n", "Prevalence (%)",
-                    "AUC for ESI"],
-              rows, [1.40, 1.46, 0.76, 1.10, 1.78])
-    legend(doc, label,
-           "Discrimination capability of ESI for the two visual CT criteria it "
-           "replaces, shown overall and within stratum of airflow limitation. "
-           "AUC = area under the receiver operating characteristic curve.")
-
+           "Participants were cross-classified by MD-COPD and the ESI classification within "
+           "strata defined by airflow-limitation status. Among participants with preserved "
+           "spirometry, those classified as noCOPD by both approaches served as the reference; "
+           "among participants with airflow limitation, those classified as AFL-only by both "
+           "approaches served as the reference. Crude rate ratios are the event rate (events per "
+           "100 person-years) in each group divided by that in the corresponding reference; confidence "
+           "intervals are exact Poisson intervals for mortality and subject-level bootstrap "
+           "intervals for respiratory exacerbations. CT-only-COPD = classified as COPD by "
+           "MD-COPD only; ESI-only-COPD = classified as COPD by the ESI classification only; "
+           "Both-COPD = classified as COPD by both; AFL-only = airflow limitation without "
+           "other criteria; CI = confidence interval. Respiratory mortality is not shown "
+           "because of the small number of respiratory deaths.")
 
 def figure_width(meta_path, default=CONTENT_WIDTH_IN):
     """Content width a figure was rendered for, from the sidecar its script
@@ -533,7 +529,7 @@ def main():
     word_guard.check([OUT], "The manuscript build")
     prose_guard.check("The manuscript build")
     prose_guard.check_owned("The manuscript build")
-    display_order.check(HERE, {"Table": ["1", "2"],
+    display_order.check(HERE, {"Table": ["1"],
                                "Figure": [str(i) for i in range(1, 5)]},
                         "The manuscript build")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -562,27 +558,16 @@ def main():
     doc.add_page_break()
     doc.add_paragraph("TABLES", style="Heading 1")
     t_classifications(doc, "Table 1.")
-    doc.add_paragraph()
-    t_esi_auc(doc, "Table 2.")
 
-    # Figure 1 declares its own content width. A figure rendered for a landscape
-    # page must be placed at that width, or every font in it lands smaller than
-    # the size the figure was validated at.
-    fig1_w = figure_width(os.path.join(FIGS, "figure1_flow.meta"))
-    landscape = fig1_w > CONTENT_WIDTH_IN + 0.01
-    if landscape:
-        new_section(doc, landscape=True)
-    else:
-        doc.add_page_break()
+    # Each figure declares its own content width. A figure rendered for a
+    # landscape page must be placed at that width, or every font in it lands
+    # smaller than the size the figure was validated at, so the page turns
+    # where a width needs it to. Numbering follows Massimo's 2026-09-20 draft.
+    doc.add_page_break()
     doc.add_paragraph("FIGURES", style="Heading 1")
-    add_figure(doc, os.path.join(FIGS, "figure1_flow.png"), "Figure 1.",
-               read_legend("figure1_flow"), width=fig1_w)
-    if landscape:
-        new_section(doc, landscape=False)
-    # Figures 2 to 4 carry their legends in a sidecar, as Figure 1 does, and
-    # declare their own widths; the page turns where a width needs it to.
     landscape_now = False
-    for n, stem in ((2, "figure2_group_risk"), (3, "figure3_discord_risk"), (4, "figure4_profile")):
+    for n, stem in ((1, "figure1_esi_ct"), (2, "figure2_flow"),
+                    (3, "figure3_group_risk"), (4, "figure4_discord_risk")):
         w = figure_width(os.path.join(FIGS, stem + ".meta"))
         want = w > CONTENT_WIDTH_IN + 0.01
         if want != landscape_now:
@@ -597,8 +582,9 @@ def main():
     print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
           f"{n_d} Discussion paragraphs, {n_ref} references")
     # A floor against a source file failing to render, not a target length.
-    # Pete's Introduction is four paragraphs by choice.
-    assert n_i >= 4 and n_m > 10 and n_r > 10 and n_d > 5, \
+    # Massimo's Introduction is three paragraphs by choice (2026-09-20); v3 merged
+    # two pairs of Results paragraphs, leaving ten.
+    assert n_i >= 3 and n_m > 10 and n_r >= 8 and n_d > 5, \
         "prose came out suspiciously short"
 
 

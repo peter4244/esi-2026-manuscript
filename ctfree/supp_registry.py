@@ -6,7 +6,7 @@ Reordering it changes every number. The prose citations are literal, and
 display_order.check stops the build until they match.
 """
 SUPP_KEYS = ["baseline", "thresholds", "crossclass", "groups_vs_mdcopd", "risk_common_ref",
-             "fev1", "discord_risk", "esi_by_ct"]
+             "fev1", "discord_risk"]
 
 
 def supp_num(key):

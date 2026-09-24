@@ -64,28 +64,30 @@ p <- ggplot(d, aes(x = est, y = grp, colour = grp)) +
                 expand = expansion(mult = c(0.10, 0.14))) +
   facet_grid(stratum ~ outcome, scales = "free_x",
              labeller = labeller(stratum = STR)) +
-  labs(x = "Crude ratio versus the stratum reference (log scale)", y = NULL) +
+  labs(x = "Crude rate ratio versus the stratum reference (log scale)", y = NULL) +
   theme_esi() +
   theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
         plot.margin = margin(4, 6, 2, 4))
 
-out <- file.path(HERE, "figure3_discord_risk.png")
+out <- file.path(HERE, "figure4_discord_risk.png")
 validate_layout(p, out)
 ggsave(out, p, width = NATIVE_W, height = 3.8, dpi = 300, bg = "white")
-writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure3_discord_risk.meta"))
+writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4_discord_risk.meta"))
 
 writeLines(c(
-  "**Figure 3. Risk in the COPD-diagnosed subjects grouped by agreement of MD-COPD and ESI classifications.**",
+  "**Figure 4. Clinical outcomes according to concordance and discordance between MD-COPD and ESI classifications.**",
   "",
   paste("Crude rate ratios for all-cause mortality and exacerbations, with 95% confidence",
         "intervals, for the three groups either classification calls COPD, within each stratum",
-        "of airflow limitation. Reference groups are the subjects classified as noCOPD by both",
-        "methods among those with preserved spirometry (top row) and subjects classified as",
+        "of airflow limitation. The crude rate ratio is the event rate (events per 100 person-years) in",
+        "the group divided by that in the stratum reference. Reference groups are the participants",
+        "classified as noCOPD by both",
+        "methods among those with preserved spirometry (top row) and participants classified as",
         "AFL-only by both methods among those with airflow limitation (bottom row). Intervals",
         "are exact Poisson intervals for deaths and subject-bootstrap intervals for",
         "exacerbations. CT-only = diagnosed as COPD under MD-COPD only; ESI-only = diagnosed",
         "as COPD under the ESI classification only; Both-COPD = diagnosed as COPD under both;",
         "AFL-only = airflow limitation without other criteria. Respiratory mortality is not",
         "shown because the numbers of respiratory deaths are too small for estimation.")),
-  file.path(HERE, "figure3_discord_risk_legend.md"))
+  file.path(HERE, "figure4_discord_risk_legend.md"))
 cat("wrote", out, "\n")
