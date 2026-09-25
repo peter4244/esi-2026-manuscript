@@ -64,7 +64,7 @@ p <- ggplot(d, aes(x = est, y = grp, colour = grp)) +
                 expand = expansion(mult = c(0.10, 0.14))) +
   facet_grid(stratum ~ outcome, scales = "free_x",
              labeller = labeller(stratum = STR)) +
-  labs(x = "Crude rate ratio versus the stratum reference (log scale)", y = NULL) +
+  labs(x = "Unadjusted rate ratio versus the stratum reference (log scale)", y = NULL) +
   theme_esi() +
   theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
         plot.margin = margin(4, 6, 2, 4))
@@ -77,9 +77,9 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4
 writeLines(c(
   "**Figure 4. Clinical outcomes according to concordance and discordance between MD-COPD and ESI classifications.**",
   "",
-  paste("Crude rate ratios for all-cause mortality and exacerbations, with 95% confidence",
+  paste("Unadjusted rate ratios for all-cause mortality and exacerbations, with 95% confidence",
         "intervals, for the three groups either classification calls COPD, within each stratum",
-        "of airflow limitation. The crude rate ratio is the event rate (events per 100 person-years) in",
+        "of airflow limitation. The unadjusted rate ratio is the event rate (events per 100 person-years) in",
         "the group divided by that in the stratum reference. Reference groups are the participants",
         "classified as noCOPD by both",
         "methods among those with preserved spirometry (top row) and participants classified as",

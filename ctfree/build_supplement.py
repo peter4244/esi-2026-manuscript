@@ -31,7 +31,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER  
 from docx.oxml import OxmlElement                            # noqa: E402
 from docx.oxml.ns import qn                                  # noqa: E402
 from build_manuscript import (init_document, add_table, legend,  # noqa: E402
-                              emphasis, ASSETS, CATS, read_titlepage,
+                              emphasis, ASSETS, CATS, read_titlepage, fmt_p,
                               t_risk_common_ref, t_discord_risk, Section,
                               add_figure, read_legend, figure_width, FIGS,
                               CONTENT_WIDTH_IN, new_section)
@@ -125,17 +125,17 @@ def supp_methods(doc):
               "considered present for MD-COPD only when definite (score 2). Participants with "
               "missing visual CT scores (n = 4) were considered not to meet the corresponding "
               "imaging criterion.")
-    para(doc, "**Crude outcome comparisons and bootstrap procedures**")
-    para(doc, "Crude rate ratios were calculated by dividing the observed event rate in each "
+    para(doc, "**Unadjusted outcome comparisons and bootstrap procedures**")
+    para(doc, "Unadjusted rate ratios were calculated by dividing the observed event rate in each "
               "diagnostic group (events per 100 person-years) by that of the corresponding reference "
               "group. For mortality, "
               "95% confidence intervals were calculated as exact conditional intervals for the "
               "ratio of two Poisson rates. For respiratory exacerbations, 95% confidence "
               "intervals were obtained from 1,000 subject-level bootstrap resamples, with the "
               "reference rate recalculated in each resample. When either the diagnostic group "
-              "or the reference group had fewer than 10 events, crude rates or rate ratios "
+              "or the reference group had fewer than 10 events, unadjusted rates or rate ratios "
               "were reported without confidence intervals.")
-    para(doc, "For direct comparisons among classifications, the crude event rate in each "
+    para(doc, "For direct comparisons among classifications, the unadjusted event rate in each "
               "NoCT and ESI group was divided by that in the corresponding MD-COPD group (rate "
               "ratio versus MD-COPD), and its adjusted HR or IRR by that of the corresponding "
               "MD-COPD group (ratio of HRs or IRRs). Confidence intervals and P values for these "
@@ -250,7 +250,7 @@ def s6_fev1_decline(doc, num):
                      f"{int(r['n_subj']):,}",
                      f"{float(r['est_mL_yr']):.1f} "
                      f"({float(r['lo']):.1f} to {float(r['hi']):.1f})",
-                     "<0.001" if p_ < 0.001 else f"{p_:.3f}"])
+                     fmt_p(p_)])
         seen.add(sc)
     add_table(doc, ["Classification", "Group", "n",
                     "Difference in decline, mL/yr (95% CI)", "P"],
@@ -287,10 +287,8 @@ def s_crossclass_agreement(doc, num):
                     "Assigned, n", "Sensitivity, %", "PPV, %", "F1"],
               rows, [1.05, 0.78, 0.58, 0.58, 0.58, 0.58, 0.60, 0.62, 0.55, 0.58])
     ps = [float(ag[c]["p_boot"]) for c in CATS]
-    floor_p = 2 / min(int(ag[c]["B_eff"]) for c in CATS)
-    p_txt = (f"P < {floor_p:.3f} in each of the four groups" if all(p == 0 for p in ps)
-             else "; ".join(f"{c} P < {floor_p:.3f}" if p == 0 else f"{c} P = {p:.3f}"
-                            for c, p in zip(CATS, ps)))
+    p_txt = ("P < 0.005 in each of the four groups" if all(p < 0.005 for p in ps)
+             else "; ".join(f"{c} P {'< 0.005' if p < 0.005 else '= ' + fmt_p(p)}" for c, p in zip(CATS, ps)))
     legend(doc, f"Table {num}.",
            "Each CT-free classification cross-classified against MD-COPD. Rows are the "
            "category each classification assigned, columns the MD-COPD category, and the "
@@ -309,7 +307,7 @@ def s_groups_crude(doc, num):
     classification against the common reference, and each CT-free
     classification against MD-COPD by a paired bootstrap. Crude only
     (Pete, 2026-09-11); all three groups (Pete, 2026-09-13)."""
-    heading(doc, f"Supplemental Table {num}. Crude risk of clinical outcomes by diagnostic "
+    heading(doc, f"Supplemental Table {num}. Unadjusted risk of clinical outcomes by diagnostic "
                  "group under each multidimensional classification")
     cru = {(r["schema"], r["category"], r["outcome"]): r for r in load(ASSETS, "consensus_ref_crude.csv")}
     cmp_ = {(r["schema"], r["category"], r["outcome"]): r for r in load(ASSETS, "group_vs_mdcopd.csv")
@@ -339,7 +337,7 @@ def s_groups_crude(doc, num):
                 else:
                     p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
                     vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
-                    pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
+                    pt = fmt_p(p_)
                 rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", rate, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events", "Rate per 100 person-years",
                     "Rate ratio versus the common reference (95% CI)",
@@ -348,7 +346,7 @@ def s_groups_crude(doc, num):
     legend(doc, f"Table {num}.",
            "Each diagnostic group was compared with the common reference comprising the "
            f"{int(ref['n_cohort']):,} participants classified as noCOPD by all three "
-           "multidimensional classifications. Rates are events per 100 person-years. Crude rate "
+           "multidimensional classifications. Rates are events per 100 person-years. Unadjusted rate "
            "ratios were calculated as the event rate in each group divided by that in the "
            "common reference, with "
            "exact Poisson confidence intervals for mortality and subject-level bootstrap "

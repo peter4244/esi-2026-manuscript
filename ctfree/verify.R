@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 213L
+REGISTRY_N <- 224L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -674,6 +674,30 @@ reg("ADJ-06", "AFL-only outcomes", "ESI vs MD-COPD, adjusted exacerbations: 0.92
             AD("S4", "exac", "ratio_of_ratios"), AD("S4", "exac", "lo"), AD("S4", "exac", "hi"), AD("S4", "exac", "p_boot")), TOL_EXACT)
 reg("ADJ-07", "AFL-only outcomes", "respiratory deaths: 2 in MD-COPD, 4 in ESI and 34 in NoCT AFL-only", TRUE, "consensus_ref_crude.csv",
     'all(x$events[x$category == "AFL-only" & x$outcome == "resp"][match(c("S2","S4","S3"), x$schema[x$category == "AFL-only" & x$outcome == "resp"])] == c(2, 4, 34))', TOL_EXACT)
+
+# --- COPD-minor and COPD-major against MD-COPD (Pete, 2026-09-24) ----------
+GV <- function(sch, cat, t, o, fld) sprintf('x$%s[x$schema == "%s" & x$category == "%s" & x$type == "%s" & x$outcome == "%s"]', fld, sch, cat, t, o)
+chk <- function(sch, cat, t, o, est, lo, hi, p)
+  sprintf('abs(%s - %s) < 0.005 && abs(%s - %s) < 0.005 && abs(%s - %s) < 0.005 && abs(%s - %s) < 0.0005',
+          GV(sch, cat, t, o, "ratio_of_ratios"), est, GV(sch, cat, t, o, "lo"), lo, GV(sch, cat, t, o, "hi"), hi, GV(sch, cat, t, o, "p_boot"), p)
+reg("MIN-01", "COPD-minor", "NoCT crude all-cause 0.87 (0.79 to 0.95), P = 0.006", TRUE, "group_vs_mdcopd.csv", chk("S3", "COPD-minor", "crude", "all", 0.87, 0.79, 0.95, 0.006), TOL_EXACT)
+reg("MIN-02", "COPD-minor", "NoCT crude exacerbations 0.90 (0.83 to 0.99), P = 0.036", TRUE, "group_vs_mdcopd.csv", chk("S3", "COPD-minor", "crude", "exac", 0.90, 0.83, 0.99, 0.036), TOL_EXACT)
+reg("MIN-03", "COPD-minor", "ESI crude all-cause 0.88 (0.80 to 0.97), P = 0.008", TRUE, "group_vs_mdcopd.csv", chk("S4", "COPD-minor", "crude", "all", 0.88, 0.80, 0.97, 0.008), TOL_EXACT)
+reg("MIN-04", "COPD-minor", "ESI crude exacerbations 0.89 (0.81 to 0.98), P = 0.016", TRUE, "group_vs_mdcopd.csv", chk("S4", "COPD-minor", "crude", "exac", 0.89, 0.81, 0.98, 0.016), TOL_EXACT)
+reg("MIN-05", "COPD-minor", "adjusted ratios 0.92 to 0.95, P = 0.096 to 0.27", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$category == "COPD-minor" & x$type == "adjusted" & x$outcome != "resp", ], round(min(ratio_of_ratios), 2) == 0.92 && round(max(ratio_of_ratios), 2) == 0.95 && round(min(p_boot), 3) == 0.096 && round(max(p_boot), 2) == 0.27)', TOL_EXACT)
+reg("MIN-06", "COPD-minor", "respiratory deaths 8 under MD-COPD, 8 under NoCT, 9 under ESI", TRUE, "consensus_ref_crude.csv",
+    'all(x$events[x$category == "COPD-minor" & x$outcome == "resp"][match(c("S2","S3","S4"), x$schema[x$category == "COPD-minor" & x$outcome == "resp"])] == c(8, 8, 9))', TOL_EXACT)
+reg("MAJ-05", "COPD-major", "NoCT 17% to 29% higher, crude and adjusted", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$category == "COPD-major" & x$schema == "S3", ], round(100 * (min(ratio_of_ratios) - 1)) == 17 && round(100 * (max(ratio_of_ratios) - 1)) == 29)', TOL_EXACT)
+reg("MAJ-06", "COPD-major", "ESI 5% to 9% higher, crude and adjusted", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$category == "COPD-major" & x$schema == "S4", ], round(100 * (min(ratio_of_ratios) - 1)) == 5 && round(100 * (max(ratio_of_ratios) - 1)) == 9)', TOL_EXACT)
+reg("MAJ-07", "COPD-major", "all twelve COPD-major comparisons P < 0.005", TRUE, "group_vs_mdcopd.csv",
+    'all(x$p_boot[x$category == "COPD-major"] < 0.005)', TOL_EXACT)
+reg("MAJ-08", "COPD-major", "the 833 reassigned under NoCT: all-cause rate ratio 1.67 versus the common reference", 1.67,
+    "consensus_ref_lost.csv", 'x$crude_all', TOL_2DP)
+reg("MAJ-09", "COPD-major", "the 2,976 who remained: 4.05", 4.05, "consensus_ref_crude.csv",
+    'x$rr[x$schema == "S3" & x$category == "COPD-major" & x$outcome == "all"]', TOL_2DP)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

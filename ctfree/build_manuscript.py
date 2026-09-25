@@ -159,6 +159,13 @@ def set_cell_margins(tbl, inches):
         el.set(qn("w:type"), "dxa")
 
 
+def fmt_p(p):
+    """P values as Pete writes them (2026-09-24): below 0.005 as '< 0.005',
+    otherwise three decimals under 0.1 and two above."""
+    p = float(p)
+    return "< 0.005" if p < 0.005 else (f"{p:.3f}" if p < 0.1 else f"{p:.2f}")
+
+
 class Section(str):
     """A table row that names the group of rows beneath it, spanning every column."""
 
@@ -309,7 +316,7 @@ def t_risk_common_ref(doc, label="Table 3."):
                 else:
                     p_ = float(x["p_boot"]); floor = 2 / int(x["B_eff"])
                     vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
-                    pt = f"<{floor:.3f}" if p_ == 0 else (f"{p_:.3f}" if p_ < 0.1 else f"{p_:.2f}")
+                    pt = fmt_p(p_)
                 rows.append([lead, NM[s_], events, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events",
                     "HR or IRR versus the common reference (95% CI)",
@@ -324,7 +331,7 @@ def t_risk_common_ref(doc, label="Table 3."):
            "additionally adjusted for baseline exacerbation frequency. Ratios versus MD-COPD "
            "divide the HR or IRR of each CT-free classification's group by that of the "
            "corresponding MD-COPD group; 95% confidence intervals and two-sided P values were "
-           "obtained from 1,000 paired subject-level bootstrap resamples. Corresponding crude "
+           "obtained from 1,000 paired subject-level bootstrap resamples. Corresponding unadjusted "
            f"rate ratios are shown in Supplemental Table {supp_num('groups_vs_mdcopd')}. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
            "MD-COPD; the estimate is shown without a confidence interval or P value. "
@@ -379,7 +386,7 @@ def t_discord_risk(doc, label="Table 4."):
            "strata defined by airflow-limitation status. Among participants with preserved "
            "spirometry, those classified as noCOPD by both approaches served as the reference; "
            "among participants with airflow limitation, those classified as AFL-only by both "
-           "approaches served as the reference. Crude rate ratios are the event rate (events per "
+           "approaches served as the reference. Unadjusted rate ratios are the event rate (events per "
            "100 person-years) in each group divided by that in the corresponding reference; confidence "
            "intervals are exact Poisson intervals for mortality and subject-level bootstrap "
            "intervals for respiratory exacerbations. CT-only-COPD = classified as COPD by "

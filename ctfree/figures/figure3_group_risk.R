@@ -27,7 +27,7 @@ stopifnot(nrow(ref) == 1, ref$resp_deaths >= MIN_EVENTS_FIG)
 
 crude <- crd %>% filter(schema %in% names(SCH), category %in% GRPS, outcome %in% names(OUTC)) %>%
   transmute(schema, group = category, outcome, est = rr, lo, hi,
-            few = toupper(few_events) %in% c("TRUE", "T"), type = "Crude")
+            few = toupper(few_events) %in% c("TRUE", "T"), type = "Unadjusted")
 adj <- bind_rows(lapply(names(OUTC), function(o) {
   est <- if (o == "exac") "exac_IRR" else paste0(o, "_HR")
   lo  <- if (o == "exac") "exac_LCI" else paste0(o, "_LCI")
@@ -52,7 +52,7 @@ prep <- function(d) {
 plot_risk <- function(d, both) {
   pd <- position_dodge(width = if (both) 0.6 else 0)
   base <- ggplot(d, aes(x = est, y = schema, colour = group,
-                        group = if (both) factor(type, levels = c("Adjusted", "Crude")) else schema)) +
+                        group = if (both) factor(type, levels = c("Adjusted", "Unadjusted")) else schema)) +
     geom_vline(xintercept = 1, linetype = 2, colour = "grey45", linewidth = 0.4) +
     geom_linerange(aes(xmin = lo, xmax = hi), linewidth = 0.6, position = pd, na.rm = TRUE) +
     scale_colour_manual(values = PAL, guide = "none") +
@@ -60,14 +60,14 @@ plot_risk <- function(d, both) {
                   labels = scales::label_number(drop0trailing = TRUE),
                   expand = expansion(mult = c(0.10, 0.12))) +
     facet_grid(group ~ outcome, scales = "free_x") +
-    labs(x = "Crude rate ratio versus the common noCOPD reference (log scale)", y = NULL) +
+    labs(x = "Unadjusted rate ratio versus the common noCOPD reference (log scale)", y = NULL) +
     theme_esi() +
     theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
           plot.margin = margin(4, 6, 2, 4))
   if (both) {
     base + geom_point(aes(shape = type), size = 2.4, position = pd, fill = "white", stroke = 0.9) +
-      scale_shape_manual(values = c(Crude = 21, Adjusted = 19), name = NULL,
-                         breaks = c("Crude", "Adjusted")) +
+      scale_shape_manual(values = c(Unadjusted = 21, Adjusted = 19), name = NULL,
+                         breaks = c("Unadjusted", "Adjusted")) +
       labs(x = "Rate ratio or hazard ratio versus the common noCOPD reference (log scale)") +
       theme(legend.position = "bottom", legend.margin = margin(t = -2, b = 0))
   } else {
@@ -102,17 +102,17 @@ common <- paste(
 floor_note <- paste("A point drawn without an interval had fewer than 10 events in that group,",
                     "so no interval was estimated.")
 writeLines(c(
-  "**Figure 3. Crude risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
+  "**Figure 3. Unadjusted risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
   "",
-  paste("Crude rate ratios with 95% confidence intervals", common,
-        "The crude rate ratio is the event rate (events per 100 person-years) in the group divided by that in the reference.",
+  paste("Unadjusted rate ratios with 95% confidence intervals", common,
+        "The unadjusted rate ratio is the event rate (events per 100 person-years) in the group divided by that in the reference.",
         floor_note, "Adjusted hazard ratios and incidence rate ratios are shown in Supplemental Figure S1.",
         "AFL-only = airflow limitation without other criteria.")),
   file.path(HERE, "figure3_group_risk_legend.md"))
 writeLines(c(
-  "**Supplemental Figure S1. Crude and adjusted risk of each diagnostic group under the three multidimensional classifications.**",
+  "**Supplemental Figure S1. Unadjusted and adjusted risk of each diagnostic group under the three multidimensional classifications.**",
   "",
-  paste("Crude rate ratios (open circles) and adjusted hazard ratios or incidence rate ratios (filled circles), with 95% confidence intervals,",
+  paste("Unadjusted rate ratios (open circles) and adjusted hazard ratios or incidence rate ratios (filled circles), with 95% confidence intervals,",
         common,
         "Hazard ratios (mortality) and incidence rate ratios (exacerbations) are",
         "from models carrying age, sex, race, current smoking status, pack-years and body mass index,",

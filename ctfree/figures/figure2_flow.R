@@ -189,7 +189,7 @@ out <- file.path(HERE, "figure2_flow.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = HEIGHT, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure2_flow.meta"))
 
-p_txt <- if (acc$p_value < 0.001) "P < 0.001" else sprintf("P = %.3f", acc$p_value)
+p_txt <- if (acc$p_value < 0.005) "P < 0.005" else sprintf("P = %.3f", acc$p_value)
 writeLines(c(
   "**Figure 2. Reclassification of MD-COPD categories by the CT-free classifications.**",
   "",
