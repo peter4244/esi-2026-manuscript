@@ -115,8 +115,8 @@ writeLines(c(
   paste("Unadjusted rate ratios (open circles) and adjusted hazard ratios or incidence rate ratios (filled circles), with 95% confidence intervals,",
         common,
         "Hazard ratios (mortality) and incidence rate ratios (exacerbations) are",
-        "from models carrying age, sex, race, current smoking status, pack-years and body mass index,",
-        "with prior exacerbation frequency added for exacerbations.", floor_note,
+        "from models adjusted for age, sex, race, current smoking status, pack-years, and body mass index,",
+        "with baseline exacerbation frequency added for exacerbations.", floor_note,
         "AFL-only = airflow limitation without other criteria.")),
   file.path(HERE, "figureS1_group_risk_legend.md"))
 cat("wrote", out_main, "and", out_supp, "\n")

@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v3.docx")
+                      "CT-free MD-COPD manuscript draft v5.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
@@ -296,7 +296,7 @@ def t_risk_common_ref(doc, label="Table 3."):
             ("resp", "Respiratory mortality", "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
             ("exac", "Exacerbations", "exac_IRR", "exac_LCI", "exac_UCI", None))
     FLAG, TRUE = "\u2020", ("TRUE", "T")
-    ci = lambda v, lo, hi: f"{float(v):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
+    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}\u2013{float(hi):.2f}]"
     rows = []
     for g in ("AFL-only", "COPD-minor", "COPD-major"):
         rows.append(Section(g))
@@ -319,8 +319,8 @@ def t_risk_common_ref(doc, label="Table 3."):
                     pt = fmt_p(p_)
                 rows.append([lead, NM[s_], events, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events",
-                    "HR or IRR versus the common reference (95% CI)",
-                    "Ratio of HRs or IRRs versus MD-COPD (95% CI)", "P"],
+                    "HR or IRR versus the common reference [95% CI]",
+                    "Ratio of HRs or IRRs versus MD-COPD [95% CI]", "P"],
               rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
     legend(doc, label,
            "Adjusted hazard ratios (HRs) for all-cause and respiratory mortality and incidence "
@@ -331,7 +331,7 @@ def t_risk_common_ref(doc, label="Table 3."):
            "additionally adjusted for baseline exacerbation frequency. Ratios versus MD-COPD "
            "divide the HR or IRR of each CT-free classification's group by that of the "
            "corresponding MD-COPD group; 95% confidence intervals and two-sided P values were "
-           "obtained from 1,000 paired subject-level bootstrap resamples. Corresponding unadjusted "
+           "obtained from 1,000 paired participant-level bootstrap resamples. Corresponding unadjusted "
            f"rate ratios are shown in Supplemental Table {supp_num('groups_vs_mdcopd')}. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
            "MD-COPD; the estimate is shown without a confidence interval or P value. "
@@ -357,7 +357,7 @@ def t_discord_risk(doc, label="Table 4."):
             return "not estimable"
         if n_ev < FLOOR or n_ref < FLOOR or r["lo"] in ("", "NA"):
             return f"{float(r['rr']):.2f}{FLAG}"
-        return f"{float(r['rr']):.2f} ({float(r['lo']):.2f}\u2013{float(r['hi']):.2f})"
+        return f"{float(r['rr']):.2f} [{float(r['lo']):.2f}\u2013{float(r['hi']):.2f}]"
 
     rows = []
     for title, rf, refg in STRATA:
@@ -378,17 +378,17 @@ def t_discord_risk(doc, label="Table 4."):
     # carries no flag note, so a flagged cell appearing later must stop the build.
     assert not any(FLAG in str(v) for r in rows if not isinstance(r, Section) for v in r), \
         "S7 has a cell under the event floor; restore the flag note in its legend"
-    add_table(doc, ["Group", "n", "Deaths", "All-cause mortality rate ratio (95% CI)",
-                    "Exacerbation rate ratio (95% CI)"],
+    add_table(doc, ["Group", "n", "Deaths", "All-cause mortality rate ratio [95% CI]",
+                    "Exacerbation rate ratio [95% CI]"],
               rows, [2.00, 0.70, 0.80, 1.50, 1.50])
     legend(doc, label,
            "Participants were cross-classified by MD-COPD and the ESI classification within "
-           "strata defined by airflow-limitation status. Among participants with preserved "
+           "strata defined by airflow limitation status. Among participants with preserved "
            "spirometry, those classified as noCOPD by both approaches served as the reference; "
            "among participants with airflow limitation, those classified as AFL-only by both "
            "approaches served as the reference. Unadjusted rate ratios are the event rate (events per "
            "100 person-years) in each group divided by that in the corresponding reference; confidence "
-           "intervals are exact Poisson intervals for mortality and subject-level bootstrap "
+           "intervals are exact Poisson intervals for mortality and participant-level bootstrap "
            "intervals for respiratory exacerbations. CT-only-COPD = classified as COPD by "
            "MD-COPD only; ESI-only-COPD = classified as COPD by the ESI classification only; "
            "Both-COPD = classified as COPD by both; AFL-only = airflow limitation without "

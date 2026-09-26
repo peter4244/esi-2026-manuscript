@@ -3,9 +3,9 @@
 # MD-COPD and the ESI classification agree or disagree, within each stratum.
 #
 # Updated from v15 Figure 2 (../../figures/figure2_discordance), which showed the
-# preserved-spirometry stratum only. Same marks and colors: bars for group means
-# with standard errors and for the share meeting each criterion; CT-only blue,
-# Both gray, ESI-only red. One bracket per panel, for the contrast the Results
+# preserved-spirometry stratum only. Bars for group means with standard errors and
+# for the share meeting each criterion. All bars are black and each group is named
+# under its bar: a color per group carried no information (Pete, 2026-09-26). One bracket per panel, for the contrast the Results
 # make (CT-only against ESI-only); the other pairwise tests are in the artifact.
 #
 # Rows are strata. Each measure keeps one y axis across both strata, so a column
@@ -28,7 +28,6 @@ tests <- read.csv(file.path(ASSETS, "discord_profile_tests.csv"),  stringsAsFact
 stopifnot(nrow(prof) == 8, nrow(tests) == 42)
 # Bar order: Both-COPD leftmost (Pete, 2026-09-14), then the two discordant groups.
 SHOWN <- c("Both-COPD" = "Both-COPD", "CT-only-COPD" = "CT-only", "ESI-only-COPD" = "ESI-only")
-GCOL  <- c("CT-only" = "#1F77B4", "Both-COPD" = "#7F7F7F", "ESI-only" = "#D62728")
 STR   <- c("Preserved spirometry" = "Preserved\nspirometry",
            "Airflow limitation"   = "Airflow\nlimitation")
 MEAS <- list(
@@ -68,9 +67,9 @@ panel <- function(i) {
   stopifnot(!is.na(xa), !is.na(xb))
   br$xa <- xa; br$xb <- xb; br$xm <- (xa + xb) / 2
   ylim_top <- max(c(br$yl, span)) + 0.12 * span
-  p <- ggplot(d, aes(x = grp, y = y, fill = grp)) +
-    geom_col(width = 0.72, colour = "grey25", linewidth = 0.2) +
-    { if (is_mean) geom_errorbar(aes(ymin = y - se, ymax = y + se), width = 0.25,
+  p <- ggplot(d, aes(x = grp, y = y)) +
+    geom_col(width = 0.72, fill = "black") +
+    { if (is_mean) geom_errorbar(aes(ymin = y, ymax = y + se), width = 0.25,
                                  linewidth = 0.35) } +
     geom_segment(data = br, inherit.aes = FALSE, aes(x = xa, xend = xb, y = yb, yend = yb),
                  linewidth = 0.3) +
@@ -80,7 +79,6 @@ panel <- function(i) {
                  linewidth = 0.3) +
     geom_text(data = br, inherit.aes = FALSE, aes(x = xm, y = yl, label = lab),
               size = TXT_PT / .pt, family = "Arial", vjust = 0) +
-    scale_fill_manual(values = GCOL, name = NULL) +
     scale_y_continuous(limits = c(0, ylim_top), expand = expansion(mult = c(0, 0)),
                        breaks = if (is_mean) scales::breaks_extended(n = 3)
                                 else c(0, 25, 50, 75, 100)) +
@@ -88,7 +86,7 @@ panel <- function(i) {
     labs(title = m$title, x = NULL,
          y = if (i == 1) "Mean" else if (i == 3) "% of group" else NULL) +
     theme_esi() +
-    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
           panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(),
           plot.title = element_text(hjust = 0.5, lineheight = 0.9),
           strip.text.y = if (i == length(MEAS)) element_text() else element_blank(),
@@ -98,8 +96,7 @@ panel <- function(i) {
 }
 panels <- lapply(seq_along(MEAS), panel)
 for (p in panels) validate_layout(p, "figureS2_profile.png", native_w = NATIVE_W_FIG)
-fig <- wrap_plots(panels, nrow = 1) +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+fig <- wrap_plots(panels, nrow = 1)
 out <- file.path(HERE, "figureS2_profile.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = 4.6, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS2_profile.meta"))
@@ -116,9 +113,9 @@ writeLines(c(
         "significant). Contrasts fixed by the classification rules carry no bracket.",
         "Group sizes with preserved spirometry:", paste0(nn("Preserved spirometry"), ";"),
         "with airflow limitation:", paste0(nn("Airflow limitation"), "."),
-        "Both-COPD = diagnosed as COPD under both; CT-only = diagnosed as COPD under MD-COPD only;",
-        "ESI-only = diagnosed as COPD under the ESI classification only; %LAA-950HU = percentage of",
-        "lung below -950 Hounsfield units; mMRC = modified Medical Research Council dyspnea scale;",
+        "Both-COPD = classified as COPD by both; CT-only = classified as COPD by MD-COPD only;",
+        "ESI-only = classified as COPD by the ESI classification only; %LAA-950HU = percentage of",
+        "lung below \u2212950 Hounsfield units at inspiration; mMRC = modified Medical Research Council dyspnea scale;",
         "SGRQ = St. George's Respiratory Questionnaire.")),
   file.path(HERE, "figureS2_profile_legend.md"))
 cat("wrote", out, "\n")

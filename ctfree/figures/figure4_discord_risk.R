@@ -5,8 +5,8 @@
 # Rows are strata and columns outcomes. Each panel shows the three groups either
 # classification calls COPD, against that stratum's own reference: participants
 # both classify as noCOPD with preserved spirometry, and as AFL-only with airflow
-# limitation. Crude ratios only (Pete, 2026-09-11). Group colors follow the v15
-# discordance figure: CT-only blue, Both gray, ESI-only red.
+# limitation. Crude ratios only (Pete, 2026-09-11). All marks are black: the group
+# is named on the y axis, so a color per group carried no information (Pete, 2026-09-26).
 #
 # Respiratory mortality is left out (Pete, 2026-09-11): too few deaths in the
 # discordant groups and the airflow-limitation reference. Its totals go in the
@@ -24,7 +24,6 @@ ASSETS <- file.path(dirname(HERE), "assets")
 cr <- read.csv(file.path(ASSETS, "discord_crude_strata.csv"), stringsAsFactors = FALSE)
 stopifnot(nrow(cr) == 18)
 GRP  <- c("CT-only-COPD" = "CT-only", "ESI-only-COPD" = "ESI-only", "Both-COPD" = "Both-COPD")
-GCOL <- c("CT-only" = "#1F77B4", "Both-COPD" = "#7F7F7F", "ESI-only" = "#D62728")
 OUTC <- c(all = "All-cause mortality", exac = "Exacerbations")
 STR  <- c("Preserved spirometry" = "Preserved\nspirometry",
           "Airflow limitation"   = "Airflow\nlimitation")
@@ -54,11 +53,10 @@ d$grp     <- factor(GRP[d$group], levels = rev(c("CT-only", "ESI-only", "Both-CO
 d$outcome <- factor(OUTC[d$outcome], levels = OUTC)
 d$stratum <- factor(d$stratum, levels = names(STR))
 
-p <- ggplot(d, aes(x = est, y = grp, colour = grp)) +
+p <- ggplot(d, aes(x = est, y = grp)) +
   geom_vline(xintercept = 1, linetype = 2, colour = "grey45", linewidth = 0.4) +
-  geom_linerange(aes(xmin = lo, xmax = hi), linewidth = 0.6) +
-  geom_point(size = 2.6) +
-  scale_colour_manual(values = GCOL, guide = "none") +
+  geom_linerange(aes(xmin = lo, xmax = hi), linewidth = 0.6, colour = "black") +
+  geom_point(size = 2.6, colour = "black") +
   scale_x_log10(breaks = c(1, 2, 3, 5),
                 labels = scales::label_number(drop0trailing = TRUE),
                 expand = expansion(mult = c(0.10, 0.14))) +

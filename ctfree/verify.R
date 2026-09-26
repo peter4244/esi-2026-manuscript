@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 224L
+REGISTRY_N <- 234L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -698,6 +698,31 @@ reg("MAJ-08", "COPD-major", "the 833 reassigned under NoCT: all-cause rate ratio
     "consensus_ref_lost.csv", 'x$crude_all', TOL_2DP)
 reg("MAJ-09", "COPD-major", "the 2,976 who remained: 4.05", 4.05, "consensus_ref_crude.csv",
     'x$rr[x$schema == "S3" & x$category == "COPD-major" & x$outcome == "all"]', TOL_2DP)
+
+# --- bronchodilator change: mean with its 95% CI (Pete's text, 2026-09-26) --
+reg("BD-CI", "Study population", "mean change -0.09 [95% CI -0.11 to -0.08]", TRUE, "bronchodilator_delta_esi.csv",
+    'with(x, { se <- sd_delta / sqrt(n_paired); lo <- mean_delta - stats::qt(0.975, n_paired - 1) * se; hi <- mean_delta + stats::qt(0.975, n_paired - 1) * se; round(mean_delta, 2) == -0.09 && round(lo, 2) == -0.11 && round(hi, 2) == -0.08 })', TOL_EXACT)
+
+# --- v4 Results and rewritten Discussion (2026-09-26) ----------------------
+reg("ADJ-ESI-AFL", "AFL-only", "ESI adjusted ratios 1.03 and 0.92; P = 0.79 and 0.49", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$schema == "S4" & x$category == "AFL-only" & x$type == "adjusted", ], round(ratio_of_ratios[outcome == "all"], 2) == 1.03 && round(ratio_of_ratios[outcome == "exac"], 2) == 0.92 && round(p_boot[outcome == "all"], 2) == 0.79 && round(p_boot[outcome == "exac"], 2) == 0.49)', TOL_EXACT)
+reg("FEV1-NE", "FEV1 decline", "decline did not differ between NoCT and ESI groups (P = 0.68 to 0.91)", TRUE, "fev1_noct_vs_esi.csv",
+    'nrow(x) == 3 && round(min(x$p_boot), 2) == 0.68 && round(max(x$p_boot), 2) == 0.91', TOL_EXACT)
+reg("DISC-KEPT", "Discussion", "ESI kept 483 of the 833 (58.0%) in COPD-major", TRUE, "crossclass.csv",
+    'with(x, { a <- n[schema == "S3" & row_cat == "AFL-only" & col_cat == "COPD-major"]; b <- n[schema == "S4" & row_cat == "AFL-only" & col_cat == "COPD-major"]; a == 833 && a - b == 483 && round(100 * (a - b) / a, 1) == 58.0 })', TOL_EXACT)
+reg("DISC-AFLN", "Discussion", "NoCT AFL-only 1,108 versus MD-COPD AFL-only 275 participants", TRUE, "crossclass.csv",
+    'with(x, sum(n[schema == "S3" & row_cat == "AFL-only"]) == 1108 && sum(n[schema == "S3" & col_cat == "AFL-only"]) == 275)', TOL_EXACT)
+reg("DISC-ESIC", "Discussion", "49 of the 501 ESI-only-COPD participants (9.8%) met the ESI criterion", TRUE, "discord_profile_strata.csv",
+    'with(x[x$stratum == "Preserved spirometry" & x$group == "ESI-only-COPD", ], n == 501 && round(n * pct_meets_esi / 100) == 49 && round(pct_meets_esi, 1) == 9.8)', TOL_EXACT)
+reg("DISC-CTONLY", "Discussion", "85 CT-only-COPD with preserved spirometry met both CT criteria; mean ESI 0.90 against 0.89 in noCOPD by both", TRUE, "discord_profile_strata.csv",
+    'with(x[x$stratum == "Preserved spirometry", ], n[group == "CT-only-COPD"] == 85 && pct_visual_emph[group == "CT-only-COPD"] == 100 && pct_wall_thick[group == "CT-only-COPD"] == 100 && round(mean_ESI[group == "CT-only-COPD"], 2) == 0.90 && round(mean_ESI[group == "Both-noCOPD"], 2) == 0.89)', TOL_EXACT)
+reg("DISC-MINOR", "Discussion", "CT-free COPD-minor unadjusted rates 10% to 13% lower than MD-COPD", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$category == "COPD-minor" & x$type == "crude" & x$outcome != "resp", ], length(ratio_of_ratios) == 4 && round(100 * (1 - max(ratio_of_ratios))) == 10 && round(100 * (1 - min(ratio_of_ratios))) == 13)', TOL_EXACT)
+reg("DISC-BOTH3", "Discussion", "with airflow limitation, Both-COPD more than three times the all-cause mortality rate of AFL-only by both", TRUE, "discord_crude_strata.csv",
+    'x$rr[x$stratum == "Airflow limitation" & x$group == "Both-COPD" & x$outcome == "all"] > 3', TOL_EXACT)
+
+reg("DISC-MINOR-ESI", "Discussion", "ESI COPD-minor unadjusted rates 11% to 12% lower than MD-COPD (P = 0.008 and 0.016)", TRUE, "group_vs_mdcopd.csv",
+    'with(x[x$schema == "S4" & x$category == "COPD-minor" & x$type == "crude" & x$outcome != "resp", ], length(ratio_of_ratios) == 2 && round(100 * (1 - max(ratio_of_ratios))) == 11 && round(100 * (1 - min(ratio_of_ratios))) == 12 && all(sort(round(p_boot, 3)) == c(0.008, 0.016)))', TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

@@ -37,7 +37,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               CONTENT_WIDTH_IN, new_section)
 import paginate                                              # noqa: E402
 
-OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v3.docx")
+OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v5.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
 
 
@@ -119,7 +119,7 @@ def supp_methods(doc):
     para(doc, "Visual emphysema was assessed according to the Fleischner Society visual "
               "classification and categorized as none, trace, mild, moderate, confluent, or "
               "advanced destructive emphysema (18, 19). For MD-COPD classification, visual "
-              "emphysema was considered present at mild severity or greater (score \u2265 2); "
+              "emphysema was considered present at mild severity or greater (score \u22652); "
               "thus, trace emphysema did not satisfy the imaging criterion. Airway wall "
               "thickening was visually categorized as absent, borderline, or definite and was "
               "considered present for MD-COPD only when definite (score 2). Participants with "
@@ -131,7 +131,7 @@ def supp_methods(doc):
               "group. For mortality, "
               "95% confidence intervals were calculated as exact conditional intervals for the "
               "ratio of two Poisson rates. For respiratory exacerbations, 95% confidence "
-              "intervals were obtained from 1,000 subject-level bootstrap resamples, with the "
+              "intervals were obtained from 1,000 participant-level bootstrap resamples, with the "
               "reference rate recalculated in each resample. When either the diagnostic group "
               "or the reference group had fewer than 10 events, unadjusted rates or rate ratios "
               "were reported without confidence intervals.")
@@ -140,7 +140,7 @@ def supp_methods(doc):
               "ratio versus MD-COPD), and its adjusted HR or IRR by that of the corresponding "
               "MD-COPD group (ratio of HRs or IRRs). Confidence intervals and P values for these "
               "comparisons "
-              "were obtained from 1,000 paired subject-level bootstrap resamples.")
+              "were obtained from 1,000 paired participant-level bootstrap resamples.")
     para(doc, "**Discordant classification analyses**")
     para(doc, "In analyses of MD-COPD and ESI discordance, participants classified as noCOPD "
               "by both approaches served as the reference group among those with preserved "
@@ -156,13 +156,15 @@ def s1_baseline(doc, num):
             ("pct_female", "Female"), ("pct_current", "Current smoker"),
             ("pack_years", "Pack-years"), ("FEV1_pp", "FEV₁ %pred"), ("ESI", "ESI")]
     add_table(doc, [h for _, h in keep],
-              [[r[k] for k, _ in keep] for r in rows],
+              [[re.sub(r"^GOLD(\d)$", r"GOLD \1", r[k]) if k == "stratum" else
+                f"{int(r[k]):,}" if k == "n" else r[k] for k, _ in keep] for r in rows],
               [0.86, 0.60, 0.86, 0.78, 1.00, 0.86, 0.84, 0.70])
     n_overall = next(r["n"] for r in rows if r["stratum"] == "Overall")
     legend(doc, f"Table {num}.",
            "Values are mean (SD) unless otherwise indicated. The overall analytic "
            f"cohort comprised {int(n_overall):,} participants. PRISm = preserved ratio "
-           "impaired spirometry; ESI = Emphysema Severity Index.")
+           "impaired spirometry; GOLD = Global Initiative for Chronic Obstructive Lung Disease; "
+           "FEV\u2081 %pred = FEV\u2081 percent predicted; ESI = Emphysema Severity Index.")
 
 
 def s4_sweep(doc, num):
@@ -176,7 +178,7 @@ def s4_sweep(doc, num):
     rows = []
     for r in sweep:
         sel = r["selected"].upper() == "TRUE"
-        lab = r["label"] + (" (selected)" if sel else "")
+        lab = r["label"].replace(">= ", "\u2265") + (" (selected)" if sel else "")
         rows.append([lab, f"{int(r['n_noCOPD']):,}", f"{int(r['n_aflonly']):,}",
                      f"{int(r['n_minor']):,}", f"{int(r['n_major']):,}",
                      f"{float(r['macroF1']):.3f}", f"{float(r['bal_acc']):.3f}",
@@ -193,10 +195,11 @@ def s4_sweep(doc, num):
     legend(doc, f"Table {num}.",
            "Category sizes and performance metrics are shown for each candidate rule "
            "against MD-COPD as the reference classification. The selected rules were "
-           f"\u2265 {int(float(sel_s3['parameter']))} of 3 symptom criteria for NoCT and "
-           f"ESI \u2265 {float(sel_s4['parameter']):.2f} for the ESI classification; both had the "
-           "highest macro-averaged F1, which weights the four diagnostic categories "
-           "equally. Thresholds were refitted within each training fold of five-fold "
+           f"\u2265{int(float(sel_s3['parameter']))} of 3 symptom criteria for NoCT and, for the "
+           f"ESI classification, \u22652 of 4 criteria with ESI \u2265{float(sel_s4['parameter']):.2f} "
+           "defining the ESI criterion; both had the "
+           "highest macro-averaged F1 (macro-F1), which weights the four diagnostic categories "
+           "equally; balanced accuracy is the mean per-category sensitivity. Thresholds were refitted within each training fold of five-fold "
            "cross-validation repeated five times: held-out agreement with MD-COPD was "
            f"{100 * float(fit['S4']['agreement_heldout']):.1f}% for the ESI classification and "
            f"{100 * float(fit['S3']['agreement_heldout']):.1f}% for NoCT, against "
@@ -241,27 +244,33 @@ def s6_fev1_decline(doc, num):
     heading(doc, f"Supplemental Table {num}. Longitudinal FEV\u2081 decline by diagnostic group "
             f"under each multidimensional classification")
     rows_in = load(ASSETS, "fev1_decline.csv")
+    ne = {r["category"]: r for r in load(ASSETS, "fev1_noct_vs_esi.csv")}
+    one = lambda v: f"{float(v):.1f}".replace("-0.0", "0.0").replace("-", "\u2212")   # no negative zero
+    mm = lambda e, lo, hi: f"{one(e)} [{one(lo)} to {one(hi)}]"
     name = {"S1": "Fixed ratio", "S2": "MD-COPD",
             "S3": "NoCT classification", "S4": "ESI classification"}
     rows, seen = [], set()
     for r in rows_in:
         sc = r["schema"]; p_ = float(r["p"])
+        x = ne[r["category"]] if sc == "S4" else None
         rows.append([name.get(sc, sc) if sc not in seen else "", r["category"],
-                     f"{int(r['n_subj']):,}",
-                     f"{float(r['est_mL_yr']):.1f} "
-                     f"({float(r['lo']):.1f} to {float(r['hi']):.1f})",
-                     fmt_p(p_)])
+                     f"{int(r['n_subj']):,}", mm(r["est_mL_yr"], r["lo"], r["hi"]), fmt_p(p_),
+                     mm(x["diff_noct_minus_esi"], x["lo"], x["hi"]) if x else "",
+                     fmt_p(float(x["p_boot"])) if x else ""])
         seen.add(sc)
     add_table(doc, ["Classification", "Group", "n",
-                    "Difference in decline, mL/yr (95% CI)", "P"],
-              rows, [1.20, 1.10, 0.66, 2.44, 1.10])
+                    "Difference in decline versus the common reference, mL/yr [95% CI]", "P",
+                    "NoCT minus ESI, mL/yr [95% CI]", "P"],
+              rows, [1.35, 0.95, 0.55, 1.40, 0.55, 1.15, 0.55])
     legend(doc, f"Table {num}.",
            "Differences in annual FEV\u2081 change are relative to the common noCOPD "
            "reference and were estimated using linear mixed-effects models over visits 1 to 3 "
            "with a participant-specific random intercept, adjusted for height, sex, race, age, "
            "smoking status, pack-years, and baseline post-bronchodilator FEV\u2081 entered as "
            "an interaction with follow-up time. Negative values indicate faster FEV\u2081 "
-           "decline relative to the reference. AFL-only = airflow limitation without other "
+           "decline relative to the reference. The NoCT minus ESI column compares corresponding "
+           "NoCT and ESI groups, with confidence intervals and P values from 1,000 paired "
+           "participant-level bootstrap resamples; negative values indicate faster decline under NoCT. AFL-only = airflow limitation without other "
            "criteria; CI = confidence interval.")
 
 
@@ -316,7 +325,7 @@ def s_groups_crude(doc, num):
     NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
     OUTC = (("all", "All-cause mortality"), ("resp", "Respiratory mortality"), ("exac", "Exacerbations"))
     FLAG = "\u2020"
-    ci = lambda v, lo, hi: f"{float(v):.2f} ({float(lo):.2f}\u2013{float(hi):.2f})"
+    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}\u2013{float(hi):.2f}]"
     TRUE = ("TRUE", "T")
     rows = []
     for g in ("AFL-only", "COPD-minor", "COPD-major"):
@@ -340,8 +349,8 @@ def s_groups_crude(doc, num):
                     pt = fmt_p(p_)
                 rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", rate, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events", "Rate per 100 person-years",
-                    "Rate ratio versus the common reference (95% CI)",
-                    "Rate ratio versus MD-COPD (95% CI)", "P"],
+                    "Rate ratio versus the common reference [95% CI]",
+                    "Rate ratio versus MD-COPD [95% CI]", "P"],
               rows, [1.05, 1.15, 0.55, 0.70, 1.25, 1.20, 0.60])
     legend(doc, f"Table {num}.",
            "Each diagnostic group was compared with the common reference comprising the "
@@ -349,11 +358,11 @@ def s_groups_crude(doc, num):
            "multidimensional classifications. Rates are events per 100 person-years. Unadjusted rate "
            "ratios were calculated as the event rate in each group divided by that in the "
            "common reference, with "
-           "exact Poisson confidence intervals for mortality and subject-level bootstrap "
+           "exact Poisson confidence intervals for mortality and participant-level bootstrap "
            "confidence intervals for respiratory exacerbations. Rate ratios versus MD-COPD divide "
            "the event rate in each CT-free classification's group by that in the corresponding "
            "MD-COPD group; 95% confidence intervals and two-sided P values were "
-           "obtained from 1,000 paired subject-level bootstrap resamples. "
+           "obtained from 1,000 paired participant-level bootstrap resamples. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
            "MD-COPD; the estimate is shown without a confidence interval or P value. "
            "AFL-only = airflow limitation without other criteria; CI = confidence interval.")

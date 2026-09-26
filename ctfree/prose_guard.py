@@ -183,8 +183,8 @@ OWNED = {
     # the build. When he supplies a new version, replace these in the same
     # commit.
     "ABSTRACT.md": {
-        "rationale (Massimo 2026-09-20)":
-            "Rationale. A recently proposed multidimensional diagnostic framework for COPD (MD-COPD) integrates spirometry",
+        "rationale (Pete 2026-09-26)":
+            "Rationale. A recently proposed multidimensional diagnostic framework for COPD (MD-COPD) provides better alignment",
     },
     "INTRODUCTION.md": {
         "opening (Massimo 2026-09-20)":
@@ -197,8 +197,8 @@ OWNED = {
     "RESULTS.md": {
         "agreement section (Massimo 2026-09-20)":
             "Cross-classification with MD-COPD is shown in Figure 2 and Table S3.",
-        "discordance section (Massimo 2026-09-20)":
-            "Clinical outcomes among concordant and discordant MD-COPD and ESI classifications are shown in Figure 4 and Table S7",
+        "discordance section (Pete 2026-09-26)":
+            "Clinical, physiological, and CT characteristics of concordant and discordant groups are shown in Figure S2.",
     },
     "DISCUSSION.md": {
         "opening (Massimo 2026-09-20)":
