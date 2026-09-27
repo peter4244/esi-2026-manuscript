@@ -147,7 +147,8 @@ DELETED = {
 
 
 def norm(t):
-    return re.sub(r"\s+", " ", t).strip().lower()
+    # **bold** markup is formatting, not wording (the Abstract labels are bold)
+    return re.sub(r"\s+", " ", t.replace("**", "")).strip().lower()
 
 
 def check(build_name="this build"):

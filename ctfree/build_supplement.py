@@ -37,7 +37,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               CONTENT_WIDTH_IN, new_section)
 import paginate                                              # noqa: E402
 
-OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v5.docx")
+OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v3.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
 
 
@@ -133,8 +133,8 @@ def supp_methods(doc):
               "ratio of two Poisson rates. For respiratory exacerbations, 95% confidence "
               "intervals were obtained from 1,000 participant-level bootstrap resamples, with the "
               "reference rate recalculated in each resample. When either the diagnostic group "
-              "or the reference group had fewer than 10 events, unadjusted rates or rate ratios "
-              "were reported without confidence intervals.")
+              "or the reference group had fewer than 10 events, unadjusted rate ratios and adjusted "
+              "HRs or IRRs were reported without confidence intervals or P values.")
     para(doc, "For direct comparisons among classifications, the unadjusted event rate in each "
               "NoCT and ESI group was divided by that in the corresponding MD-COPD group (rate "
               "ratio versus MD-COPD), and its adjusted HR or IRR by that of the corresponding "

@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v5.docx")
+                      "CT-free MD-COPD manuscript draft v3.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
@@ -545,6 +545,16 @@ def main():
     add_front_matter(doc)
 
     heading_on_new_page(doc, "ABSTRACT")
+    # Pete bolds the Abstract headings. Regenerating ABSTRACT.md from the plain
+    # text of his docx dropped the bold markup three times (2026-09-27), so the
+    # build refuses an Abstract whose paragraphs do not open with a bold label.
+    ABSTRACT_LABELS = ("Rationale.", "Objectives.", "Methods.",
+                       "Measurements and Main Results.", "Conclusions.")
+    abs_paras = [p for p in open(os.path.join(HERE, "ABSTRACT.md")).read().split("\n\n")
+                 if p.strip() and not p.startswith(("#", "*("))]
+    if [p.split("**")[1] if p.startswith("**") else None for p in abs_paras] != list(ABSTRACT_LABELS):
+        raise SystemExit("ABSTRACT.md: every paragraph must open with its bold label, "
+                         f"**{'**, **'.join(ABSTRACT_LABELS)}**, as Pete formats them")
     add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
     heading_on_new_page(doc, "INTRODUCTION")
     n_i = add_prose(doc, os.path.join(HERE, "INTRODUCTION.md"))

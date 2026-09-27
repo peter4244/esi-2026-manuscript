@@ -82,9 +82,9 @@ writeLines(c(
         "classified as noCOPD by both",
         "methods among those with preserved spirometry (top row) and participants classified as",
         "AFL-only by both methods among those with airflow limitation (bottom row). Intervals",
-        "are exact Poisson intervals for deaths and subject-bootstrap intervals for",
-        "exacerbations. CT-only = diagnosed as COPD under MD-COPD only; ESI-only = diagnosed",
-        "as COPD under the ESI classification only; Both-COPD = diagnosed as COPD under both;",
+        "are exact Poisson intervals for deaths and participant-level bootstrap intervals for",
+        "exacerbations. CT-only = classified as COPD by MD-COPD only; ESI-only = classified",
+        "as COPD by the ESI classification only; Both-COPD = classified as COPD by both;",
         "AFL-only = airflow limitation without other criteria. Respiratory mortality is not",
         "shown because the numbers of respiratory deaths are too small for estimation.")),
   file.path(HERE, "figure4_discord_risk_legend.md"))
