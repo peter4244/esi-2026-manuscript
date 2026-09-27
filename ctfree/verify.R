@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 234L
+REGISTRY_N <- 249L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -723,6 +723,32 @@ reg("DISC-BOTH3", "Discussion", "with airflow limitation, Both-COPD more than th
 
 reg("DISC-MINOR-ESI", "Discussion", "ESI COPD-minor unadjusted rates 11% to 12% lower than MD-COPD (P = 0.008 and 0.016)", TRUE, "group_vs_mdcopd.csv",
     'with(x[x$schema == "S4" & x$category == "COPD-minor" & x$type == "crude" & x$outcome != "resp", ], length(ratio_of_ratios) == 2 && round(100 * (1 - max(ratio_of_ratios))) == 11 && round(100 * (1 - min(ratio_of_ratios))) == 12 && all(sort(round(p_boot, 3)) == c(0.008, 0.016)))', TOL_EXACT)
+
+# --- every ratio in the text carries its CI (Pete, 2026-09-27) --------------
+# chk_ci: estimate and CI as printed (2 dp); the P condition as printed.
+chk_ci <- function(sch, cat, t, o, est, lo, hi, pcond)
+  sprintf('abs(%s - %s) < 0.005 && abs(%s - %s) < 0.005 && abs(%s - %s) < 0.005 && (%s)',
+          GV(sch, cat, t, o, "ratio_of_ratios"), est, GV(sch, cat, t, o, "lo"), lo, GV(sch, cat, t, o, "hi"), hi,
+          sub("P", GV(sch, cat, t, o, "p_boot"), pcond, fixed = TRUE))
+CIS <- list(
+  list("CI-01", "S4", "AFL-only",   "crude",    "all",  1.14, 0.91, 1.44, "P > 0.2"),
+  list("CI-02", "S4", "AFL-only",   "crude",    "exac", 0.96, 0.78, 1.21, "P > 0.2"),
+  list("CI-03", "S3", "AFL-only",   "adjusted", "all",  1.22, 0.97, 1.55, "round(P, 3) == 0.098"),
+  list("CI-04", "S4", "AFL-only",   "adjusted", "all",  1.03, 0.82, 1.31, "P > 0.2"),
+  list("CI-05", "S4", "AFL-only",   "adjusted", "exac", 0.92, 0.73, 1.17, "P > 0.2"),
+  list("CI-06", "S3", "COPD-minor", "adjusted", "all",  0.95, 0.85, 1.04, "round(P, 2) == 0.27"),
+  list("CI-07", "S3", "COPD-minor", "adjusted", "exac", 0.95, 0.87, 1.04, "round(P, 2) == 0.27"),
+  list("CI-08", "S4", "COPD-minor", "adjusted", "all",  0.94, 0.84, 1.03, "round(P, 2) == 0.20"),
+  list("CI-09", "S4", "COPD-minor", "adjusted", "exac", 0.92, 0.84, 1.02, "round(P, 3) == 0.096"),
+  list("CI-10", "S3", "COPD-major", "adjusted", "all",  1.23, 1.19, 1.27, "P < 0.005"),
+  list("CI-11", "S3", "COPD-major", "adjusted", "exac", 1.17, 1.13, 1.21, "P < 0.005"),
+  list("CI-12", "S4", "COPD-major", "adjusted", "all",  1.07, 1.05, 1.09, "P < 0.005"),
+  list("CI-13", "S4", "COPD-major", "adjusted", "exac", 1.07, 1.05, 1.09, "P < 0.005"),
+  list("CI-14", "S3", "COPD-major", "adjusted", "resp", 1.29, 1.25, 1.34, "P < 0.005"),
+  list("CI-15", "S4", "COPD-major", "adjusted", "resp", 1.08, 1.06, 1.10, "P < 0.005"))
+for (e in CIS)
+  reg(e[[1]], e[[3]], sprintf("%s %s %s %s %.2f [%.2f-%.2f], %s", e[[2]], e[[3]], e[[4]], e[[5]], e[[6]], e[[7]], e[[8]], e[[9]]),
+      TRUE, "group_vs_mdcopd.csv", chk_ci(e[[2]], e[[3]], e[[4]], e[[5]], e[[6]], e[[7]], e[[8]], e[[9]]), TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {
