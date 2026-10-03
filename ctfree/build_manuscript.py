@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v3.docx")
+                      "CT-free MD-COPD manuscript draft v6.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
@@ -254,30 +254,33 @@ def t_classifications(doc, label="Table 1."):
     esi_t = float(fit["S4"]["t_low"])
     esi_desc = f"ESI ≥ {esi_t:.2f}, dyspnea, SGRQ, chronic bronchitis (≥2)"
     rows = [
-        ["Fixed ratio", "none; COPD is airflow limitation",
+        ["Fixed FEV\u2081/FVC ratio", "Post-bronchodilator\nFEV\u2081/FVC <0.70",
          n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
-        ["MD-COPD", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
+        ["MD-COPD-CT", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
-        ["NoCT classification", "dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["MD-NoCT classification", "dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
-        ["ESI classification", esi_desc,
+        ["MD-COPD-ESI classification", esi_desc,
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
-    add_table(doc, ["Classification", "Minor criteria", "noCOPD", "AFL-only",
+    # Title above the table and legend below, as in Massimo's v4 (2) of 2026-10-03.
+    legend(doc, label, f"Distribution of the {n_total:,} participants according to the four "
+                       "classification approaches")
+    add_table(doc, ["Classification", "Diagnostic criteria", "noCOPD", "AFL-only",
                     "COPD-minor", "COPD-major"],
               rows, [1.25, 1.95, 0.72, 0.92, 0.84, 0.82])
-    legend(doc, label,
-           f"Distribution of the {n_total:,} participants according to the four "
-           "classification approaches. "
+    p = doc.add_paragraph()
+    r = p.add_run(
            "The fixed-ratio classification defines COPD by post-bronchodilator "
-           "FEV\u2081/FVC < 0.70 alone. MD-COPD incorporates airflow limitation as the major "
+           "FEV\u2081/FVC < 0.70 alone. MD-COPD-CT incorporates airflow limitation as the major "
            "criterion and visual emphysema, definite airway wall thickening, dyspnea, SGRQ, "
-           "and chronic bronchitis as minor criteria. The NoCT and ESI classifications use the "
-           "modified criteria shown in the table. In participants with coronary artery disease "
-           "or congestive heart failure, the COPD-minor pathway requires both CT criteria "
-           "under MD-COPD, is unavailable under the NoCT classification, and requires the ESI "
-           "criterion under the ESI classification. AFL-only = airflow limitation without other "
-           "criteria; ESI = Emphysema Severity Index; SGRQ = St. George\u2019s Respiratory "
-           "Questionnaire.")
+           "and chronic bronchitis as minor criteria. MD-NoCT removes the two CT criteria without "
+           "replacement, whereas MD-COPD-ESI replaces them with ESI as a single physiological "
+           "criterion. In participants with coronary artery disease or congestive heart failure, "
+           "the COPD-minor pathway requires both CT criteria under MD-COPD-CT, is unavailable under "
+           "the MD-NoCT classification, and requires the ESI criterion under the MD-COPD-ESI "
+           "classification. AFL-only = airflow limitation without other criteria; ESI = Emphysema "
+           "Severity Index; SGRQ = St. George\u2019s Respiratory Questionnaire.")
+    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS - 1)
 
 
 def t_risk_common_ref(doc, label="Table 3."):
@@ -291,7 +294,7 @@ def t_risk_common_ref(doc, label="Table 3."):
     cmp_ = {(r["schema"], r["category"], r["outcome"]): r for r in load("group_vs_mdcopd.csv")
             if r["type"] == "adjusted"}
     ref = load("consensus_ref_group.csv")[0]
-    NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
+    NM = {"S2": "MD-COPD-CT", "S3": "MD-NoCT", "S4": "MD-COPD-ESI"}
     OUTC = (("all", "All-cause mortality", "all_HR", "all_LCI", "all_UCI", "all_few_events"),
             ("resp", "Respiratory mortality", "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
             ("exac", "Exacerbations", "exac_IRR", "exac_LCI", "exac_UCI", None))
@@ -320,7 +323,7 @@ def t_risk_common_ref(doc, label="Table 3."):
                 rows.append([lead, NM[s_], events, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events",
                     "HR or IRR versus the common reference [95% CI]",
-                    "Ratio of HRs or IRRs versus MD-COPD [95% CI]", "P"],
+                    "Ratio of HRs or IRRs versus MD-COPD-CT [95% CI]", "P"],
               rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
     legend(doc, label,
            "Adjusted hazard ratios (HRs) for all-cause and respiratory mortality and incidence "
@@ -328,13 +331,13 @@ def t_risk_common_ref(doc, label="Table 3."):
            f"reference comprising the {int(ref['n_cohort']):,} participants classified as "
            "noCOPD by all three classifications. Models were adjusted for age, sex, race, "
            "current smoking status, pack-years, and body mass index; exacerbation models were "
-           "additionally adjusted for baseline exacerbation frequency. Ratios versus MD-COPD "
-           "divide the HR or IRR of each CT-free classification's group by that of the "
-           "corresponding MD-COPD group; 95% confidence intervals and two-sided P values were "
+           "additionally adjusted for baseline exacerbation frequency. Ratios versus MD-COPD-CT "
+           "divide the HR or IRR of each MD-NoCT and MD-COPD-ESI group by that of the "
+           "corresponding MD-COPD-CT group; 95% confidence intervals and two-sided P values were "
            "obtained from 1,000 paired participant-level bootstrap resamples. Corresponding unadjusted "
            f"rate ratios are shown in Supplemental Table {supp_num('groups_vs_mdcopd')}. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
-           "MD-COPD; the estimate is shown without a confidence interval or P value. "
+           "MD-COPD-CT; the estimate is shown without a confidence interval or P value. "
            "AFL-only = airflow limitation without other criteria; HR = hazard ratio; "
            "IRR = incidence rate ratio; CI = confidence interval.")
 
@@ -364,7 +367,7 @@ def t_discord_risk(doc, label="Table 4."):
         rates = {r["group"]: r for r in load(rf)}
         R = rates[refg]
         ref_ev = {"all": int(R["deaths"]), "resp": int(R["resp_deaths"]), "exac": 10 ** 9}
-        rows.append(Section(title))
+        rows.append(Section({"Preserved spirometry": "Without airflow limitation"}.get(title, title)))
         rows.append([f"\u2003{refg} (reference)", f"{int(R['n']):,}", f"{int(R['deaths']):,}", "1.00",
                      "1.00"])
         for g in ORDER:
@@ -382,18 +385,17 @@ def t_discord_risk(doc, label="Table 4."):
                     "Exacerbation rate ratio [95% CI]"],
               rows, [2.00, 0.70, 0.80, 1.50, 1.50])
     legend(doc, label,
-           "Participants were cross-classified by MD-COPD and the ESI classification within "
-           "strata defined by airflow limitation status. Among participants with preserved "
-           "spirometry, those classified as noCOPD by both approaches served as the reference; "
-           "among participants with airflow limitation, those classified as AFL-only by both "
-           "approaches served as the reference. Unadjusted rate ratios are the event rate (events per "
-           "100 person-years) in each group divided by that in the corresponding reference; confidence "
-           "intervals are exact Poisson intervals for mortality and participant-level bootstrap "
-           "intervals for respiratory exacerbations. CT-only-COPD = classified as COPD by "
-           "MD-COPD only; ESI-only-COPD = classified as COPD by the ESI classification only; "
-           "Both-COPD = classified as COPD by both; AFL-only = airflow limitation without "
-           "other criteria; CI = confidence interval. Respiratory mortality is not shown "
-           "because of the small number of respiratory deaths.")
+           "Participants were cross-classified by MD-COPD-CT and MD-COPD-ESI separately among "
+           "those with and without airflow limitation. Reference groups were participants "
+           "classified as noCOPD by both approaches among those without airflow limitation and as "
+           "AFL-only by both approaches among those with airflow limitation. Unadjusted rate ratios "
+           "were calculated as the observed event rate in each group divided by that in the "
+           "corresponding reference group; confidence intervals were exact Poisson intervals for "
+           "deaths and participant-level bootstrap intervals for exacerbations. Respiratory mortality "
+           "is not shown because the numbers of respiratory deaths were too small for estimation. "
+           "CT-only-COPD = classified as COPD by MD-COPD-CT only; ESI-only-COPD = classified as COPD "
+           "by MD-COPD-ESI only; Both-COPD = classified as COPD by both; AFL-only = airflow limitation "
+           "without other criteria; CI = confidence interval.")
 
 def figure_width(meta_path, default=CONTENT_WIDTH_IN):
     """Content width a figure was rendered for, from the sidecar its script
@@ -543,15 +545,18 @@ def main():
     doc = init_document()
 
     add_front_matter(doc)
+    add_prose(doc, os.path.join(HERE, "AT_A_GLANCE.md"))
 
     heading_on_new_page(doc, "ABSTRACT")
     # Pete bolds the Abstract headings. Regenerating ABSTRACT.md from the plain
     # text of his docx dropped the bold markup three times (2026-09-27), so the
     # build refuses an Abstract whose paragraphs do not open with a bold label.
-    ABSTRACT_LABELS = ("Rationale.", "Objectives.", "Methods.",
-                       "Measurements and Main Results.", "Conclusions.")
+    # AJRCCM headings, with colons as in Massimo's v4 (2026-09-30); the word-count
+    # line at the foot of the Abstract carries no label.
+    ABSTRACT_LABELS = ("Rationale:", "Objectives:", "Methods:",
+                       "Measurements and Main Results:", "Conclusions:")
     abs_paras = [p for p in open(os.path.join(HERE, "ABSTRACT.md")).read().split("\n\n")
-                 if p.strip() and not p.startswith(("#", "*("))]
+                 if p.strip() and not p.startswith(("#", "*(", "(word count"))]
     if [p.split("**")[1] if p.startswith("**") else None for p in abs_paras] != list(ABSTRACT_LABELS):
         raise SystemExit("ABSTRACT.md: every paragraph must open with its bold label, "
                          f"**{'**, **'.join(ABSTRACT_LABELS)}**, as Pete formats them")
@@ -573,7 +578,6 @@ def main():
             doc.add_paragraph(line.strip())
 
     doc.add_page_break()
-    doc.add_paragraph("TABLES", style="Heading 1")
     t_classifications(doc, "Table 1.")
 
     # Each figure declares its own content width. A figure rendered for a

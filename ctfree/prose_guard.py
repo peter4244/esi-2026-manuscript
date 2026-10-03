@@ -185,7 +185,7 @@ OWNED = {
     # commit.
     "ABSTRACT.md": {
         "rationale (Pete 2026-09-26)":
-            "Rationale. A recently proposed multidimensional diagnostic framework for COPD (MD-COPD) provides better alignment",
+            "Rationale: A multidimensional COPD diagnostic framework integrates airflow limitation, symptoms, and chest computed tomography (CT)",
     },
     "INTRODUCTION.md": {
         "opening (Massimo 2026-09-20)":
@@ -197,15 +197,15 @@ OWNED = {
     },
     "RESULTS.md": {
         "agreement section (Massimo 2026-09-20)":
-            "Cross-classification with MD-COPD is shown in Figure 2 and Table S3.",
-        "discordance section (Pete 2026-09-26)":
+            "Cross-classification with MD-COPD-CT is shown in Figure 2 and Table S3.",
+        "discordance section (Massimo 2026-10-03)":
             "Clinical, physiological, and CT characteristics of concordant and discordant groups are shown in Figure S2.",
     },
     "DISCUSSION.md": {
         "opening (Massimo 2026-09-20)":
             "In this study, we examined whether the Emphysema Severity Index (ESI), derived from the expiratory portion of the spirometric flow-volume curve",
         "conclusion (Massimo 2026-09-20)":
-            "In conclusion, replacing the CT component of MD-COPD with ESI preserved much of the original multidimensional classification",
+            "In conclusion, replacing the CT criteria of MD-COPD-CT with ESI preserved much of the original multidimensional classification",
     },
 }
 

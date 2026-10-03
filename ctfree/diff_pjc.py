@@ -24,7 +24,7 @@ from docx.text.paragraph import Paragraph
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PJC = os.path.join(HERE, "manuscript",
-                   "CT-free MD-COPD manuscript draft v3_PJC.docx")
+                   "CT-free MD-COPD manuscript draft v5.docx")
 SECTIONS = {"ABSTRACT": "ABSTRACT.md", "INTRODUCTION": "INTRODUCTION.md",
             "METHODS": "METHODS.md", "RESULTS": "RESULTS.md",
             "DISCUSSION": "DISCUSSION.md"}

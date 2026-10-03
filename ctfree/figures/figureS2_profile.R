@@ -28,7 +28,7 @@ tests <- read.csv(file.path(ASSETS, "discord_profile_tests.csv"),  stringsAsFact
 stopifnot(nrow(prof) == 8, nrow(tests) == 42)
 # Bar order: Both-COPD leftmost (Pete, 2026-09-14), then the two discordant groups.
 SHOWN <- c("Both-COPD" = "Both-COPD", "CT-only-COPD" = "CT-only", "ESI-only-COPD" = "ESI-only")
-STR   <- c("Preserved spirometry" = "Preserved\nspirometry",
+STR   <- c("Preserved spirometry" = "Without airflow\nlimitation",
            "Airflow limitation"   = "Airflow\nlimitation")
 MEAS <- list(
   list(test = "ESI",                       col = "mean_ESI",        se = "se_ESI",    title = "ESI"),
@@ -101,21 +101,27 @@ out <- file.path(HERE, "figureS2_profile.png")
 ggsave(out, fig, width = NATIVE_W_FIG, height = 4.6, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS2_profile.meta"))
 
-nn <- function(s) paste(sprintf("%s %s", SHOWN, formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")),
-                        collapse = ", ")
+# Group sizes as "Both-COPD, n = 714; CT-only, n = 85; and ESI-only, n = 501", from the data.
+nn <- function(s) {
+  k <- formatC(d0$n[d0$stratum == s][match(names(SHOWN), d0$group[d0$stratum == s])], format = "d", big.mark = ",")
+  sprintf("%s, n = %s; %s, n = %s; and %s, n = %s", SHOWN[1], k[1], SHOWN[2], k[2], SHOWN[3], k[3])
+}
 writeLines(c(
-  "**Supplemental Figure S2. Clinical, physiological, and CT characteristics according to concordance and discordance between MD-COPD and ESI classifications.**",
+  "**Supplemental Figure S2. Clinical, physiological, and CT characteristics according to concordance and discordance between MD-COPD-CT and MD-COPD-ESI classifications.**",
   "",
-  paste("Within each stratum of airflow limitation, bars show group means with standard errors",
-        "(ESI, %LAA-950HU) or the percentage of the group meeting each criterion. Brackets compare",
-        "the CT-only and ESI-only groups (Wilcoxon rank-sum test for the two means, Fisher's exact",
-        "test for the criteria; unadjusted; * P < 0.05, ** P < 0.01, *** P < 0.001, ns = not",
-        "significant). Contrasts fixed by the classification rules carry no bracket.",
-        "Group sizes with preserved spirometry:", paste0(nn("Preserved spirometry"), ";"),
-        "with airflow limitation:", paste0(nn("Airflow limitation"), "."),
-        "Both-COPD = classified as COPD by both; CT-only = classified as COPD by MD-COPD only;",
-        "ESI-only = classified as COPD by the ESI classification only; %LAA-950HU = percentage of",
-        "lung below \u2212950 Hounsfield units at inspiration; mMRC = modified Medical Research Council dyspnea scale;",
-        "SGRQ = St. George's Respiratory Questionnaire.")),
+  paste("Characteristics are shown for participants classified as COPD by both approaches",
+        "(Both-COPD), by MD-COPD-CT only (CT-only), or by MD-COPD-ESI only (ESI-only), separately",
+        "among participants with and without airflow limitation. Bars show group means with",
+        "standard errors for ESI and %LAA-950HU and the percentage of participants meeting each",
+        "criterion for visual emphysema, definite airway wall thickening, mMRC \u22652, SGRQ \u226525,",
+        "and chronic bronchitis. Comparisons between CT-only and ESI-only used Wilcoxon rank-sum",
+        "tests for ESI and %LAA-950HU and Fisher's exact tests for categorical variables.",
+        "* P < 0.05; ** P < 0.01; *** P < 0.001; ns = not significant. Comparisons fixed by the",
+        "classification definitions are shown without statistical testing. Group sizes without",
+        paste0("airflow limitation were ", nn("Preserved spirometry"), "; with airflow limitation, ",
+               nn("Airflow limitation"), "."),
+        "%LAA-950HU = percentage of lung below \u2212950 Hounsfield units at inspiration;",
+        "mMRC = modified Medical Research Council dyspnea scale; SGRQ = St. George's Respiratory",
+        "Questionnaire; ESI = Emphysema Severity Index.")),
   file.path(HERE, "figureS2_profile_legend.md"))
 cat("wrote", out, "\n")

@@ -31,14 +31,14 @@ XLAB   <- c("Visual emphysema" = "Visual emphysema category",
             "Airway wall thickening" = "Visual airway wall thickening category")
 # The level at which MD-COPD counts the criterion as met.
 MET    <- c("Visual emphysema" = 2, "Airway wall thickening" = 2)
-MET_TXT <- c("Visual emphysema" = "MD-COPD criterion: mild or greater",
-             "Airway wall thickening" = "MD-COPD criterion: definite")
+MET_TXT <- c("Visual emphysema" = "MD-COPD-CT criterion: mild or greater",
+             "Airway wall thickening" = "MD-COPD-CT criterion: definite")
 SHOWN  <- c("none" = "None", "trace" = "Trace", "mild" = "Mild",
             "moderate" = "Moderate", "confluent" = "Confluent",
             "advanced destructive" = "Advanced\ndestructive",
             "absent" = "Absent", "borderline" = "Borderline", "definite" = "Definite")
 STRATA <- c("All participants" = "Overall", "Airflow limitation" = "Airflow limitation",
-            "Preserved spirometry" = "Preserved spirometry")
+            "Preserved spirometry" = "Without airflow limitation")
 stopifnot(all(lv$label %in% names(SHOWN)), all(au$stratum %in% names(STRATA)),
           all(names(TITLES) %in% lv$criterion), all(names(TITLES) %in% au$criterion))
 # Every participant with a visual score appears once per criterion, and the two
@@ -84,14 +84,14 @@ ggsave(out, fig, width = NATIVE_W_FIG, height = 6.2, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W_FIG), file.path(HERE, "figure1_esi_ct.meta"))
 
 writeLines(c(
-  "**Figure 1. Relationship of ESI to the visual CT criteria of MD-COPD.**",
+  "**Figure 1. Relationship of ESI to the visual CT criteria of MD-COPD-CT.**",
   "",
   paste("Mean ESI according to visual emphysema severity (A) and visual airway wall thickening",
         "category (B). Dashed vertical lines indicate the thresholds defining the corresponding CT",
-        "criteria in MD-COPD: mild or greater emphysema and definite airway wall thickening. Insets",
+        "criteria in MD-COPD-CT: mild or greater emphysema and definite airway wall thickening. Insets",
         "show the area under the receiver operating characteristic curve (AUC) for discrimination of",
         "each visual CT criterion by ESI in the overall cohort and separately among participants with",
-        "airflow limitation and preserved spirometry. Numbers adjacent to the points indicate the",
+        "and without airflow limitation. Numbers adjacent to the points indicate the",
         sprintf("number of participants in each CT category; %s participants had a visual score for each",
                 formatC(N_SCORED, format = "d", big.mark = ",")),
         "criterion. Panels keep separate y axes because the two criteria span different ESI ranges.",

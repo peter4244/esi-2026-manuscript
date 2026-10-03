@@ -25,7 +25,7 @@ cr <- read.csv(file.path(ASSETS, "discord_crude_strata.csv"), stringsAsFactors =
 stopifnot(nrow(cr) == 18)
 GRP  <- c("CT-only-COPD" = "CT-only", "ESI-only-COPD" = "ESI-only", "Both-COPD" = "Both-COPD")
 OUTC <- c(all = "All-cause mortality", exac = "Exacerbations")
-STR  <- c("Preserved spirometry" = "Preserved\nspirometry",
+STR  <- c("Preserved spirometry" = "Without airflow\nlimitation",
           "Airflow limitation"   = "Airflow\nlimitation")
 
 d <- cr %>% filter(outcome %in% names(OUTC)) %>%
@@ -73,18 +73,18 @@ ggsave(out, p, width = NATIVE_W, height = 3.8, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure4_discord_risk.meta"))
 
 writeLines(c(
-  "**Figure 4. Clinical outcomes according to concordance and discordance between MD-COPD and ESI classifications.**",
+  "**Figure 4. Clinical outcomes according to concordance and discordance between MD-COPD-CT and MD-COPD-ESI classifications.**",
   "",
   paste("Unadjusted rate ratios for all-cause mortality and exacerbations, with 95% confidence",
         "intervals, for the three groups either classification calls COPD, within each stratum",
         "of airflow limitation. The unadjusted rate ratio is the event rate (events per 100 person-years) in",
         "the group divided by that in the stratum reference. Reference groups are the participants",
         "classified as noCOPD by both",
-        "methods among those with preserved spirometry (top row) and participants classified as",
+        "methods among those without airflow limitation (top row) and participants classified as",
         "AFL-only by both methods among those with airflow limitation (bottom row). Intervals",
         "are exact Poisson intervals for deaths and participant-level bootstrap intervals for",
-        "exacerbations. CT-only = classified as COPD by MD-COPD only; ESI-only = classified",
-        "as COPD by the ESI classification only; Both-COPD = classified as COPD by both;",
+        "exacerbations. CT-only = classified as COPD by MD-COPD-CT only; ESI-only = classified",
+        "as COPD by MD-COPD-ESI only; Both-COPD = classified as COPD by both;",
         "AFL-only = airflow limitation without other criteria. Respiratory mortality is not",
         "shown because the numbers of respiratory deaths are too small for estimation.")),
   file.path(HERE, "figure4_discord_risk_legend.md"))

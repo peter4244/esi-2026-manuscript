@@ -19,7 +19,7 @@ risk <- read.csv(file.path(ASSETS, "consensus_ref_risk.csv"),  stringsAsFactors 
 crd  <- read.csv(file.path(ASSETS, "consensus_ref_crude.csv"), stringsAsFactors = FALSE)
 ref  <- read.csv(file.path(ASSETS, "consensus_ref_group.csv"), stringsAsFactors = FALSE)
 MIN_EVENTS_FIG <- 10     # the analysis event floor (MIN_EVENTS in the Rmd)
-SCH  <- c(S2 = "MD-COPD", S4 = "ESI classification", S3 = "NoCT classification")
+SCH  <- c(S2 = "MD-COPD-CT", S4 = "MD-COPD-ESI", S3 = "MD-NoCT")
 OUTC <- c(all = "All-cause mortality", resp = "Respiratory mortality", exac = "Exacerbations")
 GRPS <- c("AFL-only", "COPD-minor", "COPD-major")
 PAL  <- c("AFL-only" = "#9467BD", "COPD-minor" = "#FFB000", "COPD-major" = "#D62728")
@@ -93,30 +93,32 @@ validate_layout(p_supp, out_supp)
 ggsave(out_supp, p_supp, width = NATIVE_W, height = 7.4, dpi = 300, bg = "white")
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS1_group_risk.meta"))
 
-common <- paste(
-  "for each diagnostic group (rows) under MD-COPD, the ESI classification and the NoCT",
-  "classification, for all-cause mortality, respiratory mortality and exacerbations (columns),",
-  sprintf("against a common reference of the %s participants assigned to noCOPD by all three",
-          format(ref$n_cohort, big.mark = ",")),
-  "classifications. The x axis is on a log scale and differs between columns.")
-floor_note <- paste("A point drawn without an interval had fewer than 10 events in that group,",
-                    "so no interval was estimated.")
+ref_n <- format(ref$n_cohort, big.mark = ",")
 writeLines(c(
   "**Figure 3. Unadjusted risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
   "",
-  paste("Unadjusted rate ratios with 95% confidence intervals", common,
-        "The unadjusted rate ratio is the event rate (events per 100 person-years) in the group divided by that in the reference.",
-        floor_note, "Adjusted hazard ratios and incidence rate ratios are shown in Supplemental Figure S1.",
-        "AFL-only = airflow limitation without other criteria.")),
+  paste("Unadjusted rate ratios with 95% confidence intervals for all-cause mortality, respiratory",
+        "mortality, and respiratory exacerbations (columns) according to diagnostic group (rows) under",
+        "MD-COPD-CT, MD-NoCT, and MD-COPD-ESI. The common reference was the", ref_n, "participants",
+        "classified as noCOPD by all three classifications. The x-axis is on a logarithmic scale and",
+        "differs among columns. Rate ratios were calculated as the event rate in each group divided by",
+        "that in the common reference. Estimates based on fewer than 10 events are shown without",
+        "confidence intervals; corresponding adjusted estimates are shown in Figure S1 in the Online",
+        "Supplement. AFL-only = airflow limitation without other criteria; ESI = Emphysema Severity Index.")),
   file.path(HERE, "figure3_group_risk_legend.md"))
 writeLines(c(
-  "**Supplemental Figure S1. Unadjusted and adjusted risk of each diagnostic group under the three multidimensional classifications.**",
+  "**Supplemental Figure S1. Unadjusted and adjusted risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
   "",
-  paste("Unadjusted rate ratios (open circles) and adjusted hazard ratios or incidence rate ratios (filled circles), with 95% confidence intervals,",
-        common,
-        "Hazard ratios (mortality) and incidence rate ratios (exacerbations) are",
-        "from models adjusted for age, sex, race, current smoking status, pack-years, and body mass index,",
-        "with baseline exacerbation frequency added for exacerbations.", floor_note,
-        "AFL-only = airflow limitation without other criteria.")),
+  paste("Unadjusted rate ratios (open circles) and adjusted estimates (filled circles), with 95%",
+        "confidence intervals, are shown for each diagnostic group (rows) under MD-COPD-CT, MD-NoCT,",
+        "and MD-COPD-ESI for all-cause mortality, respiratory mortality, and respiratory exacerbations",
+        "(columns), relative to a common reference comprising the", ref_n, "participants classified as",
+        "noCOPD by all three classifications. The x-axis is on a logarithmic scale and differs among",
+        "columns. Adjusted estimates are hazard ratios for mortality and incidence rate ratios for",
+        "exacerbations from models adjusted for age, sex, race, current smoking status, pack-years,",
+        "and body mass index; exacerbation models were additionally adjusted for baseline exacerbation",
+        "frequency. Estimates based on fewer than 10 events are shown without confidence intervals.",
+        "AFL-only = airflow limitation without other criteria; HR = hazard ratio; IRR = incidence rate",
+        "ratio; ESI = Emphysema Severity Index.")),
   file.path(HERE, "figureS1_group_risk_legend.md"))
 cat("wrote", out_main, "and", out_supp, "\n")

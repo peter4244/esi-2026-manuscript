@@ -37,7 +37,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               CONTENT_WIDTH_IN, new_section)
 import paginate                                              # noqa: E402
 
-OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v3.docx")
+OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v5.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
 
 
@@ -118,11 +118,11 @@ def supp_methods(doc):
     para(doc, "**Visual CT assessment**")
     para(doc, "Visual emphysema was assessed according to the Fleischner Society visual "
               "classification and categorized as none, trace, mild, moderate, confluent, or "
-              "advanced destructive emphysema (18, 19). For MD-COPD classification, visual "
+              "advanced destructive emphysema (S1, S2). For MD-COPD-CT classification, visual "
               "emphysema was considered present at mild severity or greater (score \u22652); "
               "thus, trace emphysema did not satisfy the imaging criterion. Airway wall "
               "thickening was visually categorized as absent, borderline, or definite and was "
-              "considered present for MD-COPD only when definite (score 2). Participants with "
+              "considered present for MD-COPD-CT only when definite (score 2). Participants with "
               "missing visual CT scores (n = 4) were considered not to meet the corresponding "
               "imaging criterion.")
     para(doc, "**Unadjusted outcome comparisons and bootstrap procedures**")
@@ -136,21 +136,21 @@ def supp_methods(doc):
               "or the reference group had fewer than 10 events, unadjusted rate ratios and adjusted "
               "HRs or IRRs were reported without confidence intervals or P values.")
     para(doc, "For direct comparisons among classifications, the unadjusted event rate in each "
-              "NoCT and ESI group was divided by that in the corresponding MD-COPD group (rate "
-              "ratio versus MD-COPD), and its adjusted HR or IRR by that of the corresponding "
-              "MD-COPD group (ratio of HRs or IRRs). Confidence intervals and P values for these "
+              "MD-NoCT and MD-COPD-ESI group was divided by that in the corresponding MD-COPD-CT group (rate "
+              "ratio versus MD-COPD-CT), and its adjusted HR or IRR by that of the corresponding "
+              "MD-COPD-CT group (ratio of HRs or IRRs). Confidence intervals and P values for these "
               "comparisons "
               "were obtained from 1,000 paired participant-level bootstrap resamples.")
     para(doc, "**Discordant classification analyses**")
-    para(doc, "In analyses of MD-COPD and ESI discordance, participants classified as noCOPD "
-              "by both approaches served as the reference group among those with preserved "
-              "spirometry, whereas participants classified as AFL-only by both approaches "
+    para(doc, "In analyses of MD-COPD-CT and MD-COPD-ESI discordance, participants classified as noCOPD "
+              "by both approaches served as the reference group among those without airflow "
+              "limitation, whereas participants classified as AFL-only by both approaches "
               "served as the reference group among those with airflow limitation.")
 
 
 def s1_baseline(doc, num):
-    heading(doc, f"Supplemental Table {num}. Baseline characteristics of the analytic cohort "
-            f"according to GOLD spirometric stratum")
+    heading(doc, f"Supplemental Table {num}. Baseline characteristics of the 9,240 participants in the "
+            f"analytic cohort according to spirometric category")
     rows = load(ASSETS, "supp_baseline.csv")
     keep = [("stratum", "Stratum"), ("n", "n"), ("age", "Age"),
             ("pct_female", "Female"), ("pct_current", "Current smoker"),
@@ -169,7 +169,7 @@ def s1_baseline(doc, num):
 
 def s4_sweep(doc, num):
     """The parameter sweep behind the threshold selection."""
-    heading(doc, f"Supplemental Table {num}. Selection of thresholds for the NoCT and ESI "
+    heading(doc, f"Supplemental Table {num}. Selection of thresholds for MD-NoCT and MD-COPD-ESI "
             f"classifications")
     sweep = load(ASSETS, "metric_sweep.csv")
     fit = {r["schema"]: r for r in load(ASSETS, "schema_fit.csv")}
@@ -178,7 +178,7 @@ def s4_sweep(doc, num):
     rows = []
     for r in sweep:
         sel = r["selected"].upper() == "TRUE"
-        lab = r["label"].replace(">= ", "\u2265") + (" (selected)" if sel else "")
+        lab = r["label"].replace(">= ", "\u2265").replace("MD-COPD (reference)", "MD-COPD-CT (reference)") + (" (selected)" if sel else "")
         rows.append([lab, f"{int(r['n_noCOPD']):,}", f"{int(r['n_aflonly']):,}",
                      f"{int(r['n_minor']):,}", f"{int(r['n_major']):,}",
                      f"{float(r['macroF1']):.3f}", f"{float(r['bal_acc']):.3f}",
@@ -194,15 +194,16 @@ def s4_sweep(doc, num):
             f"{sch}: selected rule is not the macro-F1 maximum"
     legend(doc, f"Table {num}.",
            "Category sizes and performance metrics are shown for each candidate rule "
-           "against MD-COPD as the reference classification. The selected rules were "
-           f"\u2265{int(float(sel_s3['parameter']))} of 3 symptom criteria for NoCT and, for the "
-           f"ESI classification, \u22652 of 4 criteria with ESI \u2265{float(sel_s4['parameter']):.2f} "
+           "against MD-COPD-CT as the reference classification. The selected rules were "
+           f"\u2265{int(float(sel_s3['parameter']))} of 3 symptom criteria for MD-NoCT and, for "
+           f"MD-COPD-ESI, \u22652 of 4 criteria with ESI \u2265{float(sel_s4['parameter']):.2f} "
            "defining the ESI criterion; both had the "
-           "highest macro-averaged F1 (macro-F1), which weights the four diagnostic categories "
-           "equally; balanced accuracy is the mean per-category sensitivity. Thresholds were refitted within each training fold of five-fold "
-           "cross-validation repeated five times: held-out agreement with MD-COPD was "
-           f"{100 * float(fit['S4']['agreement_heldout']):.1f}% for the ESI classification and "
-           f"{100 * float(fit['S3']['agreement_heldout']):.1f}% for NoCT, against "
+           "highest macro-averaged F1 (macro-F1). F1 is the harmonic mean of sensitivity and positive "
+           "predictive value within a diagnostic category, and macro-F1 is its mean across the four "
+           "categories, which weights them equally; balanced accuracy is the mean per-category sensitivity. Thresholds were refitted within each training fold of five-fold "
+           "cross-validation repeated five times: held-out agreement with MD-COPD-CT was "
+           f"{100 * float(fit['S4']['agreement_heldout']):.1f}% for MD-COPD-ESI and "
+           f"{100 * float(fit['S3']['agreement_heldout']):.1f}% for MD-NoCT, against "
            f"{100 * float(fit['S4']['agreement_insample']):.1f}% and "
            f"{100 * float(fit['S3']['agreement_insample']):.1f}% in the full cohort. "
            "AFL-only = airflow limitation without other criteria; ESI = Emphysema "
@@ -226,8 +227,8 @@ def data_files(doc):
         "**COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24**: the main COPD phenotype file in "
         "long format, used for baseline characteristics, spirometry, the visual CT "
         "scores, the symptom criteria and the cohort exclusions.",
-        "**COPDGene_Multidimensional_COPD_plus**: the per-participant MD-COPD "
-        "classification from the source report (11), used as the MD-COPD reference.",
+        "**COPDGene_Multidimensional_COPD_plus**: the per-participant MD-COPD-CT "
+        "classification from the source report (S3), used as the MD-COPD-CT reference classification.",
         "**COPDGene_VitalStatus_SM_NS_Sep23**: vital status and follow-up time, "
         "used for all-cause mortality.",
         "**COPDGene_Mort_COD_Adj**: adjudicated underlying cause of death, used "
@@ -240,6 +241,22 @@ def data_files(doc):
               "spirometric flow-volume curves as described in the main text.")
 
 
+# The Online Supplement's own references, numbered S1, S2, ... in order of first
+# citation in the supplement (AJRCCM). S1 and S2 are main-text references 18 and
+# 19, S3 is reference 11; the entries are those of the main list, AJRCCM style.
+SUPP_REFS = [
+    'Lynch DA, Austin JH, Hogg JC, Grenier PA, Kauczor HU, Bankier AA, et al. CT-definable subtypes of chronic obstructive pulmonary disease: a statement of the Fleischner Society. Radiology. 2015;277(1):192-205.',
+    'Lynch DA, Moore CM, Wilson C, Nevrekar D, Jennermann T, Humphries SM, et al. CT-based visual classification of emphysema: association with mortality in the COPDGene Study. Radiology. 2018;288(3):859-866.',
+    'Bhatt SP, Abadi E, Anzueto A, Bodduluri S, Casaburi R, Castaldi PJ, et al; COPDGene 2025 Diagnosis Working Group and CanCOLD Investigators. A multidimensional diagnostic approach for chronic obstructive pulmonary disease. JAMA. 2025;333(24):2164-2175.',
+]
+
+
+def supp_references(doc):
+    heading(doc, "References")
+    for i, ref in enumerate(SUPP_REFS, 1):
+        para(doc, f"S{i}. {ref}")
+
+
 def s6_fev1_decline(doc, num):
     heading(doc, f"Supplemental Table {num}. Longitudinal FEV\u2081 decline by diagnostic group "
             f"under each multidimensional classification")
@@ -247,8 +264,8 @@ def s6_fev1_decline(doc, num):
     ne = {r["category"]: r for r in load(ASSETS, "fev1_noct_vs_esi.csv")}
     one = lambda v: f"{float(v):.1f}".replace("-0.0", "0.0").replace("-", "\u2212")   # no negative zero
     mm = lambda e, lo, hi: f"{one(e)} [{one(lo)} to {one(hi)}]"
-    name = {"S1": "Fixed ratio", "S2": "MD-COPD",
-            "S3": "NoCT classification", "S4": "ESI classification"}
+    name = {"S1": "Fixed ratio", "S2": "MD-COPD-CT",
+            "S3": "MD-NoCT", "S4": "MD-COPD-ESI"}
     rows, seen = [], set()
     for r in rows_in:
         sc = r["schema"]; p_ = float(r["p"])
@@ -260,7 +277,7 @@ def s6_fev1_decline(doc, num):
         seen.add(sc)
     add_table(doc, ["Classification", "Group", "n",
                     "Difference in decline versus the common reference, mL/yr [95% CI]", "P",
-                    "NoCT minus ESI, mL/yr [95% CI]", "P"],
+                    "MD-NoCT minus MD-COPD-ESI, mL/yr [95% CI]", "P"],
               rows, [1.35, 0.95, 0.55, 1.40, 0.55, 1.15, 0.55])
     legend(doc, f"Table {num}.",
            "Differences in annual FEV\u2081 change are relative to the common noCOPD "
@@ -268,9 +285,9 @@ def s6_fev1_decline(doc, num):
            "with a participant-specific random intercept, adjusted for height, sex, race, age, "
            "smoking status, pack-years, and baseline post-bronchodilator FEV\u2081 entered as "
            "an interaction with follow-up time. Negative values indicate faster FEV\u2081 "
-           "decline relative to the reference. The NoCT minus ESI column compares corresponding "
-           "NoCT and ESI groups, with confidence intervals and P values from 1,000 paired "
-           "participant-level bootstrap resamples; negative values indicate faster decline under NoCT. AFL-only = airflow limitation without other "
+           "decline relative to the reference. The MD-NoCT minus MD-COPD-ESI column compares corresponding "
+           "MD-NoCT and ESI groups, with confidence intervals and P values from 1,000 paired "
+           "participant-level bootstrap resamples; negative values indicate faster decline under MD-NoCT. AFL-only = airflow limitation without other "
            "criteria; CI = confidence interval.")
 
 
@@ -278,13 +295,13 @@ def s_crossclass_agreement(doc, num):
     """Cross-classification of each CT-free classification against MD-COPD,
     with the agreement the Results quote: the share of each classification's
     assignments that MD-COPD places in the same group."""
-    heading(doc, f"Supplemental Table {num}. Cross-classification of the NoCT and ESI "
-                 f"classifications against MD-COPD")
+    heading(doc, f"Supplemental Table {num}. Cross-classification of MD-NoCT and MD-COPD-ESI "
+                 f"against MD-COPD-CT")
     x = load(ASSETS, "crossclass.csv")
     f1 = {r["category"]: r for r in load(ASSETS, "f1_by_category.csv")}
     ag = {r["category"]: r for r in load(ASSETS, "agreement_by_group.csv")}
     rows = []
-    for s_, name, key in (("S3", "NoCT classification", "noct"), ("S4", "ESI classification", "esi")):
+    for s_, name, key in (("S3", "MD-NoCT", "noct"), ("S4", "MD-COPD-ESI", "esi")):
         for i, rc in enumerate(CATS):
             vals = [cell_n(x, s_, rc, cc) for cc in CATS]
             n_ = sum(vals)
@@ -292,23 +309,22 @@ def s_crossclass_agreement(doc, num):
                         [f"{n_:,}", f"{float(ag[rc]['recall_' + key]):.1f}",
                          f"{100 * vals[i] / n_:.1f}",
                          f"{float(f1[rc]['f1_' + key]):.2f}"])
-    add_table(doc, ["Classification", "Assigned to", *[f"MD-COPD {c}" for c in CATS],
+    add_table(doc, ["Classification", "Assigned to", *[f"MD-COPD-CT {c}" for c in CATS],
                     "Assigned, n", "Sensitivity, %", "PPV, %", "F1"],
               rows, [1.05, 0.78, 0.58, 0.58, 0.58, 0.58, 0.60, 0.62, 0.55, 0.58])
     ps = [float(ag[c]["p_boot"]) for c in CATS]
     p_txt = ("P < 0.005 in each of the four groups" if all(p < 0.005 for p in ps)
              else "; ".join(f"{c} P {'< 0.005' if p < 0.005 else '= ' + fmt_p(p)}" for c, p in zip(CATS, ps)))
     legend(doc, f"Table {num}.",
-           "Each CT-free classification cross-classified against MD-COPD. Rows are the "
-           "category each classification assigned, columns the MD-COPD category, and the "
-           "diagonal is concordant classification. With MD-COPD as the reference, "
-           "sensitivity is the percentage of the MD-COPD category reproduced by the "
-           "CT-free classification and the positive predictive value is the percentage of "
-           "participants assigned to that category whom MD-COPD assigned to the same "
-           "category; F1 is their harmonic mean. Positive predictive values differed "
-           f"between the ESI and NoCT classifications by paired bootstrap ({p_txt}). "
-           "AFL-only = airflow limitation without other criteria; PPV = positive "
-           "predictive value.")
+           "Cross-classification of MD-NoCT and MD-COPD-ESI against MD-COPD-CT. Rows indicate the "
+           "category assigned by each modified classification and columns the corresponding "
+           "MD-COPD-CT category; diagonal cells indicate concordant classification. Positive "
+           "predictive value (PPV) is the proportion of participants assigned to a category by the "
+           "modified classification who were assigned to the same category by MD-COPD-CT. F1 is the "
+           "harmonic mean of PPV and sensitivity, where sensitivity is the proportion of each "
+           "MD-COPD-CT category reproduced by the modified classification. PPV differed between "
+           f"MD-NoCT and MD-COPD-ESI by paired bootstrap ({p_txt}). "
+           "AFL-only = airflow limitation without other criteria; ESI = Emphysema Severity Index.")
 
 
 def s_groups_crude(doc, num):
@@ -322,7 +338,7 @@ def s_groups_crude(doc, num):
     cmp_ = {(r["schema"], r["category"], r["outcome"]): r for r in load(ASSETS, "group_vs_mdcopd.csv")
             if r["type"] == "crude"}
     ref = load(ASSETS, "consensus_ref_group.csv")[0]
-    NM = {"S2": "MD-COPD", "S3": "NoCT classification", "S4": "ESI classification"}
+    NM = {"S2": "MD-COPD-CT", "S3": "MD-NoCT", "S4": "MD-COPD-ESI"}
     OUTC = (("all", "All-cause mortality"), ("resp", "Respiratory mortality"), ("exac", "Exacerbations"))
     FLAG = "\u2020"
     ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}\u2013{float(hi):.2f}]"
@@ -350,7 +366,7 @@ def s_groups_crude(doc, num):
                 rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", rate, own, vs, pt])
     add_table(doc, ["Outcome", "Classification", "Events", "Rate per 100 person-years",
                     "Rate ratio versus the common reference [95% CI]",
-                    "Rate ratio versus MD-COPD [95% CI]", "P"],
+                    "Rate ratio versus MD-COPD-CT [95% CI]", "P"],
               rows, [1.05, 1.15, 0.55, 0.70, 1.25, 1.20, 0.60])
     legend(doc, f"Table {num}.",
            "Each diagnostic group was compared with the common reference comprising the "
@@ -359,12 +375,12 @@ def s_groups_crude(doc, num):
            "ratios were calculated as the event rate in each group divided by that in the "
            "common reference, with "
            "exact Poisson confidence intervals for mortality and participant-level bootstrap "
-           "confidence intervals for respiratory exacerbations. Rate ratios versus MD-COPD divide "
-           "the event rate in each CT-free classification's group by that in the corresponding "
-           "MD-COPD group; 95% confidence intervals and two-sided P values were "
+           "confidence intervals for respiratory exacerbations. Rate ratios versus MD-COPD-CT divide "
+           "the event rate in each modified classification group by that in the corresponding "
+           "MD-COPD-CT group; 95% confidence intervals and two-sided P values were "
            "obtained from 1,000 paired participant-level bootstrap resamples. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
-           "MD-COPD; the estimate is shown without a confidence interval or P value. "
+           "MD-COPD-CT; the estimate is shown without a confidence interval or P value. "
            "AFL-only = airflow limitation without other criteria; CI = confidence interval.")
 
 
@@ -376,7 +392,7 @@ def s_risk_common_ref(doc, num):
 
 def s_discord_risk(doc, num):
     heading(doc, f"Supplemental Table {num}. Clinical outcomes according to concordance and "
-                 "discordance between MD-COPD and ESI classifications")
+                 "discordance between MD-COPD-CT and MD-COPD-ESI classifications")
     t_discord_risk(doc, label=f"Table {num}.")
 
 
@@ -440,15 +456,23 @@ def build(out, toc):
     HEADINGS.clear()
     doc = init_document()
     add_page_numbers(doc)
+    # AJRCCM cover sheet for an Online Supplement: the manuscript title, the
+    # authors without affiliations, and the words "Online Supplement". Title and
+    # authors come from TITLEPAGE.md, as in the manuscript, so they cannot drift.
+    tp = read_titlepage()
     p = doc.add_paragraph()
-    r = p.add_run("Supplement")
+    r = p.add_run("Online Supplement")
     r.bold = True
     r.font.size = Pt(14)
-    r.add_break()
-    # Same source as the manuscript title, so the two cannot drift apart.
-    r = p.add_run(read_titlepage()["TITLE"][0])
+    p = doc.add_paragraph()
+    r = p.add_run(tp["TITLE"][0])
     r.bold = True
     r.font.size = Pt(14)
+    authors = re.sub(r"[⁰¹²³⁴-⁹]+(?:,[⁰¹²³⁴-⁹]+)*",
+                     "", " ".join(tp["AUTHORS"]))
+    assert not re.search(r"[⁰¹²³⁴-⁹]", authors), "affiliation marks left in the author list"
+    doc.add_paragraph(authors)
+    doc.add_page_break()
     if toc:
         add_toc(doc, toc)
         doc.add_page_break()
@@ -472,6 +496,7 @@ def build(out, toc):
     if landscape_now:
         new_section(doc, landscape=False)
     data_files(doc)
+    supp_references(doc)
     upd = OxmlElement("w:updateFields")
     upd.set(qn("w:val"), "true")
     doc.settings.element.append(upd)

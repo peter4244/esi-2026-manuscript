@@ -105,15 +105,15 @@ matrix_panel <- function(d, xname, side, tag) {
                            guide = "none") +
     scale_x_discrete(position = "top", labels = SHORT, expand = c(0, 0)) +
     scale_y_discrete(position = side, labels = SHORT, expand = c(0, 0)) +
-    labs(x = xname, y = "MD-COPD", tag = tag) +
+    labs(x = xname, y = "MD-COPD-CT", tag = tag) +
     theme_esi() +
     theme(panel.grid = element_blank(), panel.border = element_blank(),
           panel.background = element_blank(), axis.ticks = element_blank(),
           axis.text.x.top = element_text(angle = 45, hjust = 0, vjust = 0),
           plot.margin = margin(4, 4, 4, 4))
 }
-pA <- matrix_panel(XA, "NoCT classification", "left",  "B")
-pC <- matrix_panel(XC, "ESI classification",  "right", "C")
+pA <- matrix_panel(XA, "MD-NoCT", "left",  "B")
+pC <- matrix_panel(XC, "MD-COPD-ESI",  "right", "C")
 
 # ---- Flow panel (B) ----------------------------------------------------------
 W_OUT <- 0.30; W_MID <- 0.40
@@ -146,8 +146,8 @@ ribbons <- function(target, side) {
     scale_alpha_manual(values = c(`TRUE` = 0.85, `FALSE` = 0.16), guide = "none") +
     scale_fill_manual(values = PAL, guide = "none") +
     scale_x_discrete(position = "top",
-                     limits = if (side == "left") c("NoCT\nclassification", "")
-                              else               c("", "ESI\nclassification"),
+                     limits = if (side == "left") c("MD-NoCT", "")
+                              else               c("", "MD-COPD-ESI"),
                      expand = if (side == "left") expansion(add = c(0.45, 0))
                               else               expansion(add = c(0, 0.45))) +
     scale_y_continuous(expand = Y_EXP) +
@@ -160,7 +160,7 @@ reference_panel <- function() {
               colour = "grey20", linewidth = 0.15) +
     scale_fill_manual(values = PAL, guide = "none") +
     scale_x_continuous(limits = c(0, 1), expand = c(0, 0), breaks = 0.5,
-                       labels = "MD-COPD", position = "top") +
+                       labels = "MD-COPD-CT", position = "top") +
     scale_y_continuous(expand = Y_EXP) +
     flow_theme()
 }
@@ -191,21 +191,19 @@ writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figure2
 
 p_txt <- if (acc$p_value < 0.005) "P < 0.005" else sprintf("P = %.3f", acc$p_value)
 writeLines(c(
-  "**Figure 2. Reclassification of MD-COPD categories by the CT-free classifications.**",
+  "**Figure 2. Reclassification of MD-COPD-CT categories by the modified classifications.**",
   "",
   sprintf(paste(
-    "(A) Participant flow from MD-COPD (center) to the NoCT classification (left) and",
-    "the ESI classification (right). Column heights and ribbon widths are proportional",
-    "to participant counts. Ribbons are colored by MD-COPD category, solid color where the",
-    "participant changes category and pale where it agrees. (B) The NoCT",
-    "classification cross-classified against",
-    "MD-COPD. Rows are MD-COPD categories and columns the NoCT classification; diagonal",
-    "cells, which agree, are shaded in the category color with depth proportional to",
-    "count, and off-diagonal cells are white. (C) The ESI classification cross-classified",
-    "against MD-COPD, laid out as in (B). Overall, the",
-    "ESI classification agreed with MD-COPD for %s of %s participants (%.1f%%) and the",
-    "NoCT classification for %s (%.1f%%) (McNemar %s).",
-    "AFL-only = airflow limitation without other criteria."),
+    "(A) Participant flow from MD-COPD-CT (center) to MD-NoCT (left) and MD-COPD-ESI (right).",
+    "Column heights and ribbon widths are proportional to participant counts. Ribbons are",
+    "colored by MD-COPD-CT category, with solid color where participants change category and",
+    "pale color where classifications agree. (B) MD-NoCT cross-classified against MD-COPD-CT.",
+    "(C) MD-COPD-ESI cross-classified against MD-COPD-CT. Rows indicate MD-COPD-CT categories",
+    "and columns the categories assigned by the modified classification; diagonal cells",
+    "indicate concordant classification and are shaded in proportion to participant count.",
+    "Overall, MD-COPD-ESI agreed with MD-COPD-CT for %s of %s participants (%.1f%%) and",
+    "MD-NoCT for %s (%.1f%%) (McNemar %s). AFL-only = airflow limitation without other",
+    "criteria; ESI = Emphysema Severity Index."),
     count_lab(conc_right), count_lab(N), 100 * conc_right / N,
     count_lab(conc_left), 100 * conc_left / N, p_txt)),
   file.path(HERE, "figure2_flow_legend.md"))
