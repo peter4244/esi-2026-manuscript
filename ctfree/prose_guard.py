@@ -196,8 +196,8 @@ OWNED = {
             "We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers",
     },
     "RESULTS.md": {
-        "agreement section (Massimo 2026-09-20)":
-            "Cross-classification with MD-COPD-CT is shown in Figure 2 and Table S3.",
+        "agreement section (Massimo 2026-09-20; Pete's v5 edit 2026-10-07)":
+            "Cross-classification of the modified classifications with MD-COPD-CT is shown in Figure 2 and Table S3.",
         "discordance section (Massimo 2026-10-03)":
             "Clinical, physiological, and CT characteristics of concordant and discordant groups are shown in Figure S2.",
     },
