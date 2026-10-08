@@ -232,7 +232,8 @@ def data_files(doc):
         "**COPDGene_VitalStatus_SM_NS_Sep23**: vital status and follow-up time, "
         "used for all-cause mortality.",
         "**COPDGene_Mort_COD_Adj**: adjudicated underlying cause of death, used "
-        "for respiratory mortality.",
+        "for respiratory mortality, with coverage through December 31, 2018, which bounds "
+        "respiratory-mortality follow-up.",
         "**LFU_SidLevel_Comorbd**: the COPDGene Longitudinal Follow-up program "
         "dataset, used for prospective exacerbation counts and years of follow-up.",
     ]:
@@ -371,7 +372,8 @@ def s_groups_crude(doc, num):
     legend(doc, f"Table {num}.",
            "Each diagnostic group was compared with the common reference comprising the "
            f"{int(ref['n_cohort']):,} participants classified as noCOPD by all three "
-           "multidimensional classifications. Rates are events per 100 person-years. Unadjusted rate "
+           f"multidimensional classifications ({int(ref['n_mort']):,} in mortality analyses and "
+           f"{int(ref['n_exac']):,} in exacerbation analyses). Rates are events per 100 person-years. Unadjusted rate "
            "ratios were calculated as the event rate in each group divided by that in the "
            "common reference, with "
            "exact Poisson confidence intervals for mortality and participant-level bootstrap "

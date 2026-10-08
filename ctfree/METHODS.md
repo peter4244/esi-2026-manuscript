@@ -4,7 +4,7 @@
 
 ## Study population
 
-We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers aged 45–80 years with ≥10 pack-years of smoking (18). Baseline evaluation included pre- and post-bronchodilator spirometry, chest CT, and symptom assessment. Participants with diagnosed interstitial lung disease or bronchiectasis, never-smokers, or without acceptable post-bronchodilator spirometry or CT passing quality control were excluded. The analysis included 9,240 participants with MD-COPD-CT classification and baseline post-bronchodilator ESI. Mortality analyses included 8,769 participants with complete follow-up and covariates and exacerbation analyses included 8,177 with longitudinal exacerbation data and complete covariates.
+We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers aged 45–80 years with ≥10 pack-years of smoking (18). Baseline evaluation included pre- and post-bronchodilator spirometry, chest CT, and symptom assessment. Participants with diagnosed interstitial lung disease or bronchiectasis, never-smokers, or without acceptable post-bronchodilator spirometry or CT passing quality control were excluded. The analysis included 9,240 participants with MD-COPD-CT classification and baseline post-bronchodilator ESI. Mortality analyses included 8,769 participants with follow-up after the baseline visit and complete covariates (469 participants without follow-up after the baseline visit were excluded), and exacerbation analyses included 8,177 with longitudinal exacerbation data and complete covariates.
 
 ## MD-COPD-CT classification
 
@@ -22,7 +22,7 @@ For both modified classifications, the number of minor criteria required for COP
 
 ## Clinical outcomes
 
-Outcomes included all-cause and respiratory mortality, prospective respiratory exacerbations, and longitudinal FEV₁ decline. Mortality was ascertained through follow-up and Social Security Death Index searches; respiratory mortality was adjudicated using modified TORCH criteria (21). Exacerbations were assessed through the COPDGene Longitudinal Follow-up program, and FEV₁ decline from spirometry at study visits 1–3. COPDGene data files are listed in the Online Supplement.
+Outcomes included all-cause and respiratory mortality, prospective respiratory exacerbations, and longitudinal FEV₁ decline. Mortality was ascertained through follow-up and Social Security Death Index searches; respiratory mortality was adjudicated using modified TORCH criteria (21). Respiratory deaths were deaths recorded in both the vital-status and the cause-of-death files and adjudicated as respiratory (TORCH group 1). Because cause of death was adjudicated through December 31, 2018, follow-up for respiratory mortality ended at the earlier of the end of cause-of-death coverage and the end of vital-status follow-up. Exacerbations were assessed through the COPDGene Longitudinal Follow-up program, and FEV₁ decline from spirometry at study visits 1–3. COPDGene data files are listed in the Online Supplement.
 
 ## Statistical analysis
 

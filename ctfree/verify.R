@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 249L
+REGISTRY_N <- 253L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -224,6 +224,15 @@ reg("FU-03", "Follow-up", "median follow-up 9.7 years for lung function decline"
     'x$median_yr[x$outcome == "FEV1 decline, participants with a follow-up visit"]', TOL_1DP)
 reg("FU-04", "Follow-up", "among 5,414 participants with a follow-up spirometry visit", 5414, "followup_medians.csv",
     'x$n[x$outcome == "FEV1 decline, participants with a follow-up visit"]', TOL_EXACT)
+# v6 (2026-10-08): respiratory window, mortality n and the outcome-specific reference sizes.
+reg("FU-05", "Follow-up", "median follow-up 8.6 years for respiratory mortality", 8.6, "followup_medians.csv",
+    'x$median_yr[x$outcome == "respiratory mortality (cause-of-death window)"]', TOL_1DP)
+reg("FU-06", "Methods", "mortality analyses included 8,769 participants", 8769, "followup_medians.csv",
+    'x$n[x$outcome == "all-cause mortality"]', TOL_EXACT)
+reg("REF-M", "Legends", "common reference: 3,625 in mortality analyses", 3625, "consensus_ref_group.csv",
+    "x$n_mort", TOL_EXACT)
+reg("REF-E", "Legends", "common reference: 3,411 in exacerbation analyses", 3411, "consensus_ref_group.csv",
+    "x$n_exac", TOL_EXACT)
 reg("AFL-01", "AFL-only paragraph", "ESI AFL-only group n = 543", 543, "schema_labels.csv",
     'x$n[x$schema == "S4" & x$category == "AFL-only"]', TOL_EXACT)
 reg("AFL-02", "AFL-only paragraph", "ESI AFL-only crude all-cause 1.25", 1.25, "consensus_ref_crude.csv",
