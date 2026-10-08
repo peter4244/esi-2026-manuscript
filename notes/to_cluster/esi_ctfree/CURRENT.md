@@ -3,7 +3,7 @@
 **Protocol:** the `copilot-relay` skill (`~/.claude/skills/copilot-relay/SKILL.md`), approved by Pete
 2026-10-07. Read it once. This file holds only what is specific to this project.
 
-**Last updated:** 2026-10-08 18:55 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1852_esi-rs_submitted.md`.
+**Last updated:** 2026-10-08 19:52 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1920_esi-rs.md`.
 
 ## The job
 
@@ -25,14 +25,12 @@ The cluster run will use the original files and its results will be compared aga
 | `esi-repro` | **closed** | — | — |
 | `esi-verify` | **closed** (Claude) | — | — |
 | `esi-resp` | **closed** (Claude) | — | — |
-| `esi-rs` | open: job 6120833 running | Copilot (status every 15 min, final on completion) | `2026-10-08_1745_esi-rs.md` |
+| `esi-rs` | **closed** (Claude; Pete confirmed Copilot's work done, 19:51) | — | — |
 | `esi-c3b` | **closed** (both sides) | — | — |
 
 ## Do now
 
-1. **`2026-10-08_1745_esi-rs.md`** (overwrite-or-delete; **needs Pete's "go" before step 2**). Random-slope FEV1
-   sensitivity: re-render in `esi-ctfree-resp-20261008`, existing tables expected unchanged, one new table.
-   **Attach your `esi-rs` timer at 1 minute now** and keep it until this thread's final report.
+Nothing. No open threads; no timer should be attached.
 
 ## Standing rules for this project
 
@@ -53,7 +51,7 @@ The cluster run will use the original files and its results will be compared aga
 - **Commands in notes contain no single quote.** If a command does not run as written, stop and report; do not
   edit a note's commands.
 - **Inputs** (settled in `esi-recon`, `esi-mdcopd-copy`): see `config_paths_channing_ctfree.R` in this folder.
-- **Source of the paper's numbers (v6):** job 6118470 in `esi-ctfree-resp-20261008`; its tables are in `ctfree/assets/` on the Mac.
+- **Source of the paper's numbers (v7):** job 6118470, plus `fev1_decline_random_slope.csv` from job 6120833, in `esi-ctfree-resp-20261008`; its tables are in `ctfree/assets/` on the Mac.
 - **Reproduction clone:** `/proj/regeps/regep00/studies/COPDGene/analyses/repjc/COPDGene/ESI_MDCOPD_2026/esi-ctfree-repro-20261007`;
   logs in `/d/tmp/repjc/esi_ctfree_repro_20261007`.
 - **Monitoring any submitted job** (Pete, 2026-10-08): attach the thread timer at 1 minute right after the interim
@@ -70,6 +68,7 @@ The cluster run will use the original files and its results will be compared aga
 | date | step | outcome |
 |---|---|---|
 | 2026-10-07 | relay set up; `esi-recon` sent | — |
+| 2026-10-08 | `esi-rs` report (job 6120833, 28 min) | 51/51 tables unchanged; fev1_decline_random_slope.csv added; manuscript/supplement v7 built |
 | 2026-10-08 | `esi-rs` submitted | Pete's "go" 18:50; job 6120833 |
 | 2026-10-08 | `esi-c3b` closed 18:47 | Copilot had no timer attached after its 17:37 report; idle until Pete's nudge |
 | 2026-10-08 | `esi-c3b` report (job 6120319, 13 min) | random-slope FEV1 models: same significance pattern, much larger COPD-major decline; preserved-spirometry CT-only -12.7, ESI-only +3.7 mL/yr vs reference |
@@ -96,7 +95,8 @@ The cluster run will use the original files and its results will be compared aga
 | file | status |
 |---|---|
 | `2026-10-08_1745_esi-c3b_r3.md` | done; closed (report `2026-10-08_1847_esi-c3b_r3.md`) |
-| `2026-10-08_1745_esi-rs.md` + `run_ctfree_rs.sh` | live: Do now 1 (needs "go") |
+| `2026-10-08_1930_esi-rs_r2.md` | closed from the Claude side (no Copilot reply needed) |
+| `2026-10-08_1745_esi-rs.md` + `run_ctfree_rs.sh` | done (report `2026-10-08_1920_esi-rs.md`) |
 | `2026-10-08_1740_esi-c3b_r2.md` | done |
 | `2026-10-08_1655_esi-c3b.md` + `run_ctfree_c3b.sh`, `C3b_fev1_model_checks.R` | done (report `2026-10-08_1737_esi-c3b.md`) |
 | `2026-10-08_1040_esi-resp_r3.md` | done (report `2026-10-08_1434_esi-resp_r3.md`) |
