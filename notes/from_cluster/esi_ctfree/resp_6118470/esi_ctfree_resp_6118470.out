@@ -1,0 +1,401 @@
+clone: /proj/edith/regeps/regep00/studies/COPDGene/analyses/repjc/COPDGene/ESI_MDCOPD_2026/esi-ctfree-resp-20261008  commit: bf72167  host: stetson24  start: Thu Oct  8 11:30:05 AM EDT 2026
+cccd3ee604209b61bd769896d55024b6  ctfree/ESI_ctfree_analysis_2026.9.3.Rmd
+a58d11fd3babcc85aae3734417cb51fa  ctfree/verify.R
+=== render
+1/76                           
+2/76 [paths]                   
+3/76                           
+4/76 [setup]                   
+5/76                           
+6/76 [ingest-and-cohort]       
+7/76                           
+8/76 [baseline-by-stratum]     
+9/76                           
+10/76 [esi-ct-correlations]     
+11/76                           
+12/76 [classifications]         
+13/76                           
+14/76 [fitting]                 
+15/76                           
+16/76 [objective-selection]     
+17/76                           
+18/76 [metric-sweep]            
+19/76                           
+20/76 [f1-decomposition]        
+21/76                           
+22/76 [cv-fit]                  
+23/76                           
+24/76 [labels-and-flow]         
+25/76                           
+26/76 [outcome-data]            
+27/76                           
+28/76 [gate-fixedratio]         
+29/76                           
+30/76 [adjusted-risk]           
+31/76                           
+32/76 [crude-rr]                
+33/76                           
+34/76 [binary-discrimination]   
+35/76                           
+36/76 [raw-discrimination]      
+37/76                           
+38/76 [binary-vs-mdcopd]        
+39/76                           
+40/76 [consensus-reference]     
+41/76                           
+42/76 [group-paired-bootstrap]  
+43/76                           
+44/76 [fev1-decline]            
+45/76                           
+46/76 [followup-medians]        
+47/76                           
+48/76 [fev1-paired-bootstrap]   
+49/76                           
+50/76 [continuous-esi-prognosis]
+51/76                           
+52/76 [esi-visual-ct]           
+53/76                           
+54/76 [continuous-esi-gold0]    
+55/76                           
+56/76 [esi-trajectory]          
+57/76                           
+58/76 [bronchodilator-delta]    
+59/76                           
+60/76 [discordance-groups]      
+61/76                           
+62/76 [discordance-rates]       
+63/76                           
+64/76 [discordance-adjusted]    
+65/76                           
+66/76 [strata-combined]         
+67/76                           
+68/76 [strata-profile-tests]    
+69/76                           
+70/76 [paired-bootstrap]        
+71/76                           
+72/76 [completeness]            
+73/76                           
+74/76 [provenance]              
+75/76                           
+76/76 [session]                 
+/bin/pandoc +RTS -K512m -RTS ESI_ctfree_analysis_2026.9.3.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output /proj/edith/regeps/regep00/studies/COPDGene/analyses/repjc/COPDGene/ESI_MDCOPD_2026/esi-ctfree-resp-20261008/ctfree/ESI_ctfree_analysis_2026.9.3.html --lua-filter /udd/repjc/R/x86_64-pc-linux-gnu-library/4.5/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /udd/repjc/R/x86_64-pc-linux-gnu-library/4.5/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --section-divs --table-of-contents --toc-depth 3 --template /udd/repjc/R/x86_64-pc-linux-gnu-library/4.5/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --number-sections --variable theme=bootstrap --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /udd/repjc/Rtmp/RtmpcONjEX/rmarkdown-stref73c1f924961.html --variable code_folding=show --variable code_menu=1 
+render exit: 0  Thu Oct  8 02:02:48 PM EDT 2026
+=== verify.R
+             id
+          FU-01
+         AFL-09
+         AFL-10
+         AFL-12
+         AFL-13
+         AFL-21
+         AFL-23
+         AFL-26
+         GRP-02
+         GRP-03
+         GRP-06
+         GRP-07
+         GRP-09
+         GRP-10
+         GRP-12
+         GRP-14
+       MINOR-08
+       MINOR-03
+       MINOR-04
+        FILL-22
+     CONSREF-05
+     CONSREF-06
+     CONSREF-16
+     CONSREF-21
+     CONSREF-31
+         MAJ-01
+         MAJ-02
+          CV-01
+         ADJ-02
+         ADJ-03
+         ADJ-04
+         ADJ-05
+         ADJ-06
+         MIN-01
+         MIN-02
+         MIN-03
+         MIN-04
+         MIN-05
+         MAJ-06
+    ADJ-ESI-AFL
+        FEV1-NE
+ DISC-MINOR-ESI
+          CI-01
+          CI-02
+          CI-03
+          CI-04
+          CI-05
+          CI-06
+          CI-07
+          CI-08
+          CI-09
+          CI-10
+          CI-11
+          CI-14
+                                                                               claim
+                                           median follow-up 10.8 years for mortality
+                                                                its lower bound 0.89
+                                                                its upper bound 1.33
+                                                                its lower bound 0.89
+                                                                its upper bound 1.46
+                                                               its upper bound 16.27
+                                                                its lower bound 1.38
+                                  MD-COPD AFL-only crude respiratory rate ratio 1.80
+                                                                its lower bound 1.10
+                                                                its upper bound 1.77
+                                                                its lower bound 1.15
+                                                                its upper bound 1.79
+                                   AFL-only ESI vs MD-COPD, crude all-cause p = 0.25
+                               AFL-only ESI vs MD-COPD, crude exacerbations p = 0.73
+                                                                             to 1.28
+                                                                             to 1.09
+                  its p = 0.036, so both CT-free exacerbation ratios are significant
+                                                                its upper bound 0.98
+                                                                       its p = 0.016
+                         the NoCT minus ESI difference in AFL-only decline is p=0.68
+                                  MD-COPD AFL-only crude respiratory rate ratio 1.80
+                              ESI-MD-COPD AFL-only crude respiratory rate ratio 1.88
+                                  NoCT-MD-COPD AFL-only adjusted respiratory HR 5.46
+                           NoCT-MD-COPD AFL-only crude respiratory upper bound 16.27
+                                       MD-COPD AFL-only adjusted respiratory HR 1.47
+                 NoCT COPD major relative risks are 18% to 28% higher than MD-COPD's
+                    ESI COPD major relative risks are 5% to 9% higher than MD-COPD's
+                                 held-out agreement 88.9% for the ESI classification
+                                                           its interval 1.07 to 1.70
+                                                                             P=0.008
+      NoCT vs MD-COPD, adjusted all-cause: ratio of HRs 1.22 (0.97 to 1.55), P=0.098
+                     ESI vs MD-COPD, adjusted all-cause: 1.03 (0.82 to 1.31), P=0.79
+                 ESI vs MD-COPD, adjusted exacerbations: 0.92 (0.73 to 1.17), P=0.49
+                                 NoCT crude all-cause 0.87 (0.79 to 0.95), P = 0.006
+                             NoCT crude exacerbations 0.90 (0.83 to 0.99), P = 0.036
+                                  ESI crude all-cause 0.88 (0.80 to 0.97), P = 0.008
+                              ESI crude exacerbations 0.89 (0.81 to 0.98), P = 0.016
+                                     adjusted ratios 0.92 to 0.95, P = 0.096 to 0.27
+                                             ESI 5% to 9% higher, crude and adjusted
+                                ESI adjusted ratios 1.03 and 0.92; P = 0.79 and 0.49
+               decline did not differ between NoCT and ESI groups (P = 0.68 to 0.91)
+ ESI COPD-minor unadjusted rates 11% to 12% lower than MD-COPD (P = 0.008 and 0.016)
+                                     S4 AFL-only crude all 1.14 [0.91-1.44], P > 0.2
+                                    S4 AFL-only crude exac 0.96 [0.78-1.21], P > 0.2
+                     S3 AFL-only adjusted all 1.22 [0.97-1.55], round(P, 3) == 0.098
+                                  S4 AFL-only adjusted all 1.03 [0.82-1.31], P > 0.2
+                                 S4 AFL-only adjusted exac 0.92 [0.73-1.17], P > 0.2
+                    S3 COPD-minor adjusted all 0.95 [0.85-1.04], round(P, 2) == 0.27
+                   S3 COPD-minor adjusted exac 0.95 [0.87-1.04], round(P, 2) == 0.27
+                    S4 COPD-minor adjusted all 0.94 [0.84-1.03], round(P, 2) == 0.20
+                  S4 COPD-minor adjusted exac 0.92 [0.84-1.02], round(P, 3) == 0.096
+                              S3 COPD-major adjusted all 1.23 [1.19-1.27], P < 0.005
+                             S3 COPD-major adjusted exac 1.17 [1.13-1.21], P < 0.005
+                             S3 COPD-major adjusted resp 1.29 [1.25-1.34], P < 0.005
+ expected          computed status error
+     10.8  11.1731690622861   FAIL      
+     0.89 0.879276040146018   FAIL      
+     1.33  1.35972927899273   FAIL      
+     0.89  0.88495055447398   FAIL      
+     1.46  1.44430721150035   FAIL      
+    16.27  16.2847315458495   FAIL      
+     1.38  1.35680237660539   FAIL      
+      1.8  1.84063849447689   FAIL      
+      1.1  1.10749844503246   FAIL      
+     1.77  1.79718275192519   FAIL      
+     1.15  1.15859977852055   FAIL      
+     1.79  1.81722304734171   FAIL      
+     0.25              0.24   FAIL      
+     0.73             0.776   FAIL      
+     1.28  1.25387257670602   FAIL      
+     1.09  1.08122182153301   FAIL      
+    0.036             0.034   FAIL      
+     0.98 0.974773264472122   FAIL      
+    0.016             0.012   FAIL      
+     0.68             0.652   FAIL      
+      1.8  1.84063849447689   FAIL      
+     1.88  1.92065001547146   FAIL      
+     5.46  5.42803171903998   FAIL      
+    16.27  16.2847315458495   FAIL      
+     1.47   1.4556355441407   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+    0.889 0.888312762783699   FAIL      
+     TRUE             FALSE   FAIL      
+    0.008             0.006   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+     TRUE             FALSE   FAIL      
+verify exit: 1  Thu Oct  8 02:02:50 PM EDT 2026
+=== compare with the first cluster run
+FILES: 51  SAME: 30  DIFFERS: 20  OTHER: 1 
+
+                             file                       status text_mismatch na_mismatch cells_reldiff_gt_1e6  max_abs  max_rel
+                accuracy_test.csv                         SAME             0           0                    0 0.00e+00 0.000000
+           agreement_by_group.csv                         SAME             0           0                    0 0.00e+00 0.000000
+             binary_vs_mdcopd.csv                      DIFFERS             0           0                   33 2.15e+00 0.500000
+     bronchodilator_delta_esi.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                  cohort_flow.csv                         SAME             0           0                    0 0.00e+00 0.000000
+          consensus_ref_crude.csv                      DIFFERS             0           0                   57 8.73e+00 0.330000
+          consensus_ref_group.csv                      DIFFERS             0           0                    1 2.31e+02 0.059900
+           consensus_ref_lost.csv                      DIFFERS             0           0                    7 3.30e+01 0.039600
+           consensus_ref_risk.csv                      DIFFERS             0           0                   36 1.21e+02 0.085100
+ continuous_esi_gold0_decline.csv                         SAME             0           0                    0 0.00e+00 0.000000
+     continuous_esi_mortality.csv                      DIFFERS             0           0                   12 4.69e+02 0.162000
+                   crossclass.csv                         SAME             0           0                    0 0.00e+00 0.000000
+             cv_category_test.csv                         SAME             0           0                    0 0.00e+00 0.000000
+               cv_schema_fits.csv                         SAME             0           0                    0 0.00e+00 0.000000
+         discord_adjusted_afl.csv                      DIFFERS             0           0                    7 1.85e-01 0.011000
+      discord_adjusted_strata.csv                      DIFFERS             0           0                   16 1.85e-01 0.011000
+             discord_adjusted.csv                      DIFFERS             0           0                    9 1.84e-01 0.009800
+               discord_counts.csv                         SAME             0           0                    0 0.00e+00 0.000000
+         discord_crude_strata.csv                      DIFFERS             0           0                   15 1.76e+01 0.097100
+          discord_profile_afl.csv                         SAME             0           0                    0 0.00e+00 0.000000
+       discord_profile_strata.csv                         SAME             0           0                    0 0.00e+00 0.000000
+        discord_profile_tests.csv                         SAME             0           0                    0 0.00e+00 0.000000
+              discord_profile.csv                         SAME             0           0                    0 0.00e+00 0.000000
+            discord_rates_afl.csv                      DIFFERS             0           0                    7 1.05e+02 0.343000
+                discord_rates.csv                      DIFFERS             0           0                    8 2.31e+02 0.299000
+                   esi_ct_auc.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                esi_ct_levels.csv                         SAME             0           0                    0 0.00e+00 0.000000
+               esi_trajectory.csv                         SAME             0           0                    0 0.00e+00 0.000000
+               f1_by_category.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                 fev1_decline.csv                         SAME             0           0                    0 0.00e+00 0.000000
+             fev1_noct_vs_esi.csv                         SAME             0           0                    0 0.00e+00 0.000000
+             followup_medians.csv SHAPE laptop 4x5 cluster 5x5            NA          NA                   NA       NA       NA
+                gate_exac_aic.csv                         SAME             0           0                    0 0.00e+00 0.000000
+              gate_fixedratio.csv                      DIFFERS             0           0                    4 5.04e-01 0.006620
+              group_vs_mdcopd.csv                      DIFFERS             0           0                  112 4.74e+00 4.000000
+            mdcopd_validation.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                 metric_sweep.csv                         SAME             0           0                    0 0.00e+00 0.000000
+          objective_selection.csv                         SAME             0           0                    0 0.00e+00 0.000000
+           raw_discrimination.csv                      DIFFERS             0           0                   40 4.69e+02 0.050800
+             reclassification.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                schema_binary.csv                      DIFFERS             0           0                   44 3.64e+00 0.301000
+                 schema_crude.csv                      DIFFERS             0           0                   53 8.00e+00 0.073600
+        schema_diff_bootstrap.csv                      DIFFERS             0           0                   34 1.10e-01 0.057300
+        schema_discrimination.csv                      DIFFERS             0           0                    4 3.15e-04 0.000365
+           schema_fit_cv_diff.csv                         SAME             0           0                    0 0.00e+00 0.000000
+           schema_fit_cv_test.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                   schema_fit.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                schema_labels.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                  schema_risk.csv                      DIFFERS             0           0                   44 3.37e+02 0.085100
+                supp_baseline.csv                         SAME             0           0                    0 0.00e+00 0.000000
+                  supp_esi_ct.csv                         SAME             0           0                    0 0.00e+00 0.000000
+
+ cohort.txt SAME 
+
+ PROVENANCE.txt DIFFERS 
+--- laptop
+rendered=2026-10-07 23:19:24 EDT
+R=R version 4.5.1 (2025-06-13)
+cohort_n=9240
+cv_seed=20260901
+cv_repeats=5
+cv_folds=5
+crude_B=1000
+fitted_S3_k=2
+fitted_S4_k=2
+fitted_S4_t_low=1.500
+fitted_S4_threshold_count=1
+--- cluster
+rendered=2026-10-08 14:02:45 EDT
+R=R version 4.5.1 (2025-06-13)
+cohort_n=9240
+cv_seed=20260901
+cv_repeats=5
+cv_folds=5
+crude_B=1000
+fitted_S3_k=2
+fitted_S4_k=2
+fitted_S4_t_low=1.500
+fitted_S4_threshold_count=1
+
+Largest differing cells (up to 60):
+                         file row                key           column       laptop      cluster   rel_diff
+          group_vs_mdcopd.csv   7                 S3           p_boot 2.000000e-03 1.000000e-02 4.00000000
+          group_vs_mdcopd.csv   3                 S3           p_boot 2.000000e-03 0.000000e+00 1.00000000
+         binary_vs_mdcopd.csv   1                 S1           p_boot 8.000000e-03 4.000000e-03 0.50000000
+          group_vs_mdcopd.csv   1                 S3           p_boot 4.000000e-03 2.000000e-03 0.50000000
+          group_vs_mdcopd.csv   6                 S3           p_boot 4.000000e-03 6.000000e-03 0.50000000
+          group_vs_mdcopd.csv  10                 S3           p_boot 2.260000e-01 3.220000e-01 0.42477876
+          group_vs_mdcopd.csv  25                 S4           p_boot 1.000000e-02 1.400000e-02 0.40000000
+          group_vs_mdcopd.csv  27                 S4           p_boot 2.000000e-02 1.200000e-02 0.40000000
+        discord_rates_afl.csv   1      Both-AFL-only  rate_resp_100py 9.378551e-02 1.259715e-01 0.34318745
+      consensus_ref_crude.csv  10                 S2       rate_100py 6.635384e-02 8.823689e-02 0.32979339
+      consensus_ref_crude.csv  16                 S4       rate_100py 6.956977e-02 9.207250e-02 0.32345555
+        discord_rates_afl.csv   3       CT-only-COPD  rate_resp_100py 5.529295e-02 7.254941e-02 0.31209157
+            schema_binary.csv   4                 S4 rate_resp_nocopd 4.283224e-02 5.572924e-02 0.30110499
+      consensus_ref_crude.csv  13                 S3       rate_100py 2.977367e-01 3.870243e-01 0.29988784
+            discord_rates.csv   1        Both-noCOPD  rate_resp_100py 3.690860e-02 4.793820e-02 0.29883539
+            schema_binary.csv   3                 S3 rate_resp_nocopd 9.928339e-02 1.288273e-01 0.29757139
+            schema_binary.csv   2                 S2 rate_resp_nocopd 3.963770e-02 5.143161e-02 0.29754266
+            schema_binary.csv   1                 S1 rate_resp_nocopd 4.910632e-02 6.324660e-02 0.28795232
+            discord_rates.csv   2      ESI-only-COPD  rate_resp_100py 4.478655e-02 5.670483e-02 0.26611294
+      consensus_ref_crude.csv  14                 S3       rate_100py 8.054657e-02 1.010097e-01 0.25405361
+      consensus_ref_crude.csv  17                 S4       rate_100py 8.768462e-02 1.097870e-01 0.25206674
+            discord_rates.csv   3       CT-only-COPD  rate_resp_100py 1.475030e-01 1.835722e-01 0.24453178
+      consensus_ref_crude.csv  11                 S2       rate_100py 1.235257e-01 1.533919e-01 0.24178065
+            discord_rates.csv   4          Both-COPD  rate_resp_100py 1.207223e-01 1.498719e-01 0.24145978
+            schema_binary.csv   1                 S1   rate_resp_copd 1.679031e+00 2.067653e+00 0.23145634
+         binary_vs_mdcopd.csv   8                 S3           p_boot 2.600000e-02 2.000000e-02 0.23076923
+          group_vs_mdcopd.csv  28                 S4           p_boot 1.920000e-01 2.360000e-01 0.22916667
+            schema_binary.csv   2                 S2   rate_resp_copd 1.545218e+00 1.894647e+00 0.22613597
+            schema_binary.csv   4                 S4   rate_resp_copd 1.502083e+00 1.839144e+00 0.22439586
+      consensus_ref_crude.csv  12                 S2       rate_100py 1.828675e+00 2.236587e+00 0.22306374
+            schema_binary.csv   3                 S3   rate_resp_copd 1.676011e+00 2.038626e+00 0.21635627
+      consensus_ref_crude.csv  18                 S4       rate_100py 1.990113e+00 2.418246e+00 0.21512984
+        discord_rates_afl.csv   4          Both-COPD  rate_resp_100py 2.050896e+00 2.487229e+00 0.21275238
+      consensus_ref_crude.csv  15                 S3       rate_100py 2.334160e+00 2.804395e+00 0.20145784
+          group_vs_mdcopd.csv   9                 S3           p_boot 4.200000e-02 3.400000e-02 0.19047619
+          group_vs_mdcopd.csv   4                 S3           p_boot 9.000000e-02 7.400000e-02 0.17777778
+ continuous_esi_mortality.csv   2        respiratory             FF_p 3.279387e-06 3.810911e-06 0.16208038
+ continuous_esi_mortality.csv   2        respiratory         lr_chisq 6.034485e-01 5.165208e-01 0.14405161
+         binary_vs_mdcopd.csv   4                 S1           p_boot 3.740000e-01 4.200000e-01 0.12299465
+         binary_vs_mdcopd.csv   6                 S4           p_boot 3.980000e-01 3.540000e-01 0.11055276
+     discord_crude_strata.csv  17 Airflow limitation               rr 2.186794e+01 1.974438e+01 0.09710861
+     discord_crude_strata.csv  17 Airflow limitation               lo 6.027017e+00 5.441742e+00 0.09710861
+     discord_crude_strata.csv  17 Airflow limitation               hi 1.809912e+02 1.634154e+02 0.09710861
+            discord_rates.csv   3       CT-only-COPD           n_mort 8.500000e+01 7.700000e+01 0.09411765
+          group_vs_mdcopd.csv  19                 S4           p_boot 2.640000e-01 2.400000e-01 0.09090909
+         binary_vs_mdcopd.csv   3                 S4           p_boot 3.440000e-01 3.740000e-01 0.08720930
+       consensus_ref_risk.csv   2                 S2           n_mort 7.990000e+02 7.310000e+02 0.08510638
+              schema_risk.csv   5                 S2           n_mort 7.990000e+02 7.310000e+02 0.08510638
+            discord_rates.csv   4          Both-COPD           n_mort 7.140000e+02 6.540000e+02 0.08403361
+       consensus_ref_risk.csv   5                 S3           n_mort 1.174000e+03 1.079000e+03 0.08091993
+              schema_risk.csv   9                 S3           n_mort 1.174000e+03 1.079000e+03 0.08091993
+       consensus_ref_risk.csv   8                 S4           n_mort 1.215000e+03 1.117000e+03 0.08065844
+              schema_risk.csv  13                 S4           n_mort 1.215000e+03 1.117000e+03 0.08065844
+ continuous_esi_mortality.csv   2        respiratory             lr_p 4.372653e-01 4.723296e-01 0.08019005
+ continuous_esi_mortality.csv   2        respiratory            ESI_p 4.376289e-01 4.726151e-01 0.07994508
+         binary_vs_mdcopd.csv   2                 S3           p_boot 2.520000e-01 2.320000e-01 0.07936508
+            discord_rates.csv   2      ESI-only-COPD           n_mort 5.010000e+02 4.630000e+02 0.07584830
+          group_vs_mdcopd.csv  12                 S3           p_boot 2.640000e-01 2.440000e-01 0.07575758
+      consensus_ref_crude.csv  15                 S3               lo 3.737698e+01 3.457472e+01 0.07497298
+      consensus_ref_crude.csv  15                 S3               rr 6.324162e+01 5.850021e+01 0.07497298
+compare exit: 0  Thu Oct  8 02:02:51 PM EDT 2026
+=== step2 C3_fev1_model_checks
+C3_fev1_model_checks exit: 1  Thu Oct  8 02:16:50 PM EDT 2026
+=== step2 C5_zero_followup
+C5_zero_followup exit: 1  Thu Oct  8 02:31:01 PM EDT 2026
+end: Thu Oct  8 02:31:01 PM EDT 2026

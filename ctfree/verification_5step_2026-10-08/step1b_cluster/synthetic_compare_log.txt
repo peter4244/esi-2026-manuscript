@@ -1,0 +1,1282 @@
+
+================================================================
+Recomputed: /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verification_5step_2026-10-08/step1b_cluster/synthetic_output 
+Against:    /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/assets 
+================================================================
+cohort_flow                     6 values,   6 beyond tolerance
+                                                       key field recomputed
+          less interstitial lung disease or bronchiectasis     n       2940
+                                        less never-smokers     n       2840
+                                      less no baseline ESI     n       2503
+ less no valid MD-COPD classification (Bhatt ground truth)     n       2570
+                              less unacceptable spirometry     n       2802
+                                 visit 1 in phenotype file     n       3000
+ analysis  diff
+    10305 -7365
+    10198 -7358
+     9240 -6737
+     9416 -6846
+    10132 -7330
+    10371 -7371
+mdcopd_validation               4 values,   4 beyond tolerance
+        key field recomputed analysis  diff
+   AFL-only  ours         28      282  -254
+ COPD-major  ours        947     3884 -2937
+ COPD-minor  ours        165      811  -646
+     noCOPD  ours       1430     4439 -3009
+schema_labels                  14 values,  14 beyond tolerance
+             key field recomputed analysis  diff
+       S1 | COPD     n        951     4084 -3133
+     S1 | noCOPD     n       1552     5156 -3604
+   S2 | AFL-only     n         27      275  -248
+ S2 | COPD-major     n        924     3809 -2885
+ S2 | COPD-minor     n        162      799  -637
+     S2 | noCOPD     n       1390     4357 -2967
+   S3 | AFL-only     n         65     1108 -1043
+ S3 | COPD-major     n        886     2976 -2090
+ S3 | COPD-minor     n        215     1174  -959
+     S3 | noCOPD     n       1337     3982 -2645
+   S4 | AFL-only     n         22      543  -521
+ S4 | COPD-major     n        929     3541 -2612
+ S4 | COPD-minor     n        344     1215  -871
+     S4 | noCOPD     n       1208     3941 -2733
+crossclass                     32 values,  21 beyond tolerance
+                          key field recomputed analysis  diff
+     S3 | AFL-only | AFL-only     n         25      275  -250
+   S3 | AFL-only | COPD-major     n         39      833  -794
+   S3 | AFL-only | COPD-minor     n          1        0     1
+   S3 | COPD-major | AFL-only     n          2        0     2
+ S3 | COPD-major | COPD-major     n        883     2976 -2093
+ S3 | COPD-major | COPD-minor     n          1        0     1
+ S3 | COPD-minor | COPD-minor     n        117      709  -592
+     S3 | COPD-minor | noCOPD     n         98      465  -367
+     S3 | noCOPD | COPD-major     n          2        0     2
+     S3 | noCOPD | COPD-minor     n         43       90   -47
+         S3 | noCOPD | noCOPD     n       1292     3892 -2600
+     S4 | AFL-only | AFL-only     n         11      193  -182
+   S4 | AFL-only | COPD-major     n         11      350  -339
+   S4 | COPD-major | AFL-only     n         16       82   -66
+ S4 | COPD-major | COPD-major     n        911     3459 -2548
+ S4 | COPD-major | COPD-minor     n          2        0     2
+ S4 | COPD-minor | COPD-minor     n        135      714  -579
+     S4 | COPD-minor | noCOPD     n        209      501  -292
+     S4 | noCOPD | COPD-major     n          2        0     2
+     S4 | noCOPD | COPD-minor     n         25       85   -60
+         S4 | noCOPD | noCOPD     n       1181     3856 -2675
+agreement_by_group             40 values,  40 beyond tolerance
+             key           field  recomputed    analysis           diff
+   S3 | AFL-only           n_ref   27.000000  275.000000 -2.4800000e+02
+ S3 | COPD-major           n_ref  924.000000 3809.000000 -2.8850000e+03
+ S3 | COPD-minor           n_ref  162.000000  799.000000 -6.3700000e+02
+     S3 | noCOPD           n_ref 1390.000000 4357.000000 -2.9670000e+03
+   S4 | AFL-only           n_ref   27.000000  275.000000 -2.4800000e+02
+ S4 | COPD-major           n_ref  924.000000 3809.000000 -2.8850000e+03
+ S4 | COPD-minor           n_ref  162.000000  799.000000 -6.3700000e+02
+     S4 | noCOPD           n_ref 1390.000000 4357.000000 -2.9670000e+03
+   S3 | AFL-only      n_assigned   65.000000 1108.000000 -1.0430000e+03
+ S3 | COPD-major      n_assigned  886.000000 2976.000000 -2.0900000e+03
+ S3 | COPD-minor      n_assigned  215.000000 1174.000000 -9.5900000e+02
+     S3 | noCOPD      n_assigned 1337.000000 3982.000000 -2.6450000e+03
+   S4 | AFL-only      n_assigned   22.000000  543.000000 -5.2100000e+02
+ S4 | COPD-major      n_assigned  929.000000 3541.000000 -2.6120000e+03
+ S4 | COPD-minor      n_assigned  344.000000 1215.000000 -8.7100000e+02
+     S4 | noCOPD      n_assigned 1208.000000 3941.000000 -2.7330000e+03
+   S3 | AFL-only         n_agree   25.000000  275.000000 -2.5000000e+02
+ S3 | COPD-major         n_agree  883.000000 2976.000000 -2.0930000e+03
+ S3 | COPD-minor         n_agree  117.000000  709.000000 -5.9200000e+02
+     S3 | noCOPD         n_agree 1292.000000 3892.000000 -2.6000000e+03
+   S4 | AFL-only         n_agree   11.000000  193.000000 -1.8200000e+02
+ S4 | COPD-major         n_agree  911.000000 3459.000000 -2.5480000e+03
+ S4 | COPD-minor         n_agree  135.000000  714.000000 -5.7900000e+02
+     S4 | noCOPD         n_agree 1181.000000 3856.000000 -2.6750000e+03
+   S3 | AFL-only sensitivity_pct   92.592593  100.000000 -7.4074074e+00
+ S3 | COPD-major sensitivity_pct   95.562771   78.130743  1.7432028e+01
+ S3 | COPD-minor sensitivity_pct   72.222222   88.735920 -1.6513698e+01
+     S3 | noCOPD sensitivity_pct   92.949640   89.327519  3.6221214e+00
+   S4 | AFL-only sensitivity_pct   40.740741   70.181818 -2.9441077e+01
+ S4 | COPD-major sensitivity_pct   98.593074   90.811237  7.7818370e+00
+ S4 | COPD-minor sensitivity_pct   83.333333   89.361702 -6.0283688e+00
+     S4 | noCOPD sensitivity_pct   84.964029   88.501262 -3.5372336e+00
+   S3 | AFL-only         ppv_pct   38.461538   24.819495  1.3642044e+01
+ S3 | COPD-major         ppv_pct   99.661400  100.000000 -3.3860045e-01
+ S3 | COPD-minor         ppv_pct   54.418605   60.391823 -5.9732182e+00
+     S3 | noCOPD         ppv_pct   96.634256   97.739829 -1.1055734e+00
+   S4 | AFL-only         ppv_pct   50.000000   35.543278  1.4456722e+01
+ S4 | COPD-major         ppv_pct   98.062433   97.684270  3.7816274e-01
+ S4 | COPD-minor         ppv_pct   39.244186   58.765432 -1.9521246e+01
+     S4 | noCOPD         ppv_pct   97.764901   97.843187 -7.8286346e-02
+f1_by_category                  8 values,   8 beyond tolerance
+             key field recomputed   analysis         diff
+   S3 | AFL-only    f1 0.54347826 0.39768619  0.145792071
+ S3 | COPD-major    f1 0.97569061 0.87722918  0.098461426
+ S3 | COPD-minor    f1 0.62068966 0.71870248 -0.098012828
+     S3 | noCOPD    f1 0.94756142 0.93344526  0.014116166
+   S4 | AFL-only    f1 0.44897959 0.47188264 -0.022903049
+ S4 | COPD-major    f1 0.98327037 0.94122449  0.042045883
+ S4 | COPD-minor    f1 0.53359684 0.70903674 -0.175439905
+     S4 | noCOPD    f1 0.90916089 0.92938057 -0.020219681
+accuracy_test                   6 values,   6 beyond tolerance
+ key                     field  recomputed   analysis        diff
+   1                         n 2503.000000 9240.00000 -6737.00000
+   1              correct_noct 2317.000000 7852.00000 -5535.00000
+   1               correct_esi 2238.000000 8222.00000 -5984.00000
+   1          only_esi_correct   46.000000  488.00000  -442.00000
+   1         only_noct_correct  125.000000  118.00000     7.00000
+   1 mcnemar_chisq_uncorrected   36.497076  225.90759  -189.41051
+reclassification                6 values,   6 beyond tolerance
+ key            field recomputed analysis diff
+  S3 major_to_aflonly         39      833 -794
+  S4 major_to_aflonly         11      350 -339
+  S3  minor_to_nocopd         43       90  -47
+  S4  minor_to_nocopd         25       85  -60
+  S3  nocopd_to_minor         98      465 -367
+  S4  nocopd_to_minor        209      501 -292
+schema_fit (selected)           6 values,   3 beyond tolerance
+ key   field recomputed   analysis        diff
+  S4   t_low 2.50000000 1.50000000 1.000000000
+  S3 macroF1 0.77185499 0.73176578 0.040089209
+  S4 macroF1 0.78579661 0.76288111 0.022915502
+bronchodilator_delta_esi        3 values,   3 beyond tolerance
+ key      field    recomputed       analysis           diff
+   1   n_paired 2503.00000000 9234.000000000 -6.7310000e+03
+   1 mean_delta   -0.15614383   -0.091805285 -6.4338543e-02
+   1   sd_delta    0.44261500    0.818237471 -3.7562247e-01
+supp_baseline (Table S1)      126 values, 121 beyond tolerance
+     key          field   recomputed analysis          diff
+   GOLD0              n 1.323000e+03  4037.00 -2.714000e+03
+   GOLD1              n 3.640000e+02   734.00 -3.700000e+02
+   GOLD2              n 5.300000e+02  1772.00 -1.242000e+03
+   GOLD3              n 5.100000e+01  1050.00 -9.990000e+02
+   GOLD4              n 6.000000e+00   528.00 -5.220000e+02
+ Overall              n 2.503000e+03  9240.00 -6.737000e+03
+   PRISm              n 2.290000e+02  1119.00 -8.900000e+02
+   GOLD0       age_mean 6.257732e+01    56.70  5.877324e+00
+   GOLD1       age_mean 6.254615e+01    61.90  6.461538e-01
+   GOLD2       age_mean 6.288189e+01    62.60  2.818868e-01
+   GOLD3       age_mean 6.294706e+01    64.30 -1.352941e+00
+   GOLD4       age_mean 5.188333e+01    64.10 -1.221667e+01
+ Overall       age_mean 6.260104e+01    59.60  3.001039e+00
+   PRISm       age_mean 6.237904e+01    57.20  5.179039e+00
+   GOLD0         age_sd 1.017634e+01     8.40  1.776336e+00
+   GOLD1         age_sd 1.028249e+01     9.00  1.282493e+00
+   GOLD2         age_sd 9.910292e+00     8.90  1.010292e+00
+   GOLD3         age_sd 1.019789e+01     8.30  1.897889e+00
+   GOLD4         age_sd 8.303834e+00     7.60  7.038345e-01
+ Overall         age_sd 1.017582e+01     9.00  1.175823e+00
+   PRISm         age_sd 1.058429e+01     8.30  2.284294e+00
+   GOLD0     pct_female 4.958428e+01    47.00  2.584278e+00
+   GOLD1     pct_female 4.725275e+01    42.00  5.252747e+00
+   GOLD2     pct_female 5.301887e+01    46.00  7.018868e+00
+   GOLD3     pct_female 5.490196e+01    42.00  1.290196e+01
+   GOLD4     pct_female 5.000000e+01    41.00  9.000000e+00
+ Overall     pct_female 5.009988e+01    47.00  3.099880e+00
+   PRISm     pct_female 4.978166e+01    54.00 -4.218341e+00
+   GOLD0    pct_current 4.973545e+01    59.00 -9.264550e+00
+   GOLD1    pct_current 4.890110e+01    55.00 -6.098901e+00
+   GOLD3    pct_current 3.333333e+01    36.00 -2.666667e+00
+   GOLD4    pct_current 3.333333e+01    24.00  9.333333e+00
+ Overall    pct_current 4.874151e+01    53.00 -4.258490e+00
+   PRISm    pct_current 4.672489e+01    63.00 -1.627511e+01
+   GOLD0 packyears_mean 4.427755e+01    37.20  7.077551e+00
+   GOLD1 packyears_mean 4.252253e+01    45.00 -2.477473e+00
+   GOLD2 packyears_mean 4.554208e+01    50.90 -5.357925e+00
+   GOLD3 packyears_mean 4.363725e+01    54.90 -1.126275e+01
+   GOLD4 packyears_mean 3.615000e+01    56.70 -2.055000e+01
+ Overall packyears_mean 4.430384e+01    44.20  1.038354e-01
+   PRISm packyears_mean 4.478341e+01    42.30  2.483406e+00
+   GOLD0   packyears_sd 2.183994e+01    20.20  1.639938e+00
+   GOLD1   packyears_sd 2.168818e+01    24.50 -2.811824e+00
+   GOLD2   packyears_sd 2.155084e+01    26.90 -5.349162e+00
+   GOLD3   packyears_sd 2.149841e+01    27.40 -5.901591e+00
+   GOLD4   packyears_sd 1.398724e+01    29.00 -1.501276e+01
+ Overall   packyears_sd 2.198698e+01    24.90 -2.913022e+00
+   PRISm   packyears_sd 2.442304e+01    23.80  6.230439e-01
+   GOLD0       BMI_mean 2.816833e+01    28.90 -7.316704e-01
+   GOLD1       BMI_mean 2.801813e+01    26.90  1.118132e+00
+   GOLD2       BMI_mean 2.909189e+01    28.70  3.918868e-01
+   GOLD3       BMI_mean 2.836667e+01    28.00  3.666667e-01
+   GOLD4       BMI_mean 2.903333e+01    25.30  3.733333e+00
+ Overall       BMI_mean 2.825805e+01    28.80 -5.419497e-01
+   PRISm       BMI_mean 2.718341e+01    31.70 -4.516594e+00
+   GOLD1         BMI_sd 6.103506e+00     4.80  1.303506e+00
+   GOLD2         BMI_sd 5.866813e+00     6.10 -2.331866e-01
+   GOLD3         BMI_sd 4.830763e+00     6.30 -1.469237e+00
+   GOLD4         BMI_sd 6.127533e+00     5.60  5.275335e-01
+ Overall         BMI_sd 5.917208e+00     6.20 -2.827923e-01
+   PRISm         BMI_sd 6.273600e+00     7.20 -9.264000e-01
+   GOLD0    FEV1pp_mean 9.360620e+01    97.50 -3.893802e+00
+   GOLD1    FEV1pp_mean 8.949066e+01    90.80 -1.309341e+00
+   GOLD2    FEV1pp_mean 6.823660e+01    65.10  3.136604e+00
+   GOLD3    FEV1pp_mean 4.302157e+01    40.20  2.821569e+00
+   GOLD4    FEV1pp_mean 2.621667e+01    22.70  3.516667e+00
+ Overall    FEV1pp_mean 8.469600e+01    76.70  7.996005e+00
+   PRISm    FEV1pp_mean 7.450524e+01    70.60  3.905240e+00
+   GOLD0      FEV1pp_sd 7.996269e+00    11.40 -3.403731e+00
+   GOLD1      FEV1pp_sd 7.378546e+00     8.80 -1.421454e+00
+   GOLD2      FEV1pp_sd 7.588925e+00     8.50 -9.110754e-01
+   GOLD3      FEV1pp_sd 5.112820e+00     5.70 -5.871803e-01
+   GOLD4      FEV1pp_sd 2.125480e+00     4.80 -2.674520e+00
+ Overall      FEV1pp_sd 1.456090e+01    25.30 -1.073910e+01
+   PRISm      FEV1pp_sd 4.454445e+00     7.90 -3.445555e+00
+   GOLD0   FEV1FVC_mean 8.180280e-01     0.79  2.802797e-02
+   GOLD2   FEV1FVC_mean 5.967943e-01     0.58  1.679434e-02
+   GOLD3   FEV1FVC_mean 4.751765e-01     0.44  3.517647e-02
+   GOLD4   FEV1FVC_mean 4.001667e-01     0.32  8.016667e-02
+ Overall   FEV1FVC_mean 7.368833e-01     0.67  6.688334e-02
+   PRISm   FEV1FVC_mean 8.028603e-01     0.77  3.286026e-02
+   GOLD0     FEV1FVC_sd 8.156553e-02     0.05  3.156553e-02
+   GOLD2     FEV1FVC_sd 7.023650e-02     0.08 -9.763503e-03
+   GOLD3     FEV1FVC_sd 6.771461e-02     0.09 -2.228539e-02
+   GOLD4     FEV1FVC_sd 4.404278e-02     0.07 -2.595722e-02
+ Overall     FEV1FVC_sd 1.279003e-01     0.16 -3.209969e-02
+   PRISm     FEV1FVC_sd 7.863282e-02     0.05  2.863282e-02
+   GOLD0       ESI_mean 6.570060e-01     0.90 -2.429940e-01
+   GOLD1       ESI_mean 2.000846e+00     1.44  5.608462e-01
+   GOLD2       ESI_mean 2.988813e+00     2.18  8.088132e-01
+   GOLD3       ESI_mean 4.652118e+00     4.84 -1.878824e-01
+   GOLD4       ESI_mean 5.949667e+00     8.30 -2.350333e+00
+ Overall       ESI_mean 1.463913e+00     2.06 -5.960871e-01
+   PRISm       ESI_mean 9.153712e-01     0.91  5.371179e-03
+   GOLD0         ESI_sd 7.595432e-01     0.37  3.895432e-01
+   GOLD1         ESI_sd 8.643907e-01     0.51  3.543907e-01
+   GOLD2         ESI_sd 1.025107e+00     1.21 -1.848929e-01
+   GOLD3         ESI_sd 1.018519e+00     2.15 -1.131481e+00
+   GOLD4         ESI_sd 1.118353e+00     1.98 -8.616472e-01
+ Overall         ESI_sd 1.380658e+00     2.24 -8.593421e-01
+   PRISm         ESI_sd 9.702643e-01     0.45  5.202643e-01
+   GOLD0      pct_mMRC2 1.730915e+01    23.00 -5.690854e+00
+   GOLD1      pct_mMRC2 5.412088e+01    22.00  3.212088e+01
+   GOLD2      pct_mMRC2 7.150943e+01    50.00  2.150943e+01
+   GOLD3      pct_mMRC2 9.607843e+01    78.00  1.807843e+01
+   GOLD4      pct_mMRC2 1.000000e+02    95.00  5.000000e+00
+ Overall      pct_mMRC2 3.667599e+01    41.00 -4.324011e+00
+   PRISm      pct_mMRC2 2.532751e+01    45.00 -1.967249e+01
+   GOLD0     pct_SGRQ25 3.280423e+01    26.00  6.804233e+00
+   GOLD1     pct_SGRQ25 6.978022e+01    28.00  4.178022e+01
+   GOLD2     pct_SGRQ25 8.396226e+01    59.00  2.496226e+01
+   GOLD3     pct_SGRQ25 1.000000e+02    85.00  1.500000e+01
+   GOLD4     pct_SGRQ25 1.000000e+02    97.00  3.000000e+00
+ Overall     pct_SGRQ25 5.113863e+01    46.00  5.138634e+00
+   PRISm     pct_SGRQ25 3.930131e+01    50.00 -1.069869e+01
+   GOLD0         pct_CB 1.534392e+01    13.00  2.343915e+00
+   GOLD1         pct_CB 1.923077e+01    15.00  4.230769e+00
+   GOLD3         pct_CB 4.509804e+01    30.00  1.509804e+01
+   GOLD4         pct_CB 5.000000e+01    28.00  2.200000e+01
+ Overall         pct_CB 1.961646e+01    19.00  6.164602e-01
+   PRISm         pct_CB 2.183406e+01    17.00  4.834061e+00
+esi_ct_levels                  18 values,  18 beyond tolerance
+                        key    field    recomputed      analysis           diff
+ Airway wall thickening | 0        n  682.00000000 1006.00000000 -3.2400000e+02
+ Airway wall thickening | 1        n 1098.00000000 4553.00000000 -3.4550000e+03
+ Airway wall thickening | 2        n  673.00000000 3677.00000000 -3.0040000e+03
+       Visual emphysema | 0        n  784.00000000 3086.00000000 -2.3020000e+03
+       Visual emphysema | 1        n  606.00000000 1686.00000000 -1.0800000e+03
+       Visual emphysema | 2        n  525.00000000 1829.00000000 -1.3040000e+03
+       Visual emphysema | 3        n  331.00000000 1435.00000000 -1.1040000e+03
+       Visual emphysema | 4        n  155.00000000  894.00000000 -7.3900000e+02
+       Visual emphysema | 5        n   51.00000000  306.00000000 -2.5500000e+02
+ Airway wall thickening | 0 mean_ESI    0.50244868    0.95800199 -4.5555331e-01
+ Airway wall thickening | 1 mean_ESI    1.40513752    1.28717659  1.1796094e-01
+ Airway wall thickening | 2 mean_ESI    2.53455869    3.32485722 -7.9029853e-01
+       Visual emphysema | 0 mean_ESI    0.45577806    1.03848833 -5.8271027e-01
+       Visual emphysema | 1 mean_ESI    1.14718482    1.22250890 -7.5324078e-02
+       Visual emphysema | 2 mean_ESI    1.77332381    1.59488245  1.7844136e-01
+       Visual emphysema | 3 mean_ESI    2.65189728    2.91246690 -2.6056962e-01
+       Visual emphysema | 4 mean_ESI    3.50721290    5.21338926 -1.7061764e+00
+       Visual emphysema | 5 mean_ESI    3.79680392    6.62300654 -2.8262026e+00
+esi_ct_auc (missing=neg)       24 values,  24 beyond tolerance
+                                           key       field    recomputed
+   Airflow limitation | Airway wall thickening           n  951.00000000
+         Airflow limitation | Visual emphysema           n  951.00000000
+     All participants | Airway wall thickening           n 2503.00000000
+           All participants | Visual emphysema           n 2503.00000000
+ Preserved spirometry | Airway wall thickening           n 1552.00000000
+       Preserved spirometry | Visual emphysema           n 1552.00000000
+   Airflow limitation | Airway wall thickening  prevalence   50.05257624
+         Airflow limitation | Visual emphysema  prevalence   74.02733964
+     All participants | Airway wall thickening  prevalence   26.88773472
+           All participants | Visual emphysema  prevalence   42.42908510
+ Preserved spirometry | Airway wall thickening  prevalence   12.69329897
+       Preserved spirometry | Visual emphysema  prevalence   23.06701031
+   Airflow limitation | Airway wall thickening     auc_ESI    0.67199469
+         Airflow limitation | Visual emphysema     auc_ESI    0.74895910
+     All participants | Airway wall thickening     auc_ESI    0.79351002
+           All participants | Visual emphysema     auc_ESI    0.84226728
+ Preserved spirometry | Airway wall thickening     auc_ESI    0.70904527
+       Preserved spirometry | Visual emphysema     auc_ESI    0.75627556
+   Airflow limitation | Airway wall thickening auc_FEV1FVC    0.67404688
+         Airflow limitation | Visual emphysema auc_FEV1FVC    0.71177712
+     All participants | Airway wall thickening auc_FEV1FVC    0.79490658
+           All participants | Visual emphysema auc_FEV1FVC    0.83971720
+ Preserved spirometry | Airway wall thickening auc_FEV1FVC    0.68037912
+       Preserved spirometry | Visual emphysema auc_FEV1FVC    0.75028073
+      analysis           diff
+ 4084.00000000 -3.1330000e+03
+ 4084.00000000 -3.1330000e+03
+ 9240.00000000 -6.7370000e+03
+ 9240.00000000 -6.7370000e+03
+ 5156.00000000 -3.6040000e+03
+ 5156.00000000 -3.6040000e+03
+   66.28305583 -1.6230480e+01
+   75.63663075 -1.6092911e+00
+   39.79437229 -1.2906638e+01
+   48.31168831 -5.8826032e+00
+   18.81303336 -6.1197344e+00
+   26.66795966 -3.6009493e+00
+    0.74609226 -7.4097568e-02
+    0.75412836 -5.1692626e-03
+    0.80401778 -1.0507760e-02
+    0.77982969  6.2437589e-02
+    0.60527569  1.0376959e-01
+    0.55719689  1.9907866e-01
+    0.74526584 -7.1218962e-02
+    0.77975471 -6.7977593e-02
+    0.81749299 -2.2586403e-02
+    0.82428493  1.5432269e-02
+    0.64338985  3.6989272e-02
+    0.67277623  7.7504508e-02
+consensus_ref_group             8 values,   8 beyond tolerance
+ key       field recomputed  analysis       diff
+   1    n_cohort   1181.000  3856.000  -2675.000
+   1      n_mort   1177.000  3856.000  -2679.000
+   1      n_exac   1057.000  3411.000  -2354.000
+   1      deaths     97.000   573.000   -476.000
+   1 resp_deaths     27.000    14.000     13.000
+   1 exac_events    873.000  3733.000  -2860.000
+   1  person_yrs   9379.729 37931.537 -28551.808
+   1      fu_yrs   6459.700 31342.300 -24882.600
+consensus_ref_crude           135 values, 116 beyond tolerance
+                    key      field    recomputed      analysis           diff
+    S2 | AFL-only | all     events    5.00000000 5.0000000e+01 -4.5000000e+01
+   S2 | AFL-only | exac     events   26.00000000 3.6200000e+02 -3.3600000e+02
+   S2 | AFL-only | resp     events    0.00000000 2.0000000e+00 -2.0000000e+00
+  S2 | COPD-major | all     events  187.00000000 1.6840000e+03 -1.4970000e+03
+ S2 | COPD-major | exac     events 2131.00000000 1.5335000e+04 -1.3204000e+04
+ S2 | COPD-major | resp     events   76.00000000 5.9400000e+02 -5.1800000e+02
+  S2 | COPD-minor | all     events   20.00000000 1.8000000e+02 -1.6000000e+02
+ S2 | COPD-minor | exac     events  186.00000000 2.0410000e+03 -1.8550000e+03
+ S2 | COPD-minor | resp     events    4.00000000 8.0000000e+00 -4.0000000e+00
+    S3 | AFL-only | all     events    9.00000000 2.6200000e+02 -2.5300000e+02
+   S3 | AFL-only | exac     events   67.00000000 1.9150000e+03 -1.8480000e+03
+   S3 | AFL-only | resp     events    1.00000000 3.4000000e+01 -3.3000000e+01
+  S3 | COPD-major | all     events  183.00000000 1.4720000e+03 -1.2890000e+03
+ S3 | COPD-major | exac     events 2090.00000000 1.3782000e+04 -1.1692000e+04
+ S3 | COPD-major | resp     events   75.00000000 5.6200000e+02 -4.8700000e+02
+  S3 | COPD-minor | all     events   27.00000000 2.4000000e+02 -2.1300000e+02
+ S3 | COPD-minor | exac     events  240.00000000 2.8750000e+03 -2.6350000e+03
+ S3 | COPD-minor | resp     events    6.00000000 8.0000000e+00 -2.0000000e+00
+    S4 | AFL-only | all     events    3.00000000 1.0900000e+02 -1.0600000e+02
+   S4 | AFL-only | exac     events   19.00000000 6.5200000e+02 -6.3300000e+02
+   S4 | AFL-only | resp     events    0.00000000 4.0000000e+00 -4.0000000e+00
+  S4 | COPD-major | all     events  189.00000000 1.6250000e+03 -1.4360000e+03
+ S4 | COPD-major | exac     events 2138.00000000 1.5045000e+04 -1.2907000e+04
+ S4 | COPD-major | resp     events   76.00000000 5.9200000e+02 -5.1600000e+02
+  S4 | COPD-minor | all     events   44.00000000 2.5200000e+02 -2.0800000e+02
+ S4 | COPD-minor | exac     events  416.00000000 2.9250000e+03 -2.5090000e+03
+    S2 | AFL-only | all rate_100py    2.53920914 1.6588459e+00  8.8036324e-01
+   S2 | AFL-only | exac rate_100py   17.29873586 1.3713160e+01  3.5855758e+00
+   S2 | AFL-only | resp rate_100py    0.00000000 6.6353836e-02 -6.6353836e-02
+  S2 | COPD-major | all rate_100py    2.71316036 5.1843257e+00 -2.4711654e+00
+ S2 | COPD-major | exac rate_100py   44.64416651 5.6643568e+01 -1.1999402e+01
+ S2 | COPD-major | resp rate_100py    1.10267480 1.8286755e+00 -7.2600066e-01
+  S2 | COPD-minor | all rate_100py    1.63468166 2.7793290e+00 -1.1446474e+00
+ S2 | COPD-minor | exac rate_100py   22.22487752 4.1054834e+01 -1.8829956e+01
+ S2 | COPD-minor | resp rate_100py    0.32693633 1.2352573e-01  2.0341060e-01
+    S3 | AFL-only | all rate_100py    1.74613166 2.2943241e+00 -5.4819241e-01
+   S3 | AFL-only | exac rate_100py   20.59637258 1.9478802e+01  1.1175704e+00
+   S3 | AFL-only | resp rate_100py    0.19401463 2.9773671e-01 -1.0372208e-01
+  S3 | COPD-major | all rate_100py    2.78384811 6.1136714e+00 -3.3298233e+00
+ S3 | COPD-major | exac rate_100py   45.54666899 6.9321074e+01 -2.3774405e+01
+ S3 | COPD-major | resp rate_100py    1.14092136 2.3341599e+00 -1.1932385e+00
+  S3 | COPD-minor | all rate_100py    1.65966008 2.4163971e+00 -7.5673702e-01
+ S3 | COPD-minor | exac rate_100py   20.08872520 3.7033220e+01 -1.6944495e+01
+ S3 | COPD-minor | resp rate_100py    0.36881335 8.0546570e-02  2.8826678e-01
+    S4 | AFL-only | all rate_100py    1.73186344 1.8957763e+00 -1.6391285e-01
+   S4 | AFL-only | exac rate_100py   18.25168108 1.3178639e+01  5.0730418e+00
+   S4 | AFL-only | resp rate_100py    0.00000000 6.9569772e-02 -6.9569772e-02
+  S4 | COPD-major | all rate_100py    2.73285843 5.4627271e+00 -2.7298686e+00
+ S4 | COPD-major | exac rate_100py   44.44998857 6.0750569e+01 -1.6300581e+01
+ S4 | COPD-major | resp rate_100py    1.09892720 1.9901135e+00 -8.9118629e-01
+  S4 | COPD-minor | all rate_100py    1.71879228 2.4551694e+00 -7.3637713e-01
+ S4 | COPD-minor | exac rate_100py   22.38364272 3.6454049e+01 -1.4070406e+01
+ S4 | COPD-minor | resp rate_100py    0.35157115 8.7684622e-02  2.6388653e-01
+    S2 | AFL-only | all         rr    2.45537047 1.0981252e+00  1.3572452e+00
+   S2 | AFL-only | exac         rr    1.28000738 1.1513581e+00  1.2864928e-01
+   S2 | AFL-only | resp         rr    0.00000000 1.7977879e+00 -1.7977879e+00
+  S2 | COPD-major | all         rr    2.62357822 3.4319275e+00 -8.0834925e-01
+ S2 | COPD-major | exac         rr    3.30341263 4.7557989e+00 -1.4523862e+00
+ S2 | COPD-major | resp         rr    3.83066323 4.9546051e+01 -4.5715388e+01
+  S2 | COPD-minor | all         rr    1.58070834 1.8398643e+00 -2.5915592e-01
+ S2 | COPD-minor | exac         rr    1.64451365 3.4469674e+00 -1.8024537e+00
+ S2 | COPD-minor | resp         rr    1.13576821 3.3468007e+00 -2.2110325e+00
+    S3 | AFL-only | all         rr    1.68847852 1.5188000e+00  1.6967854e-01
+   S3 | AFL-only | exac         rr    1.52401361 1.6354419e+00 -1.1142829e-01
+   S3 | AFL-only | resp         rr    0.67400172 8.0668651e+00 -7.3928634e+00
+  S3 | COPD-major | all         rr    2.69193204 4.0471371e+00 -1.3552050e+00
+ S3 | COPD-major | exac         rr    3.37019264 5.8202033e+00 -2.4500107e+00
+ S3 | COPD-major | resp         rr    3.96353078 6.3241623e+01 -5.9278092e+01
+  S3 | COPD-minor | all         rr    1.60486203 1.5996101e+00  5.2519696e-03
+ S3 | COPD-minor | exac         rr    1.48645061 3.1093124e+00 -1.6228618e+00
+ S3 | COPD-minor | resp         rr    1.28124788 2.1823252e+00 -9.0107728e-01
+    S4 | AFL-only | all         rr    1.67468141 1.2549687e+00  4.1971266e-01
+   S4 | AFL-only | exac         rr    1.35051987 1.1064797e+00  2.4404018e-01
+   S4 | AFL-only | resp         rr    0.00000000 1.8849203e+00 -1.8849203e+00
+  S4 | COPD-major | all         rr    2.64262592 3.6162240e+00 -9.7359809e-01
+ S4 | COPD-major | exac         rr    3.28904457 5.1006230e+00 -1.8115784e+00
+ S4 | COPD-major | resp         rr    3.81764418 5.3920046e+01 -5.0102402e+01
+  S4 | COPD-minor | all         rr    1.66204182 1.6252766e+00  3.6765208e-02
+ S4 | COPD-minor | exac         rr    1.65626136 3.0606851e+00 -1.4044237e+00
+ S4 | COPD-minor | resp         rr    1.22134892 2.3757232e+00 -1.1543743e+00
+    S2 | AFL-only | all         lo    0.77974604 8.0544112e-01 -2.5695085e-02
+   S2 | AFL-only | resp         lo            NA 1.9830765e-01             NA
+  S2 | COPD-major | all         lo    2.04220033 3.1196815e+00 -1.0774812e+00
+ S2 | COPD-major | resp         lo    2.44024380 2.9295855e+01 -2.6855611e+01
+  S2 | COPD-minor | all         lo    0.92489434 1.5474168e+00 -6.2252247e-01
+ S2 | COPD-minor | resp         lo    0.28878783 1.2164753e+00 -9.2768750e-01
+    S3 | AFL-only | all         lo    0.74959208 1.3072099e+00 -5.5761781e-01
+   S3 | AFL-only | resp         lo    0.01646225 4.2166796e+00 -4.2002173e+00
+  S3 | COPD-major | all         lo    2.09323932 3.6722918e+00 -1.5790525e+00
+ S3 | COPD-major | resp         lo    2.52246876 3.7376985e+01 -3.4854516e+01
+  S3 | COPD-minor | all         lo    1.00682238 1.3700533e+00 -3.6323096e-01
+ S3 | COPD-minor | resp         lo    0.43255736 7.9321864e-01 -3.6066128e-01
+    S4 | AFL-only | all         lo    0.33945550 1.0129889e+00 -6.7353339e-01
+   S4 | AFL-only | resp         lo            NA 4.5178525e-01             NA
+  S4 | COPD-major | all         lo    2.05806065 3.2857071e+00 -1.2276465e+00
+ S4 | COPD-major | resp         lo    2.43195028 3.1881281e+01 -2.9449331e+01
+  S4 | COPD-minor | all         lo    1.13652377 1.3958744e+00 -2.5935061e-01
+ S4 | COPD-minor | resp         lo    0.50534388 9.0707215e-01 -4.0172827e-01
+    S2 | AFL-only | all         hi    5.92923893 1.4676287e+00  4.4616103e+00
+   S2 | AFL-only | resp         hi            NA 7.8275369e+00             NA
+  S2 | COPD-major | all         hi    3.38840302 3.7797516e+00 -3.9134856e-01
+ S2 | COPD-major | resp         hi    6.18327077 9.1184468e+01 -8.5001197e+01
+  S2 | COPD-minor | all         hi    2.57709949 2.1790055e+00  3.9809404e-01
+ S2 | COPD-minor | resp         hi    3.25963967 8.5485029e+00 -5.2888632e+00
+    S3 | AFL-only | all         hi    3.33975925 1.7609132e+00  1.5788461e+00
+   S3 | AFL-only | resp         hi    4.08921275 1.6271547e+01 -1.2182334e+01
+  S3 | COPD-major | all         hi    3.47985641 4.4649789e+00 -9.8512249e-01
+ S3 | COPD-major | resp         hi    6.40261382 1.1643023e+02 -1.1002761e+02
+  S3 | COPD-minor | all         hi    2.47999029 1.8630112e+00  6.1697906e-01
+ S3 | COPD-minor | resp         hi    3.16779089 5.5741631e+00 -2.4063722e+00
+    S4 | AFL-only | all         hi    5.04153360 1.5426766e+00  3.4988570e+00
+   S4 | AFL-only | resp         hi            NA 6.0018582e+00             NA
+  S4 | COPD-major | all         hi    3.41149222 3.9844640e+00 -5.7297176e-01
+ S4 | COPD-major | resp         hi    6.16225605 9.9236408e+01 -9.3074151e+01
+  S4 | COPD-minor | all         hi    2.39682000 1.8880882e+00  5.0873185e-01
+ S4 | COPD-minor | resp         hi    2.67545896 5.8928781e+00 -3.2174191e+00
+consensus_ref_risk            117 values, 116 beyond tolerance
+             key       field    recomputed      analysis           diff
+   S2 | AFL-only      n_mort 2.7000000e+01  275.00000000 -2.4800000e+02
+ S2 | COPD-major      n_mort 9.2300000e+02 3807.00000000 -2.8840000e+03
+ S2 | COPD-minor      n_mort 1.6200000e+02  799.00000000 -6.3700000e+02
+   S3 | AFL-only      n_mort 6.5000000e+01 1108.00000000 -1.0430000e+03
+ S3 | COPD-major      n_mort 8.8600000e+02 2974.00000000 -2.0880000e+03
+ S3 | COPD-minor      n_mort 2.1500000e+02 1174.00000000 -9.5900000e+02
+   S4 | AFL-only      n_mort 2.2000000e+01  543.00000000 -5.2100000e+02
+ S4 | COPD-major      n_mort 9.2900000e+02 3539.00000000 -2.6100000e+03
+ S4 | COPD-minor      n_mort 3.4400000e+02 1215.00000000 -8.7100000e+02
+   S2 | AFL-only      n_exac 2.4000000e+01  255.00000000 -2.3100000e+02
+ S2 | COPD-major      n_exac 8.1300000e+02 3419.00000000 -2.6060000e+03
+ S2 | COPD-minor      n_exac 1.4000000e+02  668.00000000 -5.2800000e+02
+   S3 | AFL-only      n_exac 5.8000000e+01 1016.00000000 -9.5800000e+02
+ S3 | COPD-major      n_exac 7.7900000e+02 2658.00000000 -1.8790000e+03
+ S3 | COPD-minor      n_exac 1.9300000e+02  986.00000000 -7.9300000e+02
+   S4 | AFL-only      n_exac 2.1000000e+01  501.00000000 -4.8000000e+02
+ S4 | COPD-major      n_exac 8.1600000e+02 3173.00000000 -2.3570000e+03
+ S4 | COPD-minor      n_exac 3.0600000e+02 1020.00000000 -7.1400000e+02
+   S2 | AFL-only      deaths 5.0000000e+00   50.00000000 -4.5000000e+01
+ S2 | COPD-major      deaths 1.8700000e+02 1684.00000000 -1.4970000e+03
+ S2 | COPD-minor      deaths 2.0000000e+01  180.00000000 -1.6000000e+02
+   S3 | AFL-only      deaths 9.0000000e+00  262.00000000 -2.5300000e+02
+ S3 | COPD-major      deaths 1.8300000e+02 1472.00000000 -1.2890000e+03
+ S3 | COPD-minor      deaths 2.7000000e+01  240.00000000 -2.1300000e+02
+   S4 | AFL-only      deaths 3.0000000e+00  109.00000000 -1.0600000e+02
+ S4 | COPD-major      deaths 1.8900000e+02 1625.00000000 -1.4360000e+03
+ S4 | COPD-minor      deaths 4.4000000e+01  252.00000000 -2.0800000e+02
+   S2 | AFL-only resp_deaths 0.0000000e+00    2.00000000 -2.0000000e+00
+ S2 | COPD-major resp_deaths 7.6000000e+01  594.00000000 -5.1800000e+02
+ S2 | COPD-minor resp_deaths 4.0000000e+00    8.00000000 -4.0000000e+00
+   S3 | AFL-only resp_deaths 1.0000000e+00   34.00000000 -3.3000000e+01
+ S3 | COPD-major resp_deaths 7.5000000e+01  562.00000000 -4.8700000e+02
+ S3 | COPD-minor resp_deaths 6.0000000e+00    8.00000000 -2.0000000e+00
+   S4 | AFL-only resp_deaths 0.0000000e+00    4.00000000 -4.0000000e+00
+ S4 | COPD-major resp_deaths 7.6000000e+01  592.00000000 -5.1600000e+02
+   S2 | AFL-only      all_HR 2.2704335e+00    0.90969422  1.3607393e+00
+ S2 | COPD-major      all_HR 2.6409731e+00    2.66798481 -2.7011712e-02
+ S2 | COPD-minor      all_HR 1.6274312e+00    1.95246739 -3.2503614e-01
+   S3 | AFL-only      all_HR 1.8063593e+00    1.10762938  6.9872995e-01
+ S3 | COPD-major      all_HR 2.7013321e+00    3.27933015 -5.7799803e-01
+ S3 | COPD-minor      all_HR 1.6264572e+00    1.84570351 -2.1924628e-01
+   S4 | AFL-only      all_HR 1.8115889e+00    0.93727723  8.7431164e-01
+ S4 | COPD-major      all_HR 2.6524384e+00    2.85310253 -2.0066418e-01
+ S4 | COPD-minor      all_HR 1.6427743e+00    1.82640683 -1.8363258e-01
+   S2 | AFL-only     all_LCI 9.2238524e-01    0.68060873  2.4177651e-01
+ S2 | COPD-major     all_LCI 2.0654586e+00    2.41459527 -3.4913667e-01
+ S2 | COPD-minor     all_LCI 1.0041362e+00    1.64599757 -6.4186140e-01
+   S3 | AFL-only     all_LCI 9.1172849e-01    0.95419266 -4.2464169e-02
+ S3 | COPD-major     all_LCI 2.1107063e+00    2.96295948 -8.5225318e-01
+ S3 | COPD-minor     all_LCI 1.0613707e+00    1.58111825 -5.1974756e-01
+   S4 | AFL-only     all_LCI 5.7209486e-01    0.76224699 -1.9015213e-01
+ S4 | COPD-major     all_LCI 2.0753071e+00    2.58161485 -5.0630777e-01
+ S4 | COPD-minor     all_LCI 1.1500138e+00    1.56843430 -4.1842046e-01
+   S2 | AFL-only     all_UCI 5.5886285e+00    1.21588739  4.3727412e+00
+ S2 | COPD-major     all_UCI 3.3768476e+00    2.94796525  4.2888234e-01
+ S2 | COPD-minor     all_UCI 2.6376228e+00    2.31599911  3.2162369e-01
+   S3 | AFL-only     all_UCI 3.5788440e+00    1.28573912  2.2931048e+00
+ S3 | COPD-major     all_UCI 3.4572291e+00    3.62948136 -1.7225228e-01
+ S3 | COPD-minor     all_UCI 2.4924026e+00    2.15456463  3.3783802e-01
+   S4 | AFL-only     all_UCI 5.7365560e+00    1.15249861  4.5840574e+00
+ S4 | COPD-major     all_UCI 3.3900666e+00    3.15314039  2.3692621e-01
+ S4 | COPD-minor     all_UCI 2.3466737e+00    2.12681012  2.1986361e-01
+   S2 | AFL-only     resp_HR 5.0102372e-07    1.47403378 -1.4740333e+00
+ S2 | COPD-major     resp_HR 3.8549777e+00   32.70413533 -2.8849158e+01
+ S2 | COPD-minor     resp_HR 1.1126198e+00    4.08992040 -2.9773006e+00
+   S3 | AFL-only     resp_HR 7.0380778e-01    5.45652702 -4.7527192e+00
+ S3 | COPD-major     resp_HR 3.9837567e+00   42.31403249 -3.8330276e+01
+ S3 | COPD-minor     resp_HR 1.2757387e+00    3.13894687 -1.8632082e+00
+   S4 | AFL-only     resp_HR 4.9240177e-07    1.40203771 -1.4020372e+00
+ S4 | COPD-major     resp_HR 3.8411400e+00   35.35702237 -3.1515882e+01
+ S4 | COPD-minor     resp_HR 1.2097798e+00    3.29308955 -2.0833098e+00
+   S2 | AFL-only    resp_LCI 0.0000000e+00    0.33473478 -3.3473478e-01
+ S2 | COPD-major    resp_LCI 2.4830424e+00   19.17519266 -1.6692150e+01
+ S2 | COPD-minor    resp_LCI 3.8859862e-01    1.71057853 -1.3219799e+00
+   S3 | AFL-only    resp_LCI 9.5538315e-02    2.92012399 -2.8245857e+00
+ S3 | COPD-major    resp_LCI 2.5638923e+00   24.80236225 -2.2238470e+01
+ S3 | COPD-minor    resp_LCI 5.2641974e-01    1.31242230 -7.8600256e-01
+   S4 | AFL-only    resp_LCI 0.0000000e+00    0.46087007 -4.6087007e-01
+ S4 | COPD-major    resp_LCI 2.4739493e+00   20.73347193 -1.8259523e+01
+ S4 | COPD-minor    resp_LCI 5.6869012e-01    1.42038215 -8.5169203e-01
+   S2 | AFL-only    resp_UCI           Inf    6.49103621            Inf
+ S2 | COPD-major    resp_UCI 5.9849374e+00   55.77834270 -4.9793405e+01
+ S2 | COPD-minor    resp_UCI 3.1856078e+00    9.77882547 -6.5932177e+00
+   S3 | AFL-only    resp_UCI 5.1847826e+00   10.19603524 -5.0112526e+00
+ S3 | COPD-major    resp_UCI 6.1899316e+00   72.18979094 -6.5999859e+01
+ S3 | COPD-minor    resp_UCI 3.0916567e+00    7.50748250 -4.4158258e+00
+   S4 | AFL-only    resp_UCI           Inf    4.26521456            Inf
+ S4 | COPD-major    resp_UCI 5.9638880e+00   60.29472706 -5.4330839e+01
+ S4 | COPD-minor    resp_UCI 2.5735758e+00    7.63487405 -5.0612982e+00
+   S2 | AFL-only    exac_IRR 1.0826177e+00    1.29730543 -2.1468778e-01
+ S2 | COPD-major    exac_IRR 3.2228837e+00    3.99511564 -7.7223190e-01
+ S2 | COPD-minor    exac_IRR 1.7424763e+00    2.33371978 -5.9124347e-01
+   S3 | AFL-only    exac_IRR 1.5791655e+00    1.72644611 -1.4728056e-01
+ S3 | COPD-major    exac_IRR 3.3098348e+00    4.68331249 -1.3734777e+00
+ S3 | COPD-minor    exac_IRR 1.5624677e+00    2.21438660 -6.5191893e-01
+   S4 | AFL-only    exac_IRR 1.3373510e+00    1.19410224  1.4324874e-01
+ S4 | COPD-major    exac_IRR 3.1870019e+00    4.27803612 -1.0910342e+00
+ S4 | COPD-minor    exac_IRR 1.6788191e+00    2.14769368 -4.6887460e-01
+   S2 | AFL-only    exac_LCI 5.5084058e-01    1.02281619 -4.7197561e-01
+ S2 | COPD-major    exac_LCI 2.7824576e+00    3.62348953 -8.4103194e-01
+ S2 | COPD-minor    exac_LCI 1.3230138e+00    1.99184891 -6.6883508e-01
+   S3 | AFL-only    exac_LCI 1.0377564e+00    1.51341551 -4.7565914e-01
+ S3 | COPD-major    exac_LCI 2.8550991e+00    4.22706341 -1.3719643e+00
+ S3 | COPD-minor    exac_LCI 1.2244881e+00    1.93331992 -7.0883179e-01
+   S4 | AFL-only    exac_LCI 6.3774017e-01    0.99869723 -3.6095706e-01
+ S4 | COPD-major    exac_LCI 2.7536200e+00    3.87827661 -1.1246566e+00
+ S4 | COPD-minor    exac_LCI 1.3710070e+00    1.87675870 -5.0575165e-01
+   S2 | AFL-only    exac_UCI 2.1277680e+00    1.64545829  4.8230973e-01
+ S2 | COPD-major    exac_UCI 3.7330235e+00    4.40485582 -6.7183232e-01
+ S2 | COPD-minor    exac_UCI 2.2949297e+00    2.73426764 -4.3933797e-01
+   S3 | AFL-only    exac_UCI 2.4030340e+00    1.96946320  4.3357078e-01
+ S3 | COPD-major    exac_UCI 3.8369968e+00    5.18880692 -1.3518102e+00
+ S3 | COPD-minor    exac_UCI 1.9937353e+00    2.53631485 -5.4257953e-01
+   S4 | AFL-only    exac_UCI 2.8044457e+00    1.42774019  1.3767055e+00
+ S4 | COPD-major    exac_UCI 3.6885922e+00    4.71900149 -1.0304093e+00
+ S4 | COPD-minor    exac_UCI 2.0557396e+00    2.45774172 -4.0200211e-01
+followup_medians               16 values,  15 beyond tolerance
+                                               key     field   recomputed
+                                     exacerbations         n 2223.0000000
+        FEV1 decline, everyone in the decline data         n 2488.0000000
+ FEV1 decline, participants with a follow-up visit         n 1861.0000000
+             mortality (all-cause and respiratory)         n 2498.0000000
+                                     exacerbations median_yr    6.1000000
+        FEV1 decline, everyone in the decline data median_yr    5.9400000
+ FEV1 decline, participants with a follow-up visit median_yr    9.1400000
+             mortality (all-cause and respiratory) median_yr    7.6372348
+                                     exacerbations     q1_yr    2.9000000
+ FEV1 decline, participants with a follow-up visit     q1_yr    5.5500000
+             mortality (all-cause and respiratory)     q1_yr    4.8377823
+                                     exacerbations     q3_yr    9.1000000
+        FEV1 decline, everyone in the decline data     q3_yr    9.7300000
+ FEV1 decline, participants with a follow-up visit     q3_yr   10.0300000
+             mortality (all-cause and respiratory)     q3_yr   10.6255989
+     analysis           diff
+ 8177.0000000 -5954.00000000
+ 9240.0000000 -6752.00000000
+ 5414.0000000 -3553.00000000
+ 9238.0000000 -6740.00000000
+   10.4000000    -4.30000000
+    5.0787132     0.86128679
+    9.6800000    -0.54000000
+   10.8117728    -3.17453799
+    5.0000000    -2.10000000
+    5.4024641     0.14753593
+    5.4510609    -0.61327858
+   11.8000000    -2.70000000
+    9.8700000    -0.14000000
+   10.4800000    -0.45000000
+   12.9883641    -2.36276523
+
+================================================================
+Recomputed: /Users/petecastaldi/claude_projects/projects/ESI_2024/ctfree/verification_5step_2026-10-08/step1b_cluster/synthetic_output 
+Against:    /Users/petecastaldi/claude_projects/projects/ESI_2024/notes/from_cluster/esi_ctfree/cluster_assets_6116301 
+================================================================
+cohort_flow                     6 values,   6 beyond tolerance
+                                                       key field recomputed
+          less interstitial lung disease or bronchiectasis     n       2940
+                                        less never-smokers     n       2840
+                                      less no baseline ESI     n       2503
+ less no valid MD-COPD classification (Bhatt ground truth)     n       2570
+                              less unacceptable spirometry     n       2802
+                                 visit 1 in phenotype file     n       3000
+ analysis  diff
+    10305 -7365
+    10198 -7358
+     9240 -6737
+     9416 -6846
+    10132 -7330
+    10305 -7305
+mdcopd_validation               4 values,   4 beyond tolerance
+        key field recomputed analysis  diff
+   AFL-only  ours         28      282  -254
+ COPD-major  ours        947     3884 -2937
+ COPD-minor  ours        165      811  -646
+     noCOPD  ours       1430     4439 -3009
+schema_labels                  14 values,  14 beyond tolerance
+             key field recomputed analysis  diff
+       S1 | COPD     n        951     4084 -3133
+     S1 | noCOPD     n       1552     5156 -3604
+   S2 | AFL-only     n         27      275  -248
+ S2 | COPD-major     n        924     3809 -2885
+ S2 | COPD-minor     n        162      799  -637
+     S2 | noCOPD     n       1390     4357 -2967
+   S3 | AFL-only     n         65     1108 -1043
+ S3 | COPD-major     n        886     2976 -2090
+ S3 | COPD-minor     n        215     1174  -959
+     S3 | noCOPD     n       1337     3982 -2645
+   S4 | AFL-only     n         22      543  -521
+ S4 | COPD-major     n        929     3541 -2612
+ S4 | COPD-minor     n        344     1215  -871
+     S4 | noCOPD     n       1208     3941 -2733
+crossclass                     32 values,  21 beyond tolerance
+                          key field recomputed analysis  diff
+     S3 | AFL-only | AFL-only     n         25      275  -250
+   S3 | AFL-only | COPD-major     n         39      833  -794
+   S3 | AFL-only | COPD-minor     n          1        0     1
+   S3 | COPD-major | AFL-only     n          2        0     2
+ S3 | COPD-major | COPD-major     n        883     2976 -2093
+ S3 | COPD-major | COPD-minor     n          1        0     1
+ S3 | COPD-minor | COPD-minor     n        117      709  -592
+     S3 | COPD-minor | noCOPD     n         98      465  -367
+     S3 | noCOPD | COPD-major     n          2        0     2
+     S3 | noCOPD | COPD-minor     n         43       90   -47
+         S3 | noCOPD | noCOPD     n       1292     3892 -2600
+     S4 | AFL-only | AFL-only     n         11      193  -182
+   S4 | AFL-only | COPD-major     n         11      350  -339
+   S4 | COPD-major | AFL-only     n         16       82   -66
+ S4 | COPD-major | COPD-major     n        911     3459 -2548
+ S4 | COPD-major | COPD-minor     n          2        0     2
+ S4 | COPD-minor | COPD-minor     n        135      714  -579
+     S4 | COPD-minor | noCOPD     n        209      501  -292
+     S4 | noCOPD | COPD-major     n          2        0     2
+     S4 | noCOPD | COPD-minor     n         25       85   -60
+         S4 | noCOPD | noCOPD     n       1181     3856 -2675
+agreement_by_group             40 values,  40 beyond tolerance
+             key           field  recomputed    analysis           diff
+   S3 | AFL-only           n_ref   27.000000  275.000000 -2.4800000e+02
+ S3 | COPD-major           n_ref  924.000000 3809.000000 -2.8850000e+03
+ S3 | COPD-minor           n_ref  162.000000  799.000000 -6.3700000e+02
+     S3 | noCOPD           n_ref 1390.000000 4357.000000 -2.9670000e+03
+   S4 | AFL-only           n_ref   27.000000  275.000000 -2.4800000e+02
+ S4 | COPD-major           n_ref  924.000000 3809.000000 -2.8850000e+03
+ S4 | COPD-minor           n_ref  162.000000  799.000000 -6.3700000e+02
+     S4 | noCOPD           n_ref 1390.000000 4357.000000 -2.9670000e+03
+   S3 | AFL-only      n_assigned   65.000000 1108.000000 -1.0430000e+03
+ S3 | COPD-major      n_assigned  886.000000 2976.000000 -2.0900000e+03
+ S3 | COPD-minor      n_assigned  215.000000 1174.000000 -9.5900000e+02
+     S3 | noCOPD      n_assigned 1337.000000 3982.000000 -2.6450000e+03
+   S4 | AFL-only      n_assigned   22.000000  543.000000 -5.2100000e+02
+ S4 | COPD-major      n_assigned  929.000000 3541.000000 -2.6120000e+03
+ S4 | COPD-minor      n_assigned  344.000000 1215.000000 -8.7100000e+02
+     S4 | noCOPD      n_assigned 1208.000000 3941.000000 -2.7330000e+03
+   S3 | AFL-only         n_agree   25.000000  275.000000 -2.5000000e+02
+ S3 | COPD-major         n_agree  883.000000 2976.000000 -2.0930000e+03
+ S3 | COPD-minor         n_agree  117.000000  709.000000 -5.9200000e+02
+     S3 | noCOPD         n_agree 1292.000000 3892.000000 -2.6000000e+03
+   S4 | AFL-only         n_agree   11.000000  193.000000 -1.8200000e+02
+ S4 | COPD-major         n_agree  911.000000 3459.000000 -2.5480000e+03
+ S4 | COPD-minor         n_agree  135.000000  714.000000 -5.7900000e+02
+     S4 | noCOPD         n_agree 1181.000000 3856.000000 -2.6750000e+03
+   S3 | AFL-only sensitivity_pct   92.592593  100.000000 -7.4074074e+00
+ S3 | COPD-major sensitivity_pct   95.562771   78.130743  1.7432028e+01
+ S3 | COPD-minor sensitivity_pct   72.222222   88.735920 -1.6513698e+01
+     S3 | noCOPD sensitivity_pct   92.949640   89.327519  3.6221214e+00
+   S4 | AFL-only sensitivity_pct   40.740741   70.181818 -2.9441077e+01
+ S4 | COPD-major sensitivity_pct   98.593074   90.811237  7.7818370e+00
+ S4 | COPD-minor sensitivity_pct   83.333333   89.361702 -6.0283688e+00
+     S4 | noCOPD sensitivity_pct   84.964029   88.501262 -3.5372336e+00
+   S3 | AFL-only         ppv_pct   38.461538   24.819495  1.3642044e+01
+ S3 | COPD-major         ppv_pct   99.661400  100.000000 -3.3860045e-01
+ S3 | COPD-minor         ppv_pct   54.418605   60.391823 -5.9732182e+00
+     S3 | noCOPD         ppv_pct   96.634256   97.739829 -1.1055734e+00
+   S4 | AFL-only         ppv_pct   50.000000   35.543278  1.4456722e+01
+ S4 | COPD-major         ppv_pct   98.062433   97.684270  3.7816274e-01
+ S4 | COPD-minor         ppv_pct   39.244186   58.765432 -1.9521246e+01
+     S4 | noCOPD         ppv_pct   97.764901   97.843187 -7.8286346e-02
+f1_by_category                  8 values,   8 beyond tolerance
+             key field recomputed   analysis         diff
+   S3 | AFL-only    f1 0.54347826 0.39768619  0.145792071
+ S3 | COPD-major    f1 0.97569061 0.87722918  0.098461426
+ S3 | COPD-minor    f1 0.62068966 0.71870248 -0.098012828
+     S3 | noCOPD    f1 0.94756142 0.93344526  0.014116166
+   S4 | AFL-only    f1 0.44897959 0.47188264 -0.022903049
+ S4 | COPD-major    f1 0.98327037 0.94122449  0.042045883
+ S4 | COPD-minor    f1 0.53359684 0.70903674 -0.175439905
+     S4 | noCOPD    f1 0.90916089 0.92938057 -0.020219681
+accuracy_test                   6 values,   6 beyond tolerance
+ key                     field  recomputed   analysis        diff
+   1                         n 2503.000000 9240.00000 -6737.00000
+   1              correct_noct 2317.000000 7852.00000 -5535.00000
+   1               correct_esi 2238.000000 8222.00000 -5984.00000
+   1          only_esi_correct   46.000000  488.00000  -442.00000
+   1         only_noct_correct  125.000000  118.00000     7.00000
+   1 mcnemar_chisq_uncorrected   36.497076  225.90759  -189.41051
+reclassification                6 values,   6 beyond tolerance
+ key            field recomputed analysis diff
+  S3 major_to_aflonly         39      833 -794
+  S4 major_to_aflonly         11      350 -339
+  S3  minor_to_nocopd         43       90  -47
+  S4  minor_to_nocopd         25       85  -60
+  S3  nocopd_to_minor         98      465 -367
+  S4  nocopd_to_minor        209      501 -292
+schema_fit (selected)           6 values,   3 beyond tolerance
+ key   field recomputed   analysis        diff
+  S4   t_low 2.50000000 1.50000000 1.000000000
+  S3 macroF1 0.77185499 0.73176578 0.040089209
+  S4 macroF1 0.78579661 0.76288111 0.022915502
+bronchodilator_delta_esi        3 values,   3 beyond tolerance
+ key      field    recomputed       analysis           diff
+   1   n_paired 2503.00000000 9234.000000000 -6.7310000e+03
+   1 mean_delta   -0.15614383   -0.091805285 -6.4338543e-02
+   1   sd_delta    0.44261500    0.818237471 -3.7562247e-01
+supp_baseline (Table S1)      126 values, 121 beyond tolerance
+     key          field   recomputed analysis          diff
+   GOLD0              n 1.323000e+03  4037.00 -2.714000e+03
+   GOLD1              n 3.640000e+02   734.00 -3.700000e+02
+   GOLD2              n 5.300000e+02  1772.00 -1.242000e+03
+   GOLD3              n 5.100000e+01  1050.00 -9.990000e+02
+   GOLD4              n 6.000000e+00   528.00 -5.220000e+02
+ Overall              n 2.503000e+03  9240.00 -6.737000e+03
+   PRISm              n 2.290000e+02  1119.00 -8.900000e+02
+   GOLD0       age_mean 6.257732e+01    56.70  5.877324e+00
+   GOLD1       age_mean 6.254615e+01    61.90  6.461538e-01
+   GOLD2       age_mean 6.288189e+01    62.60  2.818868e-01
+   GOLD3       age_mean 6.294706e+01    64.30 -1.352941e+00
+   GOLD4       age_mean 5.188333e+01    64.10 -1.221667e+01
+ Overall       age_mean 6.260104e+01    59.60  3.001039e+00
+   PRISm       age_mean 6.237904e+01    57.20  5.179039e+00
+   GOLD0         age_sd 1.017634e+01     8.40  1.776336e+00
+   GOLD1         age_sd 1.028249e+01     9.00  1.282493e+00
+   GOLD2         age_sd 9.910292e+00     8.90  1.010292e+00
+   GOLD3         age_sd 1.019789e+01     8.30  1.897889e+00
+   GOLD4         age_sd 8.303834e+00     7.60  7.038345e-01
+ Overall         age_sd 1.017582e+01     9.00  1.175823e+00
+   PRISm         age_sd 1.058429e+01     8.30  2.284294e+00
+   GOLD0     pct_female 4.958428e+01    47.00  2.584278e+00
+   GOLD1     pct_female 4.725275e+01    42.00  5.252747e+00
+   GOLD2     pct_female 5.301887e+01    46.00  7.018868e+00
+   GOLD3     pct_female 5.490196e+01    42.00  1.290196e+01
+   GOLD4     pct_female 5.000000e+01    41.00  9.000000e+00
+ Overall     pct_female 5.009988e+01    47.00  3.099880e+00
+   PRISm     pct_female 4.978166e+01    54.00 -4.218341e+00
+   GOLD0    pct_current 4.973545e+01    59.00 -9.264550e+00
+   GOLD1    pct_current 4.890110e+01    55.00 -6.098901e+00
+   GOLD3    pct_current 3.333333e+01    36.00 -2.666667e+00
+   GOLD4    pct_current 3.333333e+01    24.00  9.333333e+00
+ Overall    pct_current 4.874151e+01    53.00 -4.258490e+00
+   PRISm    pct_current 4.672489e+01    63.00 -1.627511e+01
+   GOLD0 packyears_mean 4.427755e+01    37.20  7.077551e+00
+   GOLD1 packyears_mean 4.252253e+01    45.00 -2.477473e+00
+   GOLD2 packyears_mean 4.554208e+01    50.90 -5.357925e+00
+   GOLD3 packyears_mean 4.363725e+01    54.90 -1.126275e+01
+   GOLD4 packyears_mean 3.615000e+01    56.70 -2.055000e+01
+ Overall packyears_mean 4.430384e+01    44.20  1.038354e-01
+   PRISm packyears_mean 4.478341e+01    42.30  2.483406e+00
+   GOLD0   packyears_sd 2.183994e+01    20.20  1.639938e+00
+   GOLD1   packyears_sd 2.168818e+01    24.50 -2.811824e+00
+   GOLD2   packyears_sd 2.155084e+01    26.90 -5.349162e+00
+   GOLD3   packyears_sd 2.149841e+01    27.40 -5.901591e+00
+   GOLD4   packyears_sd 1.398724e+01    29.00 -1.501276e+01
+ Overall   packyears_sd 2.198698e+01    24.90 -2.913022e+00
+   PRISm   packyears_sd 2.442304e+01    23.80  6.230439e-01
+   GOLD0       BMI_mean 2.816833e+01    28.90 -7.316704e-01
+   GOLD1       BMI_mean 2.801813e+01    26.90  1.118132e+00
+   GOLD2       BMI_mean 2.909189e+01    28.70  3.918868e-01
+   GOLD3       BMI_mean 2.836667e+01    28.00  3.666667e-01
+   GOLD4       BMI_mean 2.903333e+01    25.30  3.733333e+00
+ Overall       BMI_mean 2.825805e+01    28.80 -5.419497e-01
+   PRISm       BMI_mean 2.718341e+01    31.70 -4.516594e+00
+   GOLD1         BMI_sd 6.103506e+00     4.80  1.303506e+00
+   GOLD2         BMI_sd 5.866813e+00     6.10 -2.331866e-01
+   GOLD3         BMI_sd 4.830763e+00     6.30 -1.469237e+00
+   GOLD4         BMI_sd 6.127533e+00     5.60  5.275335e-01
+ Overall         BMI_sd 5.917208e+00     6.20 -2.827923e-01
+   PRISm         BMI_sd 6.273600e+00     7.20 -9.264000e-01
+   GOLD0    FEV1pp_mean 9.360620e+01    97.50 -3.893802e+00
+   GOLD1    FEV1pp_mean 8.949066e+01    90.80 -1.309341e+00
+   GOLD2    FEV1pp_mean 6.823660e+01    65.10  3.136604e+00
+   GOLD3    FEV1pp_mean 4.302157e+01    40.20  2.821569e+00
+   GOLD4    FEV1pp_mean 2.621667e+01    22.70  3.516667e+00
+ Overall    FEV1pp_mean 8.469600e+01    76.70  7.996005e+00
+   PRISm    FEV1pp_mean 7.450524e+01    70.60  3.905240e+00
+   GOLD0      FEV1pp_sd 7.996269e+00    11.40 -3.403731e+00
+   GOLD1      FEV1pp_sd 7.378546e+00     8.80 -1.421454e+00
+   GOLD2      FEV1pp_sd 7.588925e+00     8.50 -9.110754e-01
+   GOLD3      FEV1pp_sd 5.112820e+00     5.70 -5.871803e-01
+   GOLD4      FEV1pp_sd 2.125480e+00     4.80 -2.674520e+00
+ Overall      FEV1pp_sd 1.456090e+01    25.30 -1.073910e+01
+   PRISm      FEV1pp_sd 4.454445e+00     7.90 -3.445555e+00
+   GOLD0   FEV1FVC_mean 8.180280e-01     0.79  2.802797e-02
+   GOLD2   FEV1FVC_mean 5.967943e-01     0.58  1.679434e-02
+   GOLD3   FEV1FVC_mean 4.751765e-01     0.44  3.517647e-02
+   GOLD4   FEV1FVC_mean 4.001667e-01     0.32  8.016667e-02
+ Overall   FEV1FVC_mean 7.368833e-01     0.67  6.688334e-02
+   PRISm   FEV1FVC_mean 8.028603e-01     0.77  3.286026e-02
+   GOLD0     FEV1FVC_sd 8.156553e-02     0.05  3.156553e-02
+   GOLD2     FEV1FVC_sd 7.023650e-02     0.08 -9.763503e-03
+   GOLD3     FEV1FVC_sd 6.771461e-02     0.09 -2.228539e-02
+   GOLD4     FEV1FVC_sd 4.404278e-02     0.07 -2.595722e-02
+ Overall     FEV1FVC_sd 1.279003e-01     0.16 -3.209969e-02
+   PRISm     FEV1FVC_sd 7.863282e-02     0.05  2.863282e-02
+   GOLD0       ESI_mean 6.570060e-01     0.90 -2.429940e-01
+   GOLD1       ESI_mean 2.000846e+00     1.44  5.608462e-01
+   GOLD2       ESI_mean 2.988813e+00     2.18  8.088132e-01
+   GOLD3       ESI_mean 4.652118e+00     4.84 -1.878824e-01
+   GOLD4       ESI_mean 5.949667e+00     8.30 -2.350333e+00
+ Overall       ESI_mean 1.463913e+00     2.06 -5.960871e-01
+   PRISm       ESI_mean 9.153712e-01     0.91  5.371179e-03
+   GOLD0         ESI_sd 7.595432e-01     0.37  3.895432e-01
+   GOLD1         ESI_sd 8.643907e-01     0.51  3.543907e-01
+   GOLD2         ESI_sd 1.025107e+00     1.21 -1.848929e-01
+   GOLD3         ESI_sd 1.018519e+00     2.15 -1.131481e+00
+   GOLD4         ESI_sd 1.118353e+00     1.98 -8.616472e-01
+ Overall         ESI_sd 1.380658e+00     2.24 -8.593421e-01
+   PRISm         ESI_sd 9.702643e-01     0.45  5.202643e-01
+   GOLD0      pct_mMRC2 1.730915e+01    23.00 -5.690854e+00
+   GOLD1      pct_mMRC2 5.412088e+01    22.00  3.212088e+01
+   GOLD2      pct_mMRC2 7.150943e+01    50.00  2.150943e+01
+   GOLD3      pct_mMRC2 9.607843e+01    78.00  1.807843e+01
+   GOLD4      pct_mMRC2 1.000000e+02    95.00  5.000000e+00
+ Overall      pct_mMRC2 3.667599e+01    41.00 -4.324011e+00
+   PRISm      pct_mMRC2 2.532751e+01    45.00 -1.967249e+01
+   GOLD0     pct_SGRQ25 3.280423e+01    26.00  6.804233e+00
+   GOLD1     pct_SGRQ25 6.978022e+01    28.00  4.178022e+01
+   GOLD2     pct_SGRQ25 8.396226e+01    59.00  2.496226e+01
+   GOLD3     pct_SGRQ25 1.000000e+02    85.00  1.500000e+01
+   GOLD4     pct_SGRQ25 1.000000e+02    97.00  3.000000e+00
+ Overall     pct_SGRQ25 5.113863e+01    46.00  5.138634e+00
+   PRISm     pct_SGRQ25 3.930131e+01    50.00 -1.069869e+01
+   GOLD0         pct_CB 1.534392e+01    13.00  2.343915e+00
+   GOLD1         pct_CB 1.923077e+01    15.00  4.230769e+00
+   GOLD3         pct_CB 4.509804e+01    30.00  1.509804e+01
+   GOLD4         pct_CB 5.000000e+01    28.00  2.200000e+01
+ Overall         pct_CB 1.961646e+01    19.00  6.164602e-01
+   PRISm         pct_CB 2.183406e+01    17.00  4.834061e+00
+esi_ct_levels                  18 values,  18 beyond tolerance
+                        key    field    recomputed      analysis           diff
+ Airway wall thickening | 0        n  682.00000000 1006.00000000 -3.2400000e+02
+ Airway wall thickening | 1        n 1098.00000000 4553.00000000 -3.4550000e+03
+ Airway wall thickening | 2        n  673.00000000 3677.00000000 -3.0040000e+03
+       Visual emphysema | 0        n  784.00000000 3086.00000000 -2.3020000e+03
+       Visual emphysema | 1        n  606.00000000 1686.00000000 -1.0800000e+03
+       Visual emphysema | 2        n  525.00000000 1829.00000000 -1.3040000e+03
+       Visual emphysema | 3        n  331.00000000 1435.00000000 -1.1040000e+03
+       Visual emphysema | 4        n  155.00000000  894.00000000 -7.3900000e+02
+       Visual emphysema | 5        n   51.00000000  306.00000000 -2.5500000e+02
+ Airway wall thickening | 0 mean_ESI    0.50244868    0.95800199 -4.5555331e-01
+ Airway wall thickening | 1 mean_ESI    1.40513752    1.28717659  1.1796094e-01
+ Airway wall thickening | 2 mean_ESI    2.53455869    3.32485722 -7.9029853e-01
+       Visual emphysema | 0 mean_ESI    0.45577806    1.03848833 -5.8271027e-01
+       Visual emphysema | 1 mean_ESI    1.14718482    1.22250890 -7.5324078e-02
+       Visual emphysema | 2 mean_ESI    1.77332381    1.59488245  1.7844136e-01
+       Visual emphysema | 3 mean_ESI    2.65189728    2.91246690 -2.6056962e-01
+       Visual emphysema | 4 mean_ESI    3.50721290    5.21338926 -1.7061764e+00
+       Visual emphysema | 5 mean_ESI    3.79680392    6.62300654 -2.8262026e+00
+esi_ct_auc (missing=neg)       24 values,  24 beyond tolerance
+                                           key       field    recomputed
+   Airflow limitation | Airway wall thickening           n  951.00000000
+         Airflow limitation | Visual emphysema           n  951.00000000
+     All participants | Airway wall thickening           n 2503.00000000
+           All participants | Visual emphysema           n 2503.00000000
+ Preserved spirometry | Airway wall thickening           n 1552.00000000
+       Preserved spirometry | Visual emphysema           n 1552.00000000
+   Airflow limitation | Airway wall thickening  prevalence   50.05257624
+         Airflow limitation | Visual emphysema  prevalence   74.02733964
+     All participants | Airway wall thickening  prevalence   26.88773472
+           All participants | Visual emphysema  prevalence   42.42908510
+ Preserved spirometry | Airway wall thickening  prevalence   12.69329897
+       Preserved spirometry | Visual emphysema  prevalence   23.06701031
+   Airflow limitation | Airway wall thickening     auc_ESI    0.67199469
+         Airflow limitation | Visual emphysema     auc_ESI    0.74895910
+     All participants | Airway wall thickening     auc_ESI    0.79351002
+           All participants | Visual emphysema     auc_ESI    0.84226728
+ Preserved spirometry | Airway wall thickening     auc_ESI    0.70904527
+       Preserved spirometry | Visual emphysema     auc_ESI    0.75627556
+   Airflow limitation | Airway wall thickening auc_FEV1FVC    0.67404688
+         Airflow limitation | Visual emphysema auc_FEV1FVC    0.71177712
+     All participants | Airway wall thickening auc_FEV1FVC    0.79490658
+           All participants | Visual emphysema auc_FEV1FVC    0.83971720
+ Preserved spirometry | Airway wall thickening auc_FEV1FVC    0.68037912
+       Preserved spirometry | Visual emphysema auc_FEV1FVC    0.75028073
+      analysis           diff
+ 4084.00000000 -3.1330000e+03
+ 4084.00000000 -3.1330000e+03
+ 9240.00000000 -6.7370000e+03
+ 9240.00000000 -6.7370000e+03
+ 5156.00000000 -3.6040000e+03
+ 5156.00000000 -3.6040000e+03
+   66.28305583 -1.6230480e+01
+   75.63663075 -1.6092911e+00
+   39.79437229 -1.2906638e+01
+   48.31168831 -5.8826032e+00
+   18.81303336 -6.1197344e+00
+   26.66795966 -3.6009493e+00
+    0.74609226 -7.4097568e-02
+    0.75412836 -5.1692626e-03
+    0.80401778 -1.0507760e-02
+    0.77982969  6.2437589e-02
+    0.60527569  1.0376959e-01
+    0.55719689  1.9907866e-01
+    0.74526584 -7.1218962e-02
+    0.77975471 -6.7977593e-02
+    0.81749299 -2.2586403e-02
+    0.82428493  1.5432269e-02
+    0.64338985  3.6989272e-02
+    0.67277623  7.7504508e-02
+consensus_ref_group             8 values,   8 beyond tolerance
+ key       field recomputed  analysis       diff
+   1    n_cohort   1181.000  3856.000  -2675.000
+   1      n_mort   1177.000  3856.000  -2679.000
+   1      n_exac   1057.000  3411.000  -2354.000
+   1      deaths     97.000   573.000   -476.000
+   1 resp_deaths     27.000    14.000     13.000
+   1 exac_events    873.000  3733.000  -2860.000
+   1  person_yrs   9379.729 37931.537 -28551.808
+   1      fu_yrs   6459.700 31342.300 -24882.600
+consensus_ref_crude           135 values, 116 beyond tolerance
+                    key      field    recomputed      analysis           diff
+    S2 | AFL-only | all     events    5.00000000 5.0000000e+01 -4.5000000e+01
+   S2 | AFL-only | exac     events   26.00000000 3.6200000e+02 -3.3600000e+02
+   S2 | AFL-only | resp     events    0.00000000 2.0000000e+00 -2.0000000e+00
+  S2 | COPD-major | all     events  187.00000000 1.6840000e+03 -1.4970000e+03
+ S2 | COPD-major | exac     events 2131.00000000 1.5335000e+04 -1.3204000e+04
+ S2 | COPD-major | resp     events   76.00000000 5.9400000e+02 -5.1800000e+02
+  S2 | COPD-minor | all     events   20.00000000 1.8000000e+02 -1.6000000e+02
+ S2 | COPD-minor | exac     events  186.00000000 2.0410000e+03 -1.8550000e+03
+ S2 | COPD-minor | resp     events    4.00000000 8.0000000e+00 -4.0000000e+00
+    S3 | AFL-only | all     events    9.00000000 2.6200000e+02 -2.5300000e+02
+   S3 | AFL-only | exac     events   67.00000000 1.9150000e+03 -1.8480000e+03
+   S3 | AFL-only | resp     events    1.00000000 3.4000000e+01 -3.3000000e+01
+  S3 | COPD-major | all     events  183.00000000 1.4720000e+03 -1.2890000e+03
+ S3 | COPD-major | exac     events 2090.00000000 1.3782000e+04 -1.1692000e+04
+ S3 | COPD-major | resp     events   75.00000000 5.6200000e+02 -4.8700000e+02
+  S3 | COPD-minor | all     events   27.00000000 2.4000000e+02 -2.1300000e+02
+ S3 | COPD-minor | exac     events  240.00000000 2.8750000e+03 -2.6350000e+03
+ S3 | COPD-minor | resp     events    6.00000000 8.0000000e+00 -2.0000000e+00
+    S4 | AFL-only | all     events    3.00000000 1.0900000e+02 -1.0600000e+02
+   S4 | AFL-only | exac     events   19.00000000 6.5200000e+02 -6.3300000e+02
+   S4 | AFL-only | resp     events    0.00000000 4.0000000e+00 -4.0000000e+00
+  S4 | COPD-major | all     events  189.00000000 1.6250000e+03 -1.4360000e+03
+ S4 | COPD-major | exac     events 2138.00000000 1.5045000e+04 -1.2907000e+04
+ S4 | COPD-major | resp     events   76.00000000 5.9200000e+02 -5.1600000e+02
+  S4 | COPD-minor | all     events   44.00000000 2.5200000e+02 -2.0800000e+02
+ S4 | COPD-minor | exac     events  416.00000000 2.9250000e+03 -2.5090000e+03
+    S2 | AFL-only | all rate_100py    2.53920914 1.6588459e+00  8.8036324e-01
+   S2 | AFL-only | exac rate_100py   17.29873586 1.3713160e+01  3.5855758e+00
+   S2 | AFL-only | resp rate_100py    0.00000000 6.6353836e-02 -6.6353836e-02
+  S2 | COPD-major | all rate_100py    2.71316036 5.1843257e+00 -2.4711654e+00
+ S2 | COPD-major | exac rate_100py   44.64416651 5.6643568e+01 -1.1999402e+01
+ S2 | COPD-major | resp rate_100py    1.10267480 1.8286755e+00 -7.2600066e-01
+  S2 | COPD-minor | all rate_100py    1.63468166 2.7793290e+00 -1.1446474e+00
+ S2 | COPD-minor | exac rate_100py   22.22487752 4.1054834e+01 -1.8829956e+01
+ S2 | COPD-minor | resp rate_100py    0.32693633 1.2352573e-01  2.0341060e-01
+    S3 | AFL-only | all rate_100py    1.74613166 2.2943241e+00 -5.4819241e-01
+   S3 | AFL-only | exac rate_100py   20.59637258 1.9478802e+01  1.1175704e+00
+   S3 | AFL-only | resp rate_100py    0.19401463 2.9773671e-01 -1.0372208e-01
+  S3 | COPD-major | all rate_100py    2.78384811 6.1136714e+00 -3.3298233e+00
+ S3 | COPD-major | exac rate_100py   45.54666899 6.9321074e+01 -2.3774405e+01
+ S3 | COPD-major | resp rate_100py    1.14092136 2.3341599e+00 -1.1932385e+00
+  S3 | COPD-minor | all rate_100py    1.65966008 2.4163971e+00 -7.5673702e-01
+ S3 | COPD-minor | exac rate_100py   20.08872520 3.7033220e+01 -1.6944495e+01
+ S3 | COPD-minor | resp rate_100py    0.36881335 8.0546570e-02  2.8826678e-01
+    S4 | AFL-only | all rate_100py    1.73186344 1.8957763e+00 -1.6391285e-01
+   S4 | AFL-only | exac rate_100py   18.25168108 1.3178639e+01  5.0730418e+00
+   S4 | AFL-only | resp rate_100py    0.00000000 6.9569772e-02 -6.9569772e-02
+  S4 | COPD-major | all rate_100py    2.73285843 5.4627271e+00 -2.7298686e+00
+ S4 | COPD-major | exac rate_100py   44.44998857 6.0750569e+01 -1.6300581e+01
+ S4 | COPD-major | resp rate_100py    1.09892720 1.9901135e+00 -8.9118629e-01
+  S4 | COPD-minor | all rate_100py    1.71879228 2.4551694e+00 -7.3637713e-01
+ S4 | COPD-minor | exac rate_100py   22.38364272 3.6454049e+01 -1.4070406e+01
+ S4 | COPD-minor | resp rate_100py    0.35157115 8.7684622e-02  2.6388653e-01
+    S2 | AFL-only | all         rr    2.45537047 1.0981252e+00  1.3572452e+00
+   S2 | AFL-only | exac         rr    1.28000738 1.1513581e+00  1.2864928e-01
+   S2 | AFL-only | resp         rr    0.00000000 1.7977879e+00 -1.7977879e+00
+  S2 | COPD-major | all         rr    2.62357822 3.4319275e+00 -8.0834925e-01
+ S2 | COPD-major | exac         rr    3.30341263 4.7557989e+00 -1.4523862e+00
+ S2 | COPD-major | resp         rr    3.83066323 4.9546051e+01 -4.5715388e+01
+  S2 | COPD-minor | all         rr    1.58070834 1.8398643e+00 -2.5915592e-01
+ S2 | COPD-minor | exac         rr    1.64451365 3.4469674e+00 -1.8024537e+00
+ S2 | COPD-minor | resp         rr    1.13576821 3.3468007e+00 -2.2110325e+00
+    S3 | AFL-only | all         rr    1.68847852 1.5188000e+00  1.6967854e-01
+   S3 | AFL-only | exac         rr    1.52401361 1.6354419e+00 -1.1142829e-01
+   S3 | AFL-only | resp         rr    0.67400172 8.0668651e+00 -7.3928634e+00
+  S3 | COPD-major | all         rr    2.69193204 4.0471371e+00 -1.3552050e+00
+ S3 | COPD-major | exac         rr    3.37019264 5.8202033e+00 -2.4500107e+00
+ S3 | COPD-major | resp         rr    3.96353078 6.3241623e+01 -5.9278092e+01
+  S3 | COPD-minor | all         rr    1.60486203 1.5996101e+00  5.2519696e-03
+ S3 | COPD-minor | exac         rr    1.48645061 3.1093124e+00 -1.6228618e+00
+ S3 | COPD-minor | resp         rr    1.28124788 2.1823252e+00 -9.0107728e-01
+    S4 | AFL-only | all         rr    1.67468141 1.2549687e+00  4.1971266e-01
+   S4 | AFL-only | exac         rr    1.35051987 1.1064797e+00  2.4404018e-01
+   S4 | AFL-only | resp         rr    0.00000000 1.8849203e+00 -1.8849203e+00
+  S4 | COPD-major | all         rr    2.64262592 3.6162240e+00 -9.7359809e-01
+ S4 | COPD-major | exac         rr    3.28904457 5.1006230e+00 -1.8115784e+00
+ S4 | COPD-major | resp         rr    3.81764418 5.3920046e+01 -5.0102402e+01
+  S4 | COPD-minor | all         rr    1.66204182 1.6252766e+00  3.6765208e-02
+ S4 | COPD-minor | exac         rr    1.65626136 3.0606851e+00 -1.4044237e+00
+ S4 | COPD-minor | resp         rr    1.22134892 2.3757232e+00 -1.1543743e+00
+    S2 | AFL-only | all         lo    0.77974604 8.0544112e-01 -2.5695085e-02
+   S2 | AFL-only | resp         lo            NA 1.9830765e-01             NA
+  S2 | COPD-major | all         lo    2.04220033 3.1196815e+00 -1.0774812e+00
+ S2 | COPD-major | resp         lo    2.44024380 2.9295855e+01 -2.6855611e+01
+  S2 | COPD-minor | all         lo    0.92489434 1.5474168e+00 -6.2252247e-01
+ S2 | COPD-minor | resp         lo    0.28878783 1.2164753e+00 -9.2768750e-01
+    S3 | AFL-only | all         lo    0.74959208 1.3072099e+00 -5.5761781e-01
+   S3 | AFL-only | resp         lo    0.01646225 4.2166796e+00 -4.2002173e+00
+  S3 | COPD-major | all         lo    2.09323932 3.6722918e+00 -1.5790525e+00
+ S3 | COPD-major | resp         lo    2.52246876 3.7376985e+01 -3.4854516e+01
+  S3 | COPD-minor | all         lo    1.00682238 1.3700533e+00 -3.6323096e-01
+ S3 | COPD-minor | resp         lo    0.43255736 7.9321864e-01 -3.6066128e-01
+    S4 | AFL-only | all         lo    0.33945550 1.0129889e+00 -6.7353339e-01
+   S4 | AFL-only | resp         lo            NA 4.5178525e-01             NA
+  S4 | COPD-major | all         lo    2.05806065 3.2857071e+00 -1.2276465e+00
+ S4 | COPD-major | resp         lo    2.43195028 3.1881281e+01 -2.9449331e+01
+  S4 | COPD-minor | all         lo    1.13652377 1.3958744e+00 -2.5935061e-01
+ S4 | COPD-minor | resp         lo    0.50534388 9.0707215e-01 -4.0172827e-01
+    S2 | AFL-only | all         hi    5.92923893 1.4676287e+00  4.4616103e+00
+   S2 | AFL-only | resp         hi            NA 7.8275369e+00             NA
+  S2 | COPD-major | all         hi    3.38840302 3.7797516e+00 -3.9134856e-01
+ S2 | COPD-major | resp         hi    6.18327077 9.1184468e+01 -8.5001197e+01
+  S2 | COPD-minor | all         hi    2.57709949 2.1790055e+00  3.9809404e-01
+ S2 | COPD-minor | resp         hi    3.25963967 8.5485029e+00 -5.2888632e+00
+    S3 | AFL-only | all         hi    3.33975925 1.7609132e+00  1.5788461e+00
+   S3 | AFL-only | resp         hi    4.08921275 1.6271547e+01 -1.2182334e+01
+  S3 | COPD-major | all         hi    3.47985641 4.4649789e+00 -9.8512249e-01
+ S3 | COPD-major | resp         hi    6.40261382 1.1643023e+02 -1.1002761e+02
+  S3 | COPD-minor | all         hi    2.47999029 1.8630112e+00  6.1697906e-01
+ S3 | COPD-minor | resp         hi    3.16779089 5.5741631e+00 -2.4063722e+00
+    S4 | AFL-only | all         hi    5.04153360 1.5426766e+00  3.4988570e+00
+   S4 | AFL-only | resp         hi            NA 6.0018582e+00             NA
+  S4 | COPD-major | all         hi    3.41149222 3.9844640e+00 -5.7297176e-01
+ S4 | COPD-major | resp         hi    6.16225605 9.9236408e+01 -9.3074151e+01
+  S4 | COPD-minor | all         hi    2.39682000 1.8880882e+00  5.0873185e-01
+ S4 | COPD-minor | resp         hi    2.67545896 5.8928781e+00 -3.2174191e+00
+consensus_ref_risk            117 values, 116 beyond tolerance
+             key       field    recomputed      analysis           diff
+   S2 | AFL-only      n_mort 2.7000000e+01  275.00000000 -2.4800000e+02
+ S2 | COPD-major      n_mort 9.2300000e+02 3807.00000000 -2.8840000e+03
+ S2 | COPD-minor      n_mort 1.6200000e+02  799.00000000 -6.3700000e+02
+   S3 | AFL-only      n_mort 6.5000000e+01 1108.00000000 -1.0430000e+03
+ S3 | COPD-major      n_mort 8.8600000e+02 2974.00000000 -2.0880000e+03
+ S3 | COPD-minor      n_mort 2.1500000e+02 1174.00000000 -9.5900000e+02
+   S4 | AFL-only      n_mort 2.2000000e+01  543.00000000 -5.2100000e+02
+ S4 | COPD-major      n_mort 9.2900000e+02 3539.00000000 -2.6100000e+03
+ S4 | COPD-minor      n_mort 3.4400000e+02 1215.00000000 -8.7100000e+02
+   S2 | AFL-only      n_exac 2.4000000e+01  255.00000000 -2.3100000e+02
+ S2 | COPD-major      n_exac 8.1300000e+02 3419.00000000 -2.6060000e+03
+ S2 | COPD-minor      n_exac 1.4000000e+02  668.00000000 -5.2800000e+02
+   S3 | AFL-only      n_exac 5.8000000e+01 1016.00000000 -9.5800000e+02
+ S3 | COPD-major      n_exac 7.7900000e+02 2658.00000000 -1.8790000e+03
+ S3 | COPD-minor      n_exac 1.9300000e+02  986.00000000 -7.9300000e+02
+   S4 | AFL-only      n_exac 2.1000000e+01  501.00000000 -4.8000000e+02
+ S4 | COPD-major      n_exac 8.1600000e+02 3173.00000000 -2.3570000e+03
+ S4 | COPD-minor      n_exac 3.0600000e+02 1020.00000000 -7.1400000e+02
+   S2 | AFL-only      deaths 5.0000000e+00   50.00000000 -4.5000000e+01
+ S2 | COPD-major      deaths 1.8700000e+02 1684.00000000 -1.4970000e+03
+ S2 | COPD-minor      deaths 2.0000000e+01  180.00000000 -1.6000000e+02
+   S3 | AFL-only      deaths 9.0000000e+00  262.00000000 -2.5300000e+02
+ S3 | COPD-major      deaths 1.8300000e+02 1472.00000000 -1.2890000e+03
+ S3 | COPD-minor      deaths 2.7000000e+01  240.00000000 -2.1300000e+02
+   S4 | AFL-only      deaths 3.0000000e+00  109.00000000 -1.0600000e+02
+ S4 | COPD-major      deaths 1.8900000e+02 1625.00000000 -1.4360000e+03
+ S4 | COPD-minor      deaths 4.4000000e+01  252.00000000 -2.0800000e+02
+   S2 | AFL-only resp_deaths 0.0000000e+00    2.00000000 -2.0000000e+00
+ S2 | COPD-major resp_deaths 7.6000000e+01  594.00000000 -5.1800000e+02
+ S2 | COPD-minor resp_deaths 4.0000000e+00    8.00000000 -4.0000000e+00
+   S3 | AFL-only resp_deaths 1.0000000e+00   34.00000000 -3.3000000e+01
+ S3 | COPD-major resp_deaths 7.5000000e+01  562.00000000 -4.8700000e+02
+ S3 | COPD-minor resp_deaths 6.0000000e+00    8.00000000 -2.0000000e+00
+   S4 | AFL-only resp_deaths 0.0000000e+00    4.00000000 -4.0000000e+00
+ S4 | COPD-major resp_deaths 7.6000000e+01  592.00000000 -5.1600000e+02
+   S2 | AFL-only      all_HR 2.2704335e+00    0.90969422  1.3607393e+00
+ S2 | COPD-major      all_HR 2.6409731e+00    2.66798481 -2.7011712e-02
+ S2 | COPD-minor      all_HR 1.6274312e+00    1.95246739 -3.2503614e-01
+   S3 | AFL-only      all_HR 1.8063593e+00    1.10762938  6.9872995e-01
+ S3 | COPD-major      all_HR 2.7013321e+00    3.27933015 -5.7799803e-01
+ S3 | COPD-minor      all_HR 1.6264572e+00    1.84570351 -2.1924628e-01
+   S4 | AFL-only      all_HR 1.8115889e+00    0.93727723  8.7431164e-01
+ S4 | COPD-major      all_HR 2.6524384e+00    2.85310253 -2.0066418e-01
+ S4 | COPD-minor      all_HR 1.6427743e+00    1.82640683 -1.8363258e-01
+   S2 | AFL-only     all_LCI 9.2238524e-01    0.68060873  2.4177651e-01
+ S2 | COPD-major     all_LCI 2.0654586e+00    2.41459527 -3.4913667e-01
+ S2 | COPD-minor     all_LCI 1.0041362e+00    1.64599757 -6.4186140e-01
+   S3 | AFL-only     all_LCI 9.1172849e-01    0.95419266 -4.2464169e-02
+ S3 | COPD-major     all_LCI 2.1107063e+00    2.96295948 -8.5225318e-01
+ S3 | COPD-minor     all_LCI 1.0613707e+00    1.58111825 -5.1974756e-01
+   S4 | AFL-only     all_LCI 5.7209486e-01    0.76224699 -1.9015213e-01
+ S4 | COPD-major     all_LCI 2.0753071e+00    2.58161485 -5.0630777e-01
+ S4 | COPD-minor     all_LCI 1.1500138e+00    1.56843430 -4.1842046e-01
+   S2 | AFL-only     all_UCI 5.5886285e+00    1.21588739  4.3727412e+00
+ S2 | COPD-major     all_UCI 3.3768476e+00    2.94796525  4.2888234e-01
+ S2 | COPD-minor     all_UCI 2.6376228e+00    2.31599911  3.2162369e-01
+   S3 | AFL-only     all_UCI 3.5788440e+00    1.28573912  2.2931048e+00
+ S3 | COPD-major     all_UCI 3.4572291e+00    3.62948136 -1.7225228e-01
+ S3 | COPD-minor     all_UCI 2.4924026e+00    2.15456463  3.3783802e-01
+   S4 | AFL-only     all_UCI 5.7365560e+00    1.15249861  4.5840574e+00
+ S4 | COPD-major     all_UCI 3.3900666e+00    3.15314039  2.3692621e-01
+ S4 | COPD-minor     all_UCI 2.3466737e+00    2.12681012  2.1986361e-01
+   S2 | AFL-only     resp_HR 5.0102372e-07    1.47403378 -1.4740333e+00
+ S2 | COPD-major     resp_HR 3.8549777e+00   32.70413533 -2.8849158e+01
+ S2 | COPD-minor     resp_HR 1.1126198e+00    4.08992040 -2.9773006e+00
+   S3 | AFL-only     resp_HR 7.0380778e-01    5.45652702 -4.7527192e+00
+ S3 | COPD-major     resp_HR 3.9837567e+00   42.31403249 -3.8330276e+01
+ S3 | COPD-minor     resp_HR 1.2757387e+00    3.13894687 -1.8632082e+00
+   S4 | AFL-only     resp_HR 4.9240177e-07    1.40203771 -1.4020372e+00
+ S4 | COPD-major     resp_HR 3.8411400e+00   35.35702237 -3.1515882e+01
+ S4 | COPD-minor     resp_HR 1.2097798e+00    3.29308955 -2.0833098e+00
+   S2 | AFL-only    resp_LCI 0.0000000e+00    0.33473478 -3.3473478e-01
+ S2 | COPD-major    resp_LCI 2.4830424e+00   19.17519266 -1.6692150e+01
+ S2 | COPD-minor    resp_LCI 3.8859862e-01    1.71057853 -1.3219799e+00
+   S3 | AFL-only    resp_LCI 9.5538315e-02    2.92012399 -2.8245857e+00
+ S3 | COPD-major    resp_LCI 2.5638923e+00   24.80236225 -2.2238470e+01
+ S3 | COPD-minor    resp_LCI 5.2641974e-01    1.31242230 -7.8600256e-01
+   S4 | AFL-only    resp_LCI 0.0000000e+00    0.46087007 -4.6087007e-01
+ S4 | COPD-major    resp_LCI 2.4739493e+00   20.73347193 -1.8259523e+01
+ S4 | COPD-minor    resp_LCI 5.6869012e-01    1.42038215 -8.5169203e-01
+   S2 | AFL-only    resp_UCI           Inf    6.49103621            Inf
+ S2 | COPD-major    resp_UCI 5.9849374e+00   55.77834270 -4.9793405e+01
+ S2 | COPD-minor    resp_UCI 3.1856078e+00    9.77882547 -6.5932177e+00
+   S3 | AFL-only    resp_UCI 5.1847826e+00   10.19603524 -5.0112526e+00
+ S3 | COPD-major    resp_UCI 6.1899316e+00   72.18979094 -6.5999859e+01
+ S3 | COPD-minor    resp_UCI 3.0916567e+00    7.50748250 -4.4158258e+00
+   S4 | AFL-only    resp_UCI           Inf    4.26521456            Inf
+ S4 | COPD-major    resp_UCI 5.9638880e+00   60.29472706 -5.4330839e+01
+ S4 | COPD-minor    resp_UCI 2.5735758e+00    7.63487405 -5.0612982e+00
+   S2 | AFL-only    exac_IRR 1.0826177e+00    1.29730543 -2.1468778e-01
+ S2 | COPD-major    exac_IRR 3.2228837e+00    3.99511564 -7.7223190e-01
+ S2 | COPD-minor    exac_IRR 1.7424763e+00    2.33371978 -5.9124347e-01
+   S3 | AFL-only    exac_IRR 1.5791655e+00    1.72644611 -1.4728056e-01
+ S3 | COPD-major    exac_IRR 3.3098348e+00    4.68331249 -1.3734777e+00
+ S3 | COPD-minor    exac_IRR 1.5624677e+00    2.21438660 -6.5191893e-01
+   S4 | AFL-only    exac_IRR 1.3373510e+00    1.19410224  1.4324874e-01
+ S4 | COPD-major    exac_IRR 3.1870019e+00    4.27803612 -1.0910342e+00
+ S4 | COPD-minor    exac_IRR 1.6788191e+00    2.14769368 -4.6887460e-01
+   S2 | AFL-only    exac_LCI 5.5084058e-01    1.02281619 -4.7197561e-01
+ S2 | COPD-major    exac_LCI 2.7824576e+00    3.62348953 -8.4103194e-01
+ S2 | COPD-minor    exac_LCI 1.3230138e+00    1.99184891 -6.6883508e-01
+   S3 | AFL-only    exac_LCI 1.0377564e+00    1.51341551 -4.7565914e-01
+ S3 | COPD-major    exac_LCI 2.8550991e+00    4.22706341 -1.3719643e+00
+ S3 | COPD-minor    exac_LCI 1.2244881e+00    1.93331992 -7.0883179e-01
+   S4 | AFL-only    exac_LCI 6.3774017e-01    0.99869723 -3.6095706e-01
+ S4 | COPD-major    exac_LCI 2.7536200e+00    3.87827661 -1.1246566e+00
+ S4 | COPD-minor    exac_LCI 1.3710070e+00    1.87675870 -5.0575165e-01
+   S2 | AFL-only    exac_UCI 2.1277680e+00    1.64545829  4.8230973e-01
+ S2 | COPD-major    exac_UCI 3.7330235e+00    4.40485582 -6.7183232e-01
+ S2 | COPD-minor    exac_UCI 2.2949297e+00    2.73426764 -4.3933797e-01
+   S3 | AFL-only    exac_UCI 2.4030340e+00    1.96946320  4.3357078e-01
+ S3 | COPD-major    exac_UCI 3.8369968e+00    5.18880692 -1.3518102e+00
+ S3 | COPD-minor    exac_UCI 1.9937353e+00    2.53631485 -5.4257953e-01
+   S4 | AFL-only    exac_UCI 2.8044457e+00    1.42774019  1.3767055e+00
+ S4 | COPD-major    exac_UCI 3.6885922e+00    4.71900149 -1.0304093e+00
+ S4 | COPD-minor    exac_UCI 2.0557396e+00    2.45774172 -4.0200211e-01
+followup_medians               16 values,  15 beyond tolerance
+                                               key     field   recomputed
+                                     exacerbations         n 2223.0000000
+        FEV1 decline, everyone in the decline data         n 2488.0000000
+ FEV1 decline, participants with a follow-up visit         n 1861.0000000
+             mortality (all-cause and respiratory)         n 2498.0000000
+                                     exacerbations median_yr    6.1000000
+        FEV1 decline, everyone in the decline data median_yr    5.9400000
+ FEV1 decline, participants with a follow-up visit median_yr    9.1400000
+             mortality (all-cause and respiratory) median_yr    7.6372348
+                                     exacerbations     q1_yr    2.9000000
+ FEV1 decline, participants with a follow-up visit     q1_yr    5.5500000
+             mortality (all-cause and respiratory)     q1_yr    4.8377823
+                                     exacerbations     q3_yr    9.1000000
+        FEV1 decline, everyone in the decline data     q3_yr    9.7300000
+ FEV1 decline, participants with a follow-up visit     q3_yr   10.0300000
+             mortality (all-cause and respiratory)     q3_yr   10.6255989
+     analysis           diff
+ 8177.0000000 -5954.00000000
+ 9240.0000000 -6752.00000000
+ 5414.0000000 -3553.00000000
+ 9238.0000000 -6740.00000000
+   10.4000000    -4.30000000
+    5.0787132     0.86128679
+    9.6800000    -0.54000000
+   10.8117728    -3.17453799
+    5.0000000    -2.10000000
+    5.4024641     0.14753593
+    5.4510609    -0.61327858
+   11.8000000    -2.70000000
+    9.8700000    -0.14000000
+   10.4800000    -0.45000000
+   12.9883641    -2.36276523
+
+---- METHODS.md stated counts ----
+                   statement stated recomputed    ok
+     analysis included 9,240   9240       2503 FALSE
+    mortality analyses 9,238   9238       2498 FALSE
+ exacerbation analyses 8,177   8177       2223 FALSE
+    common reference n 3,856   3856       1181 FALSE
+
+==== SUMMARY ====
+                 assets                    table values beyond
+                 assets            accuracy_test      6      6
+ cluster_assets_6116301            accuracy_test      6      6
+                 assets       agreement_by_group     40     40
+ cluster_assets_6116301       agreement_by_group     40     40
+                 assets bronchodilator_delta_esi      3      3
+ cluster_assets_6116301 bronchodilator_delta_esi      3      3
+                 assets              cohort_flow      6      6
+ cluster_assets_6116301              cohort_flow      6      6
+                 assets      consensus_ref_crude    135    116
+ cluster_assets_6116301      consensus_ref_crude    135    116
+                 assets      consensus_ref_group      8      8
+ cluster_assets_6116301      consensus_ref_group      8      8
+                 assets       consensus_ref_risk    117    116
+ cluster_assets_6116301       consensus_ref_risk    117    116
+                 assets               crossclass     32     21
+ cluster_assets_6116301               crossclass     32     21
+                 assets esi_ct_auc (missing=neg)     24     24
+ cluster_assets_6116301 esi_ct_auc (missing=neg)     24     24
+                 assets            esi_ct_levels     18     18
+ cluster_assets_6116301            esi_ct_levels     18     18
+                 assets           f1_by_category      8      8
+ cluster_assets_6116301           f1_by_category      8      8
+                 assets         followup_medians     16     15
+ cluster_assets_6116301         followup_medians     16     15
+                 assets        mdcopd_validation      4      4
+ cluster_assets_6116301        mdcopd_validation      4      4
+                 assets         reclassification      6      6
+ cluster_assets_6116301         reclassification      6      6
+                 assets    schema_fit (selected)      6      3
+ cluster_assets_6116301    schema_fit (selected)      6      3
+                 assets            schema_labels     14     14
+ cluster_assets_6116301            schema_labels     14     14
+             METHODS.md            stated counts      4      4
+                 assets supp_baseline (Table S1)    126    121
+ cluster_assets_6116301 supp_baseline (Table S1)    126    121
+
+Total: 1142 values compared, 1062 beyond tolerance
+
+Informational (not compared): rc_diagnostics.csv, rc_mdcopd_rebuilt_vs_file.csv,
+ rc_consensus_ref_risk_pairwise.csv, rc_esi_ct_auc.csv complete-case rows, rc_torch_codes_among_deaths.csv

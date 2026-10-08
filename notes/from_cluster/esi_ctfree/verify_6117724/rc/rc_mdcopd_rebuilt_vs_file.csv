@@ -1,0 +1,17 @@
+"rebuilt","bhatt","Freq"
+"noCOPD","noCOPD",4357
+"AFL-only","noCOPD",0
+"COPD-minor","noCOPD",0
+"COPD-major","noCOPD",0
+"noCOPD","AFL-only",0
+"AFL-only","AFL-only",275
+"COPD-minor","AFL-only",0
+"COPD-major","AFL-only",0
+"noCOPD","COPD-minor",0
+"AFL-only","COPD-minor",0
+"COPD-minor","COPD-minor",799
+"COPD-major","COPD-minor",0
+"noCOPD","COPD-major",0
+"AFL-only","COPD-major",0
+"COPD-minor","COPD-major",0
+"COPD-major","COPD-major",3809

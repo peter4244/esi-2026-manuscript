@@ -1,0 +1,10 @@
+"criterion","level","label","n","mean_ESI"
+"Visual emphysema",0,"none",3086,1.03848833441348
+"Visual emphysema",1,"trace",1686,1.22250889679715
+"Visual emphysema",2,"mild",1829,1.59488244942592
+"Visual emphysema",3,"moderate",1435,2.9124668989547
+"Visual emphysema",4,"confluent",894,5.21338926174497
+"Visual emphysema",5,"advanced destructive",306,6.62300653594771
+"Airway wall thickening",0,"absent",1006,0.95800198807157
+"Airway wall thickening",1,"borderline",4553,1.2871765868658
+"Airway wall thickening",2,"definite",3677,3.32485722056024

@@ -1,5 +1,5 @@
-rendered=2026-09-20 08:04:15 PDT
-R=R version 4.5.2 (2025-10-31)
+rendered=2026-10-08 14:02:45 EDT
+R=R version 4.5.1 (2025-06-13)
 cohort_n=9240
 cv_seed=20260901
 cv_repeats=5

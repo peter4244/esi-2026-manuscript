@@ -4,7 +4,7 @@
 
 ## Study population
 
-We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers aged 45–80 years with ≥10 pack-years of smoking (18). Baseline evaluation included pre- and post-bronchodilator spirometry, chest CT, and symptom assessment. Participants with diagnosed interstitial lung disease or bronchiectasis, never-smokers, or without acceptable post-bronchodilator spirometry or CT passing quality control were excluded. The analysis included 9,240 participants with MD-COPD-CT classification and baseline post-bronchodilator ESI. Mortality analyses included 9,238 participants with complete follow-up and covariates and exacerbation analyses included 8,177 with longitudinal exacerbation data and complete covariates.
+We analyzed data from COPDGene (NCT00608764), a multicenter observational cohort of current and former smokers aged 45–80 years with ≥10 pack-years of smoking (18). Baseline evaluation included pre- and post-bronchodilator spirometry, chest CT, and symptom assessment. Participants with diagnosed interstitial lung disease or bronchiectasis, never-smokers, or without acceptable post-bronchodilator spirometry or CT passing quality control were excluded. The analysis included 9,240 participants with MD-COPD-CT classification and baseline post-bronchodilator ESI. Mortality analyses included 8,769 participants with complete follow-up and covariates and exacerbation analyses included 8,177 with longitudinal exacerbation data and complete covariates.
 
 ## MD-COPD-CT classification
 

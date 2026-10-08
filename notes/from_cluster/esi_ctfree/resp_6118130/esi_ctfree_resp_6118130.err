@@ -1,0 +1,16 @@
+bitmapType: Xlib -> cairo (headless-safe)
+
+
+processing file: ESI_ctfree_analysis_2026.9.3.Rmd
+Error:
+! all(mort$py_resp <= mort$py + 1/365.25) is not TRUE
+Backtrace:
+    ▆
+ 1. └─base::stopifnot(...)
+
+Quitting from ESI_ctfree_analysis_2026.9.3.Rmd:773-819 [outcome-data]
+Execution halted
+Error in data.frame(id = e$id, section = e$section, claim = e$claim, expected = as.character(e$expected),  : 
+  arguments imply differing number of rows: 1, 0
+Calls: lapply -> FUN -> data.frame
+Execution halted

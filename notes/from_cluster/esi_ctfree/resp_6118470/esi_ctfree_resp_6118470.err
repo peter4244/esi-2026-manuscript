@@ -1,0 +1,10 @@
+bitmapType: Xlib -> cairo (headless-safe)
+
+
+processing file: ESI_ctfree_analysis_2026.9.3.Rmd
+output file: ESI_ctfree_analysis_2026.9.3.knit.md
+
+
+Output created: ctfree/ESI_ctfree_analysis_2026.9.3.html
+Error: VERIFICATION FAILED: 54 of 249 claims
+Execution halted

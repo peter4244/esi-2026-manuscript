@@ -1,0 +1,96 @@
+recompute_ctfree.R  started 2026-10-08 07:27:30
+R: R version 4.5.2 (2025-10-31) | locale LC_CTYPE=en_US.UTF-8 | pROC available: TRUE
+Reading inputs
+  read syn_pheno_long.txt: sep=TAB, 27 header fields, 6009 rows, kept 24 columns
+  read syn_pft_esi.csv: sep=COMMA, 11 header fields, 6125 rows, kept 4 columns
+  read syn_vital.csv: sep=COMMA, 4 header fields, 2995 rows, kept 3 columns
+  read syn_cod.txt: sep=TAB, 5 header fields, 3000 rows, kept 3 columns
+  read syn_lfu.txt: sep=TAB, 6 header fields, 2700 rows, kept 3 columns
+  read syn_mdcopd.csv: sep=COMMA, 4 header fields, 2900 rows, kept 3 columns
+  [diag] phe_rows = 6009
+  [diag] phe_visitnum_NA = 0
+  [diag] esi_rows = 6125
+  [diag] vs_rows = 2995
+  [diag] vs_dup_ids = 0
+  [diag] cod_rows = 3000
+  [diag] cod_dup_ids = 0
+  [diag] ex_rows = 2700
+  [diag] ex_dup_ids = 0
+  [diag] md_rows = 2900
+  [diag] md_dup_ids = 0
+  [diag] phe_has_ExclusionaryDisease = TRUE
+Section 1: cohort flow
+  [diag] v1_dup_ids = 0
+  [diag] v1_ExclusionaryDisease_nonmissing = 60
+  [diag] v1_cohort_NA = 0
+  [diag] v1_cohort_never_smoked = 100
+  [diag] md_valid_rows = 2756
+  [diag] md_valid_dup_ids = 0
+  [diag] md_valid_ids_not_in_spirometry_set = 186
+  [diag] esi_v1_PrePost0_rows_meanESI = 3000 | 1.5967
+  [diag] esi_v1_PrePost1_rows_meanESI = 2925 | 1.4518
+  [diag] esi_v1_post_ids_with_multiple_rows = 5
+  wrote rc_mdcopd_validation.csv (4 rows)
+  [diag] esi_mean_vs_first_maxabsdiff = 0.00500000000000012
+  wrote rc_cohort_flow.csv (6 rows)
+  wrote rc_bronchodilator_delta_esi.csv (1 rows)
+  [diag] finalgold_visit_other_or_NA = 0
+Section 2: classifications
+  [diag] cohort_NA_CT_Visual_Emph_Severity = 51
+  [diag] cohort_NA_CT_Visual_Wall_Thickening = 50
+  [diag] cohort_NA_MMRCDyspneaScor = 0
+  [diag] cohort_NA_SGRQ_scoreTotal = 0
+  [diag] cohort_NA_Chronic_Bronchitis = 0
+  [diag] cohort_NA_CoronaryArtery = 0
+  [diag] cohort_NA_CongestHeartFail = 0
+  [diag] md_score_other_values = 0
+  wrote rc_mdcopd_score_by_afl.csv (6 rows)
+  wrote rc_mdcopd_subtype_by_score.csv (18 rows)
+  wrote rc_mdcopd_rebuilt_vs_file.csv (16 rows)
+  [diag] mdcopd_rebuilt_agreement = 0.996005
+  [diag] cardiac_bhatt_minor_without_both_CT = 0
+  wrote rc_fit_selected.csv (2 rows)
+  wrote rc_fit_grid.csv (48 rows)
+  NOTE: independent macro-F1 fit selects different parameters than the paper's (k3=2; k4=2, t=1.50)
+  wrote rc_schema_labels.csv (14 rows)
+  wrote rc_crossclass.csv (32 rows)
+  wrote rc_agreement.csv (10 rows)
+  wrote rc_accuracy_test.csv (1 rows)
+  wrote rc_reclassification.csv (2 rows)
+Section 3: Table S1
+  wrote rc_supp_baseline.csv (7 rows)
+Section 4: ESI vs visual CT
+  wrote rc_esi_ct_levels.csv (11 rows)
+  wrote rc_esi_ct_auc.csv (12 rows)
+Section 5-6: outcomes
+  [diag] mort_after_vs_join = 2498
+  [diag] mort_vital_status_NA = 0
+  [diag] mort_days_followed_NA_or_nonpositive = 0
+  [diag] mort_cod_dup_rows_would_add = 0
+  [diag] mort_n = 2498
+  [diag] mort_deaths = 336
+  [diag] mort_resp_deaths = 113
+  [diag] deaths_without_torch_code = 8
+  [diag] alive_with_torch_code = 0
+  wrote rc_torch_codes_among_deaths.csv (7 rows)
+  wrote rc_vital_status_vs_cod_file.csv (4 rows)
+  [diag] exac_after_lfu_join = 2254
+  [diag] exac_n = 2223
+  wrote rc_consensus_ref_group.csv (1 rows)
+  wrote rc_consensus_ref_crude.csv (27 rows)
+  fitting joint models (one per classification)
+Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights,  :
+  Loglik converged before variable  1 ; coefficient may be infinite. 
+Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights,  :
+  Loglik converged before variable  1 ; coefficient may be infinite. 
+  wrote rc_consensus_ref_risk.csv (9 rows)
+  fitting pairwise models (REF + one category; sensitivity only)
+Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights,  :
+  Loglik converged before variable  1 ; coefficient may be infinite. 
+Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights,  :
+  Loglik converged before variable  1 ; coefficient may be infinite. 
+  wrote rc_consensus_ref_risk_pairwise.csv (9 rows)
+Section 7: follow-up
+  wrote rc_followup_medians.csv (4 rows)
+  wrote rc_diagnostics.csv (45 rows)
+Done in 1.4 s. Files written: 24

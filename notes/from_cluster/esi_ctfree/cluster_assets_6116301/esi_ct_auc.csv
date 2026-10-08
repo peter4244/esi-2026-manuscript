@@ -1,0 +1,7 @@
+"stratum","criterion","n","prevalence","auc_ESI","auc_FEV1FVC"
+"All participants","Visual emphysema",9240,48.3116883116883,0.7798296946951,0.824284931790073
+"All participants","Airway wall thickening",9240,39.7943722943723,0.804017775278217,0.817492987463158
+"Airflow limitation","Visual emphysema",4084,75.6366307541626,0.754128362759085,0.779754714003816
+"Airflow limitation","Airway wall thickening",4084,66.28305582762,0.746092260872388,0.745265844301025
+"Preserved spirometry","Visual emphysema",5156,26.6679596586501,0.557196893558703,0.672776225625736
+"Preserved spirometry","Airway wall thickening",5156,18.8130333591932,0.605275685766497,0.643389846370573
