@@ -778,18 +778,24 @@ mort <- d_b %>%
   left_join (cod %>% dplyr::select(pid, UCD_Resp,
                                    cod_status = mortality_survival_vital_status,
                                    cod_days   = days_followed), by = "pid") %>%
-  # Cause of death is adjudicated only within the cause-of-death file's own
-  # follow-up window, which ends earlier than the vital-status file's. A death
-  # after that window has no cause, so respiratory mortality takes its status
-  # and follow-up time from the cause-of-death file and is censored at the end
-  # of that window. All-cause mortality keeps the full vital-status follow-up.
-  # A few participants are dead in the cause-of-death file but alive in the
-  # later vital-status file; they are treated as alive (Pete, 2026-10-08), so
-  # no respiratory event, censored at the time the cause-of-death file records.
-  mutate(ev_resp = ifelse(vital_status == 1 & cod_status == 1 &
-                          !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
+  # Cause of death is adjudicated only up to the cause-of-death file's censor
+  # date (31 December 2018); vital status runs later. Respiratory mortality is
+  # therefore censored at the end of that window (Pete, 2026-10-08):
+  # - a respiratory death is a death in both files with TORCH group 1, at the
+  #   vital-status death time, the same time all-cause mortality uses;
+  # - everyone else is followed for the shorter of the two files' times, so
+  #   respiratory follow-up never exceeds vital status or passes the window.
+  #   The two files' times differ slightly for some participants (death dates
+  #   days apart, last contact recorded differently).
+  # - participants dead in the cause-of-death file but alive in vital status
+  #   count as alive (Pete, 2026-10-08).
+  mutate(dead_both = vital_status == 1 & cod_status == 1,
+         ev_resp = ifelse(dead_both & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
          py      = days_followed / 365.25,
-         py_resp = cod_days / 365.25) %>%
+         py_resp = ifelse(dead_both, py, pmin(py, cod_days / 365.25))) %>%
+  # Participants with no follow-up after visit 1 contribute no person-time and
+  # no events; they are excluded from the mortality analyses (Pete, 2026-10-08).
+  filter(days_followed > 0) %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
 # Prior-year exacerbation frequency, per the source MD-COPD paper.
@@ -804,10 +810,10 @@ exa <- d_b %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
-# Every participant has a cause-of-death record and its window ends no later
-# than the vital-status follow-up.
-stopifnot(!anyNA(mort$cod_status), !anyNA(mort$py_resp),
-          all(mort$py_resp <= mort$py + 1 / 365.25))
+# Every participant has a cause-of-death record; respiratory follow-up never
+# exceeds all-cause follow-up, and every respiratory death is a death.
+stopifnot(!anyNA(mort$cod_status), !anyNA(mort$py_resp), all(mort$py > 0),
+          all(mort$py_resp <= mort$py), all(mort$vital_status[mort$ev_resp == 1] == 1))
 cat(sprintf("Dead in the cause-of-death file but alive in vital status (treated as alive): %d\n",
             sum(mort$cod_status == 1 & mort$vital_status == 0)))
 cat(sprintf("Respiratory follow-up ends with the cause-of-death window: median %.1f vs %.1f years; %d deaths fall after it\n",
