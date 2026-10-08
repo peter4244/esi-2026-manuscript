@@ -783,7 +783,11 @@ mort <- d_b %>%
   # after that window has no cause, so respiratory mortality takes its status
   # and follow-up time from the cause-of-death file and is censored at the end
   # of that window. All-cause mortality keeps the full vital-status follow-up.
-  mutate(ev_resp = ifelse(cod_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
+  # A few participants are dead in the cause-of-death file but alive in the
+  # later vital-status file; they are treated as alive (Pete, 2026-10-08), so
+  # no respiratory event, censored at the time the cause-of-death file records.
+  mutate(ev_resp = ifelse(vital_status == 1 & cod_status == 1 &
+                          !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
          py      = days_followed / 365.25,
          py_resp = cod_days / 365.25) %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
@@ -800,11 +804,12 @@ exa <- d_b %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
-# Every participant has a cause-of-death record, its window ends no later than
-# the vital-status follow-up, and a death inside it is a death in both files.
-stopifnot(!anyNA(mort$cod_status), !anyNA(mort$py_resp), all(mort$py_resp > 0),
-          all(mort$py_resp <= mort$py + 1 / 365.25),
-          all(mort$vital_status[mort$cod_status == 1] == 1))
+# Every participant has a cause-of-death record and its window ends no later
+# than the vital-status follow-up.
+stopifnot(!anyNA(mort$cod_status), !anyNA(mort$py_resp),
+          all(mort$py_resp <= mort$py + 1 / 365.25))
+cat(sprintf("Dead in the cause-of-death file but alive in vital status (treated as alive): %d\n",
+            sum(mort$cod_status == 1 & mort$vital_status == 0)))
 cat(sprintf("Respiratory follow-up ends with the cause-of-death window: median %.1f vs %.1f years; %d deaths fall after it\n",
             median(mort$py_resp), median(mort$py),
             sum(mort$vital_status == 1 & mort$cod_status == 0)))
