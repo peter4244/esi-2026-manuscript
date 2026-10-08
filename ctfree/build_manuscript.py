@@ -381,7 +381,7 @@ def t_discord_risk(doc, label="Table 4."):
     # With respiratory mortality out, every cell clears the floor; the legend
     # carries no flag note, so a flagged cell appearing later must stop the build.
     assert not any(FLAG in str(v) for r in rows if not isinstance(r, Section) for v in r), \
-        "S7 has a cell under the event floor; restore the flag note in its legend"
+        "S8 has a cell under the event floor; restore the flag note in its legend"
     add_table(doc, ["Group", "n", "Deaths", "All-cause mortality rate ratio [95% CI]",
                     "Exacerbation rate ratio [95% CI]"],
               rows, [2.00, 0.70, 0.80, 1.50, 1.50])

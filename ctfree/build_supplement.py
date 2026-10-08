@@ -292,6 +292,33 @@ def s6_fev1_decline(doc, num):
            "criteria; CI = confidence interval.")
 
 
+def s_fev1_random_slope(doc, num):
+    heading(doc, f"Supplemental Table {num}. Sensitivity analysis of longitudinal FEV\u2081 decline "
+                 f"with participant-specific random slopes")
+    rows_in = load(ASSETS, "fev1_decline_random_slope.csv")
+    one = lambda v: f"{float(v):.1f}".replace("-0.0", "0.0").replace("-", "\u2212")   # no negative zero
+    mm = lambda e, lo, hi: f"{one(e)} [{one(lo)} to {one(hi)}]"
+    name = {"S2": "MD-COPD-CT", "S3": "MD-NoCT", "S4": "MD-COPD-ESI"}
+    rows, seen, sd = [], set(), {}
+    for r in rows_in:
+        sc = r["schema"]
+        rows.append([name.get(sc, sc) if sc not in seen else "", r["category"],
+                     f"{int(r['n_subj']):,}", mm(r["est_mL_yr"], r["lo"], r["hi"]),
+                     fmt_p(float(r["p"]))])
+        seen.add(sc); sd[sc] = float(r["sd_slope_mL_yr"])
+    assert set(sd) == {"S2", "S3", "S4"}, "random-slope table must cover the three MD classifications"
+    add_table(doc, ["Classification", "Group", "n",
+                    "Difference in decline versus the common reference, mL/yr [95% CI]", "P"],
+              rows, [1.45, 1.15, 0.65, 2.55, 0.70])
+    legend(doc, f"Table {num}.",
+           "Models were as in Table S6, with a participant-specific random slope for follow-up "
+           "time in addition to the random intercept. Negative values indicate faster FEV\u2081 "
+           "decline relative to the common noCOPD reference. The standard deviation of the "
+           f"participant-specific slopes was {sd['S2']:.1f}, {sd['S3']:.1f}, and {sd['S4']:.1f} "
+           "mL/yr in the models for MD-COPD-CT, MD-NoCT, and MD-COPD-ESI. AFL-only = airflow "
+           "limitation without other criteria; CI = confidence interval.")
+
+
 def s_crossclass_agreement(doc, num):
     """Cross-classification of each CT-free classification against MD-COPD,
     with the agreement the Results quote: the share of each classification's
@@ -403,7 +430,8 @@ SUPP_TABLES = [("baseline", s1_baseline), ("thresholds", s4_sweep),
                ("crossclass", s_crossclass_agreement),
                ("groups_vs_mdcopd", s_groups_crude),
                ("risk_common_ref", s_risk_common_ref),
-               ("fev1", s6_fev1_decline), ("discord_risk", s_discord_risk)]
+               ("fev1", s6_fev1_decline), ("fev1_rs", s_fev1_random_slope),
+               ("discord_risk", s_discord_risk)]
 assert [k for k, _ in SUPP_TABLES] == SUPP_KEYS, "supplement order disagrees with supp_registry"
 SUPP_ORDER = [f"S{i}" for i in range(1, len(SUPP_TABLES) + 1)]
 # Supplemental figures, numbered in citation order like the tables.
