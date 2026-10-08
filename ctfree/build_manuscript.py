@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v7.docx")
+                      "CT-free MD-COPD manuscript draft v8.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,

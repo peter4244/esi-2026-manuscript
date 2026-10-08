@@ -1,0 +1,6 @@
+"outcome","n","median_yr","q1_yr","q3_yr"
+"all-cause mortality",8769,11.1731690622861,6.19028062970568,13.0485968514716
+"respiratory mortality (cause-of-death window)",8769,8.62149212867899,6.19028062970568,9.52224503764545
+"exacerbations",8177,10.4,5,11.8
+"FEV1 decline, everyone in the decline data",9240,5.0787132101,0,9.87
+"FEV1 decline, participants with a follow-up visit",5414,9.68,5.4024640657,10.48

@@ -8,7 +8,7 @@
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 253L
+REGISTRY_N <- 257L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -233,6 +233,19 @@ reg("REF-M", "Legends", "common reference: 3,625 in mortality analyses", 3625, "
     "x$n_mort", TOL_EXACT)
 reg("REF-E", "Legends", "common reference: 3,411 in exacerbation analyses", 3411, "consensus_ref_group.csv",
     "x$n_exac", TOL_EXACT)
+# Table S7, random-slope sensitivity (Pete, 2026-10-08). Results: "the same pattern of
+# differences, with larger estimates of excess decline, particularly in COPD-major".
+reg("RS-01", "Table S7", "same significance pattern as Table S6 at P < 0.05", TRUE,
+    "fev1_decline_random_slope.csv",
+    'paste(x$p < 0.05, collapse = ",") == "FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,TRUE"', TOL_EXACT)
+reg("RS-02", "Table S7", "every estimate more negative than its Table S6 counterpart", TRUE,
+    "fev1_decline_random_slope.csv",
+    'all(x$est_mL_yr < c(-2.69, -4.48, -5.33, -4.88, -0.07, -5.10, -4.34, -0.06, -4.99))', TOL_EXACT)
+reg("RS-03", "Table S7", "COPD-major excess decline -12.1 to -13.0 mL/yr", TRUE,
+    "fev1_decline_random_slope.csv",
+    'all(round(x$est_mL_yr[x$category == "COPD-major"], 1) <= -12.1 & round(x$est_mL_yr[x$category == "COPD-major"], 1) >= -13.0)', TOL_EXACT)
+reg("RS-04", "Table S7", "no singular random-slope fit", TRUE,
+    "fev1_decline_random_slope.csv", '!any(x$singular)', TOL_EXACT)
 reg("AFL-01", "AFL-only paragraph", "ESI AFL-only group n = 543", 543, "schema_labels.csv",
     'x$n[x$schema == "S4" & x$category == "AFL-only"]', TOL_EXACT)
 reg("AFL-02", "AFL-only paragraph", "ESI AFL-only crude all-cause 1.25", 1.25, "consensus_ref_crude.csv",

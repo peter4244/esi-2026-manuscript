@@ -3,7 +3,7 @@
 **Protocol:** the `copilot-relay` skill (`~/.claude/skills/copilot-relay/SKILL.md`), approved by Pete
 2026-10-07. Read it once. This file holds only what is specific to this project.
 
-**Last updated:** 2026-10-08 17:45 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1737_esi-c3b.md`.
+**Last updated:** 2026-10-08 18:55 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1852_esi-rs_submitted.md`.
 
 ## The job
 
@@ -25,11 +25,14 @@ The cluster run will use the original files and its results will be compared aga
 | `esi-repro` | **closed** | — | — |
 | `esi-verify` | **closed** (Claude) | — | — |
 | `esi-resp` | **closed** (Claude) | — | — |
-| `esi-c3b` | close-proposed | Copilot (confirm close, clear timer) | `2026-10-08_1745_esi-c3b_r3.md` |
+| `esi-rs` | open: job 6120833 running | Copilot (status every 15 min, final on completion) | `2026-10-08_1745_esi-rs.md` |
+| `esi-c3b` | **closed** (both sides) | — | — |
 
 ## Do now
 
-1. **`2026-10-08_1745_esi-c3b_r3.md`**: nothing to run; confirm the close and clear the `esi-c3b` timer.
+1. **`2026-10-08_1745_esi-rs.md`** (overwrite-or-delete; **needs Pete's "go" before step 2**). Random-slope FEV1
+   sensitivity: re-render in `esi-ctfree-resp-20261008`, existing tables expected unchanged, one new table.
+   **Attach your `esi-rs` timer at 1 minute now** and keep it until this thread's final report.
 
 ## Standing rules for this project
 
@@ -67,6 +70,8 @@ The cluster run will use the original files and its results will be compared aga
 | date | step | outcome |
 |---|---|---|
 | 2026-10-07 | relay set up; `esi-recon` sent | — |
+| 2026-10-08 | `esi-rs` submitted | Pete's "go" 18:50; job 6120833 |
+| 2026-10-08 | `esi-c3b` closed 18:47 | Copilot had no timer attached after its 17:37 report; idle until Pete's nudge |
 | 2026-10-08 | `esi-c3b` report (job 6120319, 13 min) | random-slope FEV1 models: same significance pattern, much larger COPD-major decline; preserved-spirometry CT-only -12.7, ESI-only +3.7 mL/yr vs reference |
 | 2026-10-08 | `esi-resp_r3` report (job 6118470, 3h01m) | render OK; this run is now the paper's single source (v6). C3 failed on a misspelled lme4 option (Claude's error) |
 | 2026-10-08 | `esi-resp_r2` diagnostic | COD censor date 31 Dec 2018 for all; COD follow-up > VS for 359 (276 dead in both, mostly days apart); 556 zero follow-up in VS, all alive. Pete: death time from VS, otherwise shorter of the two; exclude zero follow-up (commit `9ef5266`) |
@@ -90,7 +95,8 @@ The cluster run will use the original files and its results will be compared aga
 
 | file | status |
 |---|---|
-| `2026-10-08_1745_esi-c3b_r3.md` | live: Do now 1 (close) |
+| `2026-10-08_1745_esi-c3b_r3.md` | done; closed (report `2026-10-08_1847_esi-c3b_r3.md`) |
+| `2026-10-08_1745_esi-rs.md` + `run_ctfree_rs.sh` | live: Do now 1 (needs "go") |
 | `2026-10-08_1740_esi-c3b_r2.md` | done |
 | `2026-10-08_1655_esi-c3b.md` + `run_ctfree_c3b.sh`, `C3b_fev1_model_checks.R` | done (report `2026-10-08_1737_esi-c3b.md`) |
 | `2026-10-08_1040_esi-resp_r3.md` | done (report `2026-10-08_1434_esi-resp_r3.md`) |
