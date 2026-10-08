@@ -775,9 +775,17 @@ COV <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + BMI"
 
 mort <- d_b %>%
   inner_join(vs  %>% dplyr::select(pid, vital_status, days_followed), by = "pid") %>%
-  left_join (cod %>% dplyr::select(pid, UCD_Resp), by = "pid") %>%
-  mutate(ev_resp = ifelse(vital_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
-         py      = days_followed / 365.25) %>%
+  left_join (cod %>% dplyr::select(pid, UCD_Resp,
+                                   cod_status = mortality_survival_vital_status,
+                                   cod_days   = days_followed), by = "pid") %>%
+  # Cause of death is adjudicated only within the cause-of-death file's own
+  # follow-up window, which ends earlier than the vital-status file's. A death
+  # after that window has no cause, so respiratory mortality takes its status
+  # and follow-up time from the cause-of-death file and is censored at the end
+  # of that window. All-cause mortality keeps the full vital-status follow-up.
+  mutate(ev_resp = ifelse(cod_status == 1 & !is.na(UCD_Resp) & UCD_Resp == 1, 1, 0),
+         py      = days_followed / 365.25,
+         py_resp = cod_days / 365.25) %>%
   filter(complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
 # Prior-year exacerbation frequency, per the source MD-COPD paper.
@@ -792,6 +800,14 @@ exa <- d_b %>%
   filter(!is.na(Total_Exacerbations), Years_Followed > 0, !is.na(prior_exac),
          complete.cases(age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI))
 
+# Every participant has a cause-of-death record, its window ends no later than
+# the vital-status follow-up, and a death inside it is a death in both files.
+stopifnot(!anyNA(mort$cod_status), !anyNA(mort$py_resp), all(mort$py_resp > 0),
+          all(mort$py_resp <= mort$py + 1 / 365.25),
+          all(mort$vital_status[mort$cod_status == 1] == 1))
+cat(sprintf("Respiratory follow-up ends with the cause-of-death window: median %.1f vs %.1f years; %d deaths fall after it\n",
+            median(mort$py_resp), median(mort$py),
+            sum(mort$vital_status == 1 & mort$cod_status == 0)))
 cat(sprintf("Mortality n = %d (%d deaths, %d respiratory)\n",
             nrow(mort), sum(mort$vital_status), sum(mort$ev_resp)))
 cat(sprintf("Exacerbation n = %d\n", nrow(exa)))
@@ -816,8 +832,9 @@ stopifnot(all((mort$fixed_ratio == "COPD") ==
               (mort$bhatt_grp %in% c("AFL-only", "COPD-major"))))
 
 cox_pair <- function(ev, label) {
-  f0 <- as.formula(sprintf("Surv(days_followed/365.25, %s) ~ fixed_ratio + %s", ev, COV))
-  f1 <- as.formula(sprintf("Surv(days_followed/365.25, %s) ~ bhatt_grp   + %s", ev, COV))
+  tm <- if (ev == "ev_resp") "py_resp" else "py"
+  f0 <- as.formula(sprintf("Surv(%s, %s) ~ fixed_ratio + %s", tm, ev, COV))
+  f1 <- as.formula(sprintf("Surv(%s, %s) ~ bhatt_grp   + %s", tm, ev, COV))
   m0 <- coxph(f0, data = mort); m1 <- coxph(f1, data = mort)
   lr <- 2 * (m1$loglik[2] - m0$loglik[2])
   df <- length(coef(m1)) - length(coef(m0))
@@ -880,7 +897,7 @@ NAMES <- c(S1 = "Fixed ratio",
 risk_rows <- list(); disc_rows <- list()
 for (s in c("S1", "S2", "S3", "S4")) {
   m1 <- coxph(as.formula(sprintf("Surv(py, vital_status) ~ %s + %s", s, COV)), data = mort)
-  m2 <- coxph(as.formula(sprintf("Surv(py, ev_resp) ~ %s + %s",      s, COV)), data = mort)
+  m2 <- coxph(as.formula(sprintf("Surv(py_resp, ev_resp) ~ %s + %s",      s, COV)), data = mort)
   n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~", s, "+", COV,
          "+ prior_exac + offset(log(Years_Followed))")), data = exa)
   cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
@@ -966,7 +983,7 @@ crude_ratio <- function(sch, ev, py, dat) {
 
 crude_rows <- list()
 for (spec in list(list("all",  "vital_status",        "py",             mort),
-                  list("resp", "ev_resp",             "py",             mort),
+                  list("resp", "ev_resp",             "py_resp",             mort),
                   list("exac", "Total_Exacerbations", "Years_Followed", exa))) {
   key <- spec[[1]]; ev <- spec[[2]]; py <- spec[[3]]; dat <- spec[[4]]
   boot <- vector("list", CRUDE_B)
@@ -1034,7 +1051,7 @@ for (s in c("S1", "S2", "S3", "S4")) {
   eb <- exa;  eb$B <- to_bin(exa[[s]])
   stopifnot(!anyNA(mb$B), !anyNA(eb$B), nlevels(droplevels(mb$B)) == 2)
   m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ B +", COV)), data = mb)
-  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ B +",      COV)), data = mb)
+  m2 <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ B +",      COV)), data = mb)
   n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ B +", COV,
          "+ prior_exac + offset(log(Years_Followed))")), data = eb)
   sm <- function(dat, col, g) sum(dat[[col]][dat$B == g])
@@ -1042,8 +1059,8 @@ for (s in c("S1", "S2", "S3", "S4")) {
                                  (sm(dat, ev, "noCOPD") / sm(dat, pt, "noCOPD"))
   ci_a <- exact_rate_ratio(sm(mb, "vital_status", "COPD"), sm(mb, "py", "COPD"),
                            sm(mb, "vital_status", "noCOPD"), sm(mb, "py", "noCOPD"))
-  ci_r <- exact_rate_ratio(sm(mb, "ev_resp", "COPD"), sm(mb, "py", "COPD"),
-                           sm(mb, "ev_resp", "noCOPD"), sm(mb, "py", "noCOPD"))
+  ci_r <- exact_rate_ratio(sm(mb, "ev_resp", "COPD"), sm(mb, "py_resp", "COPD"),
+                           sm(mb, "ev_resp", "noCOPD"), sm(mb, "py_resp", "noCOPD"))
   be <- replicate(CRUDE_B, crude_bin(eb[sample.int(nrow(eb), nrow(eb), replace = TRUE), ],
                                  "Total_Exacerbations", "Years_Followed"))
   be <- be[is.finite(be)]
@@ -1055,7 +1072,7 @@ for (s in c("S1", "S2", "S3", "S4")) {
     deaths_copd = sm(mb, "vital_status", "COPD"), deaths_nocopd = sm(mb, "vital_status", "noCOPD"),
     resp_copd = sm(mb, "ev_resp", "COPD"), resp_nocopd = sm(mb, "ev_resp", "noCOPD"),
     all_rr = crude_bin(mb, "vital_status", "py"), all_rr_lo = ci_a[1], all_rr_hi = ci_a[2],
-    resp_rr = crude_bin(mb, "ev_resp", "py"), resp_rr_lo = ci_r[1], resp_rr_hi = ci_r[2],
+    resp_rr = crude_bin(mb, "ev_resp", "py_resp"), resp_rr_lo = ci_r[1], resp_rr_hi = ci_r[2],
     exac_rr = crude_bin(eb, "Total_Exacerbations", "Years_Followed"),
     exac_rr_lo = unname(quantile(be, .025)), exac_rr_hi = unname(quantile(be, .975)),
     all_HR = hr(m1)[1], all_LCI = hr(m1)[2], all_UCI = hr(m1)[3],
@@ -1071,8 +1088,8 @@ for (s in c("S1", "S2", "S3", "S4")) {
     fy_copd = sm(eb, "Years_Followed", "COPD"), fy_nocopd = sm(eb, "Years_Followed", "noCOPD"),
     rate_all_copd   = 100 * sm(mb, "vital_status", "COPD")   / sm(mb, "py", "COPD"),
     rate_all_nocopd = 100 * sm(mb, "vital_status", "noCOPD") / sm(mb, "py", "noCOPD"),
-    rate_resp_copd   = 100 * sm(mb, "ev_resp", "COPD")   / sm(mb, "py", "COPD"),
-    rate_resp_nocopd = 100 * sm(mb, "ev_resp", "noCOPD") / sm(mb, "py", "noCOPD"),
+    rate_resp_copd   = 100 * sm(mb, "ev_resp", "COPD")   / sm(mb, "py_resp", "COPD"),
+    rate_resp_nocopd = 100 * sm(mb, "ev_resp", "noCOPD") / sm(mb, "py_resp", "noCOPD"),
     rate_exac_copd   = 100 * sm(eb, "Total_Exacerbations", "COPD")   / sm(eb, "Years_Followed", "COPD"),
     rate_exac_nocopd = 100 * sm(eb, "Total_Exacerbations", "noCOPD") / sm(eb, "Years_Followed", "noCOPD"),
     stringsAsFactors = FALSE, row.names = NULL)
@@ -1107,7 +1124,7 @@ for (s in c("S1", "S2", "S3", "S4")) for (coding in c("binary", "groups")) {
   eb$X <- if (coding == "binary") to_bin(exa[[s]])  else droplevels(factor(exa[[s]]))
   stopifnot(!anyNA(mb$X), !anyNA(eb$X), nlevels(mb$X) >= 2)
   m1 <- coxph(Surv(py, vital_status) ~ X, data = mb)
-  m2 <- coxph(Surv(py, ev_resp) ~ X, data = mb)
+  m2 <- coxph(Surv(py_resp, ev_resp) ~ X, data = mb)
   n1 <- glm.nb(Total_Exacerbations ~ X + offset(log(Years_Followed)), data = eb)
   c1 <- summary(m1)$concordance; c2 <- summary(m2)$concordance
   raw_rows[[length(raw_rows) + 1]] <- data.frame(
@@ -1139,7 +1156,7 @@ crude_bin <- function(dat, s, ev, pt) {
   unname((e["COPD"] / t["COPD"]) / (e["noCOPD"] / t["noCOPD"]))
 }
 OUTC <- list(all  = list(mort, "vital_status", "py", "all_rr"),
-             resp = list(mort, "ev_resp", "py", "resp_rr"),
+             resp = list(mort, "ev_resp", "py_resp", "resp_rr"),
              exac = list(exa, "Total_Exacerbations", "Years_Followed", "exac_rr"))
 set.seed(CV_SEED)
 vs_rows <- list()
@@ -1219,7 +1236,7 @@ for (s in SCHEMAS) {
   stopifnot(!any(mm$cons & mm[[s]] %in% oth), !anyNA(mm$g), !anyNA(ee$g))
 
   m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
-  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+  m2 <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ g +",      COV)), data = mm)
   n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
          "+ prior_exac + offset(log(Years_Followed))")), data = ee)
   cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
@@ -1260,7 +1277,7 @@ cons_rate <- function(sch, ev, py, dat) {
 
 crude_c_rows <- list()
 for (spec in list(list("all",  "vital_status",        "py",             mort_c),
-                  list("resp", "ev_resp",             "py",             mort_c),
+                  list("resp", "ev_resp",             "py_resp",             mort_c),
                   list("exac", "Total_Exacerbations", "Years_Followed", exa_c))) {
   key <- spec[[1]]; ev <- spec[[2]]; py <- spec[[3]]; dat <- spec[[4]]
   boot <- vector("list", CRUDE_B)
@@ -1339,7 +1356,7 @@ ee$g <- factor(ifelse(ee$cons, "REF", "reclassified"), c("REF", "reclassified"))
 stopifnot(!any(mm$cons & mm$lost), !anyNA(mm$g), !anyNA(ee$g))
 
 .m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
-.m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+.m2 <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ g +",      COV)), data = mm)
 .n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
         "+ prior_exac + offset(log(Years_Followed))")), data = ee)
 .cm <- summary(.m1)$conf.int; .cr <- summary(.m2)$conf.int; .ce <- summary(.n1)$coef
@@ -1352,15 +1369,15 @@ stopifnot(!any(mm$cons & mm$lost), !anyNA(mm$g), !anyNA(ee$g))
   if (e1 == 0) c(NA_real_, NA_real_) else poisson.test(c(e1, e0), c(t1, t0))$conf.int[1:2]
 .ci_all  <- .ex(sum(mm$vital_status[mm$lost]), sum(mm$py[mm$lost]),
                 sum(mm$vital_status[mm$cons]), sum(mm$py[mm$cons]))
-.ci_resp <- .ex(sum(mm$ev_resp[mm$lost]), sum(mm$py[mm$lost]),
-                sum(mm$ev_resp[mm$cons]), sum(mm$py[mm$cons]))
+.ci_resp <- .ex(sum(mm$ev_resp[mm$lost]), sum(mm$py_resp[mm$lost]),
+                sum(mm$ev_resp[mm$cons]), sum(mm$py_resp[mm$cons]))
 
 cons_lost <- data.frame(
   n = sum(lost), n_mort = sum(mm$lost), n_exac = sum(ee$lost),
   deaths = sum(mm$vital_status[mm$lost]), resp_deaths = sum(mm$ev_resp[mm$lost]),
   crude_all = .crude("vital_status", "py", mm),
   crude_all_lo = .ci_all[1], crude_all_hi = .ci_all[2],
-  crude_resp = .crude("ev_resp", "py", mm),
+  crude_resp = .crude("ev_resp", "py_resp", mm),
   crude_resp_lo = .ci_resp[1], crude_resp_hi = .ci_resp[2],
   crude_exac = .crude("Total_Exacerbations", "Years_Followed", ee),
   all_HR = .cm[.r, 1], all_LCI = .cm[.r, 3], all_UCI = .cm[.r, 4],
@@ -1416,14 +1433,14 @@ fit_groups <- function(mm0, ee0, s) {
     (sum(d[[ev]][a]) / sum(d[[py]][a])) / (sum(d[[ev]][b]) / sum(d[[py]][b]))
   }
   m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ g +", COV)), data = mm)
-  m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ g +",      COV)), data = mm)
+  m2 <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ g +",      COV)), data = mm)
   n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ g +", COV,
          "+ prior_exac + offset(log(Years_Followed))")), data = ee)
   out <- setNames(rep(NA_real_, length(KEYS)), KEYS)
   for (g in GRPS) {
     r <- paste0("g", g)
     out[paste(g, MEAS, sep = "|")] <- c(
-      log(rate(mm, g, "vital_status", "py")), log(rate(mm, g, "ev_resp", "py")),
+      log(rate(mm, g, "vital_status", "py")), log(rate(mm, g, "ev_resp", "py_resp")),
       log(rate(ee, g, "Total_Exacerbations", "Years_Followed")),
       unname(coef(m1)[r]), unname(coef(m2)[r]), unname(coef(n1)[r]))
   }
@@ -1437,7 +1454,7 @@ for (s in SCHEMAS) for (g in GRPS) {
   stopifnot(isTRUE(all.equal(exp(pt[paste(g, "adj_all", sep = "|"), s]),  cons_risk$all_HR[k])),
             isTRUE(all.equal(exp(pt[paste(g, "adj_exac", sep = "|"), s]), cons_risk$exac_IRR[k])))
 }
-.want <- list(n_m = nrow(mort_c), n_e = nrow(exa_c), B = B_GRP, version = 1L,
+.want <- list(n_m = nrow(mort_c), n_e = nrow(exa_c), B = B_GRP, version = 2L,
               labels = substr(digest::digest(paste(d_b$S2, d_b$S3, d_b$S4, d_b$cons)), 1, 12))
 .cached <- if (file.exists(GPATH)) readRDS(GPATH) else NULL
 if (!is.null(.cached) && identical(.cached$fingerprint, .want)) {
@@ -1587,12 +1604,14 @@ fu_row <- function(label, v) data.frame(
   q1_yr = unname(quantile(v, .25)), q3_yr = unname(quantile(v, .75)),
   stringsAsFactors = FALSE)
 followup_medians <- rbind(
-  fu_row("mortality (all-cause and respiratory)", mort$py),
+  fu_row("all-cause mortality", mort$py),
+  fu_row("respiratory mortality (cause-of-death window)", mort$py_resp),
   fu_row("exacerbations", exa$Years_Followed),
   fu_row("FEV1 decline, everyone in the decline data", fu_fev$last),
   fu_row("FEV1 decline, participants with a follow-up visit", fu_fev$last[fu_fev$n_vis > 1]))
-stopifnot(nrow(followup_medians) == 4, all(followup_medians$median_yr >= 0),
-          followup_medians$n[1] == nrow(mort), followup_medians$n[2] == nrow(exa))
+stopifnot(nrow(followup_medians) == 5, all(followup_medians$median_yr >= 0),
+          followup_medians$n[1] == nrow(mort), followup_medians$n[2] == nrow(mort),
+          followup_medians$n[3] == nrow(exa))
 write.csv(followup_medians, file.path(OUT_DIR, "followup_medians.csv"), row.names = FALSE)
 print(followup_medians, digits = 3)
 ```
@@ -1676,10 +1695,11 @@ d_cont$FF_per_0_1 <- d_cont$FEV1_FVC_post / 0.1
 cont_rows <- list()
 for (o in c("all-cause", "respiratory")) {
   ev <- if (o == "all-cause") "vital_status" else "ev_resp"
+  tm <- if (o == "all-cause") "py" else "py_resp"
   RHS <- "age_visit + gender + race + SmokCigNow + ATS_PackYears + stratum"
-  m_e <- coxph(as.formula(sprintf("Surv(py, %s) ~ ESI_v1post + %s", ev, RHS)), data = d_cont)
-  m_f <- coxph(as.formula(sprintf("Surv(py, %s) ~ FF_per_0_1 + %s", ev, RHS)), data = d_cont)
-  m_b <- coxph(as.formula(sprintf("Surv(py, %s) ~ ESI_v1post + FF_per_0_1 + %s", ev, RHS)), data = d_cont)
+  m_e <- coxph(as.formula(sprintf("Surv(%s, %s) ~ ESI_v1post + %s", tm, ev, RHS)), data = d_cont)
+  m_f <- coxph(as.formula(sprintf("Surv(%s, %s) ~ FF_per_0_1 + %s", tm, ev, RHS)), data = d_cont)
+  m_b <- coxph(as.formula(sprintf("Surv(%s, %s) ~ ESI_v1post + FF_per_0_1 + %s", tm, ev, RHS)), data = d_cont)
   lr  <- anova(m_f, m_b)
   ce  <- summary(m_b)$conf.int; co <- summary(m_b)$coef
   cont_rows[[length(cont_rows) + 1]] <- data.frame(
@@ -1920,7 +1940,7 @@ for (g in levels(d_al$discord)) {
     group = g, n = nrow(z), n_mort = sum(i), deaths = sum(mort_al$vital_status[i]),
     resp_deaths = sum(mort_al$ev_resp[i]),
     rate_all_100py  = 100 * sum(mort_al$vital_status[i]) / sum(mort_al$py[i]),
-    rate_resp_100py = 100 * sum(mort_al$ev_resp[i]) / sum(mort_al$py[i]),
+    rate_resp_100py = 100 * sum(mort_al$ev_resp[i]) / sum(mort_al$py_resp[i]),
     n_exac = sum(j),
     rate_exac_100py = 100 * sum(exa_al$Total_Exacerbations[j]) / sum(exa_al$Years_Followed[j]),
     prior_exac_mean = mean(exa_al$prior_exac[j]), stringsAsFactors = FALSE)
@@ -1938,7 +1958,7 @@ disc_rates_al <- do.call(rbind, rate_rows)
 disc_profile_al <- do.call(rbind, prof_rows)
 
 m1 <- coxph(as.formula(paste("Surv(py, vital_status) ~ discord +", COV)), data = mort_al)
-m2 <- coxph(as.formula(paste("Surv(py, ev_resp) ~ discord +", COV)), data = mort_al)
+m2 <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ discord +", COV)), data = mort_al)
 n1 <- glm.nb(as.formula(paste("Total_Exacerbations ~ discord +", COV,
        "+ prior_exac + offset(log(Years_Followed))")), data = exa_al)
 cm <- summary(m1)$conf.int; cr <- summary(m2)$conf.int; ce <- summary(n1)$coef
@@ -1986,7 +2006,7 @@ rows <- lapply(levels(d_ps$discord), function(g) {
     deaths         = sum(m$vital_status),
     resp_deaths    = sum(m$ev_resp),
     rate_all_100py = rate100(m$vital_status, m$py),
-    rate_resp_100py= rate100(m$ev_resp,      m$py),
+    rate_resp_100py= rate100(m$ev_resp,      m$py_resp),
     n_exac         = nrow(e),
     rate_exac_100py= rate100(e$Total_Exacerbations, e$Years_Followed),
     prior_exac_mean= mean(e$prior_exac, na.rm = TRUE),
@@ -2003,7 +2023,7 @@ kable(disc_rates, digits = 2,
 ```{r discordance-adjusted}
 # Adjusted estimates against Both-noCOPD.
 cm <- coxph(as.formula(paste("Surv(py, vital_status) ~ discord +", COV)), data = mort_ps)
-cr <- coxph(as.formula(paste("Surv(py, ev_resp) ~ discord +",      COV)), data = mort_ps)
+cr <- coxph(as.formula(paste("Surv(py_resp, ev_resp) ~ discord +",      COV)), data = mort_ps)
 ne <- glm.nb(as.formula(paste("Total_Exacerbations ~ discord +", COV,
        "+ prior_exac + offset(log(Years_Followed))")), data = exa_ps)
 sm <- summary(cm)$conf.int; sr <- summary(cr)$conf.int; se <- summary(ne)$coef
@@ -2094,11 +2114,12 @@ for (st in STRATA) {
         lo <- unname(quantile(v, .025)); hi <- unname(quantile(v, .975))
       } else {
         col <- if (o == "all") "vital_status" else "ev_resp"
+        tcol <- if (o == "all") "py" else "py_resp"
         ev <- sum(m[[col]][m$discord == g])
         ev0 <- sum(m[[col]][m$discord == ref])
-        rr <- ratio(col, "py", m, g)
-        ci <- exact_rate_ratio(ev, sum(m$py[m$discord == g]),
-                               sum(m[[col]][m$discord == ref]), sum(m$py[m$discord == ref]))
+        rr <- ratio(col, tcol, m, g)
+        ci <- exact_rate_ratio(ev, sum(m[[tcol]][m$discord == g]),
+                               sum(m[[col]][m$discord == ref]), sum(m[[tcol]][m$discord == ref]))
         lo <- ci[1]; hi <- ci[2]
       }
       crude_rows_s[[length(crude_rows_s) + 1]] <- data.frame(
@@ -2208,7 +2229,7 @@ CATS   <- c("AFL-only", "COPD-minor", "COPD-major")
 # change to an outcome, covariate or offset invalidates the cache whether or
 # not anyone remembers to bump a version.
 .fml <- c(paste("Surv(py, vital_status) ~ S +", COV),
-          paste("Surv(py, ev_resp) ~ S +",      COV),
+          paste("Surv(py_resp, ev_resp) ~ S +",      COV),
           paste("Total_Exacerbations ~ S +", COV,
                 "+ prior_exac + offset(log(Years_Followed))"))
 # The formulas and row counts are identical whether or not the S4 rule
@@ -2221,7 +2242,7 @@ CATS   <- c("AFL-only", "COPD-minor", "COPD-major")
               deaths = sum(mort$vital_status), resp = sum(mort$ev_resp),
               cats = paste(CATS, collapse = ","), fml = paste(.fml, collapse = "|"),
               labels = substr(digest::digest(.labels), 1, 12),
-              version = 2L)
+              version = 3L)
 .cached <- if (file.exists(CPATH)) readRDS(CPATH) else NULL
 if (!is.null(.cached) && !identical(.cached$fingerprint, .want)) {
   message("paired-bootstrap cache stale; recomputing")
@@ -2244,7 +2265,7 @@ if (!is.null(.cached)) {
     unname(co[term, 1])
   }
   fit_cox <- function(dat, ev) tryCatch({
-    lhs <- sprintf("Surv(py, %s)", ev)
+    lhs <- sprintf("Surv(%s, %s)", if (ev == "ev_resp") "py_resp" else "py", ev)
     list(S2 = coxph(as.formula(paste(lhs, "~ S2 +", COV)), data = dat),
          S4 = coxph(as.formula(paste(lhs, "~ S4 +", COV)), data = dat))
   }, error = function(e) NULL, warning = function(w) NULL)

@@ -217,7 +217,7 @@ reg("RECL-12", "Reclassification", "COPD versus no COPD agreement is 85.0% for t
 
 # Results fills and the S5 sentence (2026-09-11 13:01 draft).
 reg("FU-01", "Follow-up", "median follow-up 10.8 years for mortality", 10.8, "followup_medians.csv",
-    'x$median_yr[x$outcome == "mortality (all-cause and respiratory)"]', TOL_1DP)
+    'x$median_yr[x$outcome == "all-cause mortality"]', TOL_1DP)
 reg("FU-02", "Follow-up", "median follow-up 10.4 years for exacerbations", 10.4, "followup_medians.csv",
     'x$median_yr[x$outcome == "exacerbations"]', TOL_1DP)
 reg("FU-03", "Follow-up", "median follow-up 9.7 years for lung function decline", 9.7, "followup_medians.csv",
