@@ -3,7 +3,7 @@
 **Protocol:** the `copilot-relay` skill (`~/.claude/skills/copilot-relay/SKILL.md`), approved by Pete
 2026-10-07. Read it once. This file holds only what is specific to this project.
 
-**Last updated:** 2026-10-08 10:40 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1026_esi-resp_r2.md`.
+**Last updated:** 2026-10-08 17:45 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1737_esi-c3b.md`.
 
 ## The job
 
@@ -24,12 +24,12 @@ The cluster run will use the original files and its results will be compared aga
 | `esi-mdcopd-copy` | **closed** | — | — |
 | `esi-repro` | **closed** | — | — |
 | `esi-verify` | **closed** (Claude) | — | — |
-| `esi-resp` | awaiting-pete ("go") | Pete's "go" in the Copilot chat, then Copilot | `2026-10-08_1040_esi-resp_r3.md` (rerun, corrected rule) |
+| `esi-resp` | **closed** (Claude) | — | — |
+| `esi-c3b` | close-proposed | Copilot (confirm close, clear timer) | `2026-10-08_1745_esi-c3b_r3.md` |
 
 ## Do now
 
-1. **`2026-10-08_1040_esi-resp_r3.md`** (overwrite-or-delete; **needs Pete's "go" before step 1**). Replace the
-   analysis file in `esi-ctfree-resp-20261008`, resubmit `run_ctfree_resp.sh`, bring back aggregate output.
+1. **`2026-10-08_1745_esi-c3b_r3.md`**: nothing to run; confirm the close and clear the `esi-c3b` timer.
 
 ## Standing rules for this project
 
@@ -50,8 +50,14 @@ The cluster run will use the original files and its results will be compared aga
 - **Commands in notes contain no single quote.** If a command does not run as written, stop and report; do not
   edit a note's commands.
 - **Inputs** (settled in `esi-recon`, `esi-mdcopd-copy`): see `config_paths_channing_ctfree.R` in this folder.
+- **Source of the paper's numbers (v6):** job 6118470 in `esi-ctfree-resp-20261008`; its tables are in `ctfree/assets/` on the Mac.
 - **Reproduction clone:** `/proj/regeps/regep00/studies/COPDGene/analyses/repjc/COPDGene/ESI_MDCOPD_2026/esi-ctfree-repro-20261007`;
   logs in `/d/tmp/repjc/esi_ctfree_repro_20261007`.
+- **Monitoring any submitted job** (Pete, 2026-10-08): attach the thread timer at 1 minute right after the interim
+  report; on each wake run the note's `sacct`; while the job is PENDING or RUNNING write a status report
+  (`..._<thread>_status.md`, `status: open`, the `sacct` line and log line counts, END marker) **every 15 minutes**;
+  on a terminal state write the final report in the same turn, then clear the timer. If `sacct` fails, one chat line
+  and retry; after 15 minutes of failures write `status: awaiting-pete` (cluster unreachable) and stop.
 - **Standing approvals:** none. Every overwrite or deletion needs Pete's "go" in the Copilot chat.
 - **Timers:** per the skill (1 minute while a thread is open; 15 after an hour quiet; cleared at 4 hours, on
   `closed` and on "stop polling"). Idle-watch: off.
@@ -61,6 +67,8 @@ The cluster run will use the original files and its results will be compared aga
 | date | step | outcome |
 |---|---|---|
 | 2026-10-07 | relay set up; `esi-recon` sent | — |
+| 2026-10-08 | `esi-c3b` report (job 6120319, 13 min) | random-slope FEV1 models: same significance pattern, much larger COPD-major decline; preserved-spirometry CT-only -12.7, ESI-only +3.7 mL/yr vs reference |
+| 2026-10-08 | `esi-resp_r3` report (job 6118470, 3h01m) | render OK; this run is now the paper's single source (v6). C3 failed on a misspelled lme4 option (Claude's error) |
 | 2026-10-08 | `esi-resp_r2` diagnostic | COD censor date 31 Dec 2018 for all; COD follow-up > VS for 359 (276 dead in both, mostly days apart); 556 zero follow-up in VS, all alive. Pete: death time from VS, otherwise shorter of the two; exclude zero follow-up (commit `9ef5266`) |
 | 2026-10-08 | `esi-resp` report (job 6118130) | render stopped at the assertion py_resp <= py: cause-of-death follow-up exceeds vital-status follow-up for some participants; later outputs stale, not used |
 | 2026-10-08 | `esi-verify` report (job 6117724) | recomputation matches the paper on 1,141 values; C1: 762 deaths after the cause-of-death window, 10 dead in COD but alive in vital status; C2 FEV1/FVC comparator ~ ESI; C3 failed (check design); C4 469 zero follow-up |
@@ -82,7 +90,10 @@ The cluster run will use the original files and its results will be compared aga
 
 | file | status |
 |---|---|
-| `2026-10-08_1040_esi-resp_r3.md` | live: Do now 1 (needs "go") |
+| `2026-10-08_1745_esi-c3b_r3.md` | live: Do now 1 (close) |
+| `2026-10-08_1740_esi-c3b_r2.md` | done |
+| `2026-10-08_1655_esi-c3b.md` + `run_ctfree_c3b.sh`, `C3b_fev1_model_checks.R` | done (report `2026-10-08_1737_esi-c3b.md`) |
+| `2026-10-08_1040_esi-resp_r3.md` | done (report `2026-10-08_1434_esi-resp_r3.md`) |
 | `2026-10-08_1025_esi-resp_r2.md` + `ctfree_diag_followup.R` | done (report `2026-10-08_1026_esi-resp_r2.md`) |
 | `2026-10-08_0945_esi-resp.md` + `run_ctfree_resp.sh`, `ctfree_compare_assets.R` (now takes a baseline argument), C3 (fixed), C5 | done: render stopped (report `2026-10-08_1020_esi-resp.md`) |
 | `2026-10-08_0735_esi-verify.md` + `run_ctfree_verify.sh` | done (report `2026-10-08_0843_esi-verify.md`) |
