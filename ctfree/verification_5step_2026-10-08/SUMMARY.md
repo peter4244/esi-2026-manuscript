@@ -59,7 +59,14 @@ Channing (Pete), so every recomputation from participant data ran there through 
 | D3 | Without airflow limitation only 9.8% of the 501 ESI-only participants meet ESI ≥ 1.50. **[checked]** Pete: described well as is. | 2 |
 | D4 | "Symptom criteria were more frequent in the ESI-only group" although chronic bronchitis goes the other way (28.2% vs 15.0%). Pete: true of symptoms overall. | 3 (v5 review) |
 
-### Open: text (for Pete; none applied)
+### Text items (decided by Pete, 2026-10-08)
+
+Fixed in v8 (commit `62bd7f1`): O-text-2, O-text-3, O-text-4 (Abstract 248, main text 3,272, counted from the
+built document with labels and headings), O-text-9 (discordant groups named CT-only/ESI-only throughout; Figure S1
+axis "Rate ratio, HR or IRR"; Figure S2 "Wall thickening (visual)"; Figure 2 colour key and minor/major in the
+legend). No change, per Pete: O-text-1, O-text-5, O-text-6, O-text-7, O-text-8.
+
+The items as originally listed:
 
 | # | item | step |
 |---|---|---|
