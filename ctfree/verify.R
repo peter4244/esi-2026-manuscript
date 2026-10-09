@@ -1,14 +1,18 @@
 #!/usr/bin/env Rscript
 # Claims verification for the CT-free paper. Fresh registry; shares nothing
-# with the v15 manuscript's. Every claim in ctfree/CLAIMS.md is evaluated
-# against ctfree/assets/ as it exists now, and any drift fails the run.
+# with the v15 manuscript's. This file is the claim registry: each reg() entry
+# pins a number printed in the manuscript or supplement to the asset field that
+# produces it, and every entry is evaluated against ctfree/assets/ as it exists
+# now. It does not read the manuscript text. Any drift fails the run; results
+# go to ctfree/assets/VERIFICATION.csv. (ctfree/CLAIMS.md is a reading guide to
+# this registry, not its source.)
 #
-# Runs from any working directory:  Rscript /abs/path/to/ctfree/verify.R
+# Runs from any working directory:  Rscript ctfree/verify.R
 # Locate this script's own directory, so it runs from any working directory.
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 source(file.path(if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1])))
                  else "ctfree", "_locate.R"))
-REGISTRY_N <- 257L
+REGISTRY_N <- 291L
 TOL_2DP <- 0.005; TOL_3DP <- 0.0005; TOL_1DP <- 0.05; TOL_EXACT <- 0
 
 .cache <- new.env(parent = emptyenv())
@@ -771,6 +775,60 @@ CIS <- list(
 for (e in CIS)
   reg(e[[1]], e[[3]], sprintf("%s %s %s %s %.2f [%.2f-%.2f], %s", e[[2]], e[[3]], e[[4]], e[[5]], e[[6]], e[[7]], e[[8]], e[[9]]),
       TRUE, "group_vs_mdcopd.csv", chk_ci(e[[2]], e[[3]], e[[4]], e[[5]], e[[6]], e[[7]], e[[8]], e[[9]]), TOL_EXACT)
+
+# --- printed values without an entry, from step 4 of the 2026-10-08 verification (O-r-7) ---
+# Each is checked at the precision the v8 text prints it.
+BS <- function(st) sprintf('x$n[x$stratum == "%s"]', st)
+reg("GOLD-01", "Study population", "1,119 with PRISm", 1119, "supp_baseline.csv", BS("PRISm"), TOL_EXACT)
+reg("GOLD-02", "Study population", "4,037 with preserved spirometry (GOLD 0)", 4037, "supp_baseline.csv", BS("GOLD0"), TOL_EXACT)
+reg("GOLD-03", "Study population", "734 with GOLD 1", 734, "supp_baseline.csv", BS("GOLD1"), TOL_EXACT)
+reg("GOLD-04", "Study population", "1,772 with GOLD 2", 1772, "supp_baseline.csv", BS("GOLD2"), TOL_EXACT)
+reg("GOLD-05", "Study population", "1,050 with GOLD 3", 1050, "supp_baseline.csv", BS("GOLD3"), TOL_EXACT)
+reg("GOLD-06", "Study population", "528 with GOLD 4", 528, "supp_baseline.csv", BS("GOLD4"), TOL_EXACT)
+# supp_baseline.csv stores ESI as "mean (SD)" text; the mean is the part before the space.
+BE <- function(st) sprintf('as.numeric(sub(" .*", "", x$ESI[x$stratum == "%s"]))', st)
+reg("GOLD-07", "Study population", "mean ESI 0.90 in GOLD 0", 0.90, "supp_baseline.csv", BE("GOLD0"), TOL_2DP)
+reg("GOLD-08", "Study population", "mean ESI 8.30 in GOLD 4", 8.30, "supp_baseline.csv", BE("GOLD4"), TOL_2DP)
+reg("FU-07", "Methods", "exacerbation analyses included 8,177 participants", 8177, "followup_medians.csv",
+    'x$n[x$outcome == "exacerbations"]', TOL_EXACT)
+reg("RECL-13", "Reclassification", "833 of the 3,809 MD-COPD-CT COPD-major (21.9%) reassigned to AFL-only by MD-NoCT", 21.9,
+    "reclassification.csv", '100 * x$major_to_aflonly[x$schema == "S3"] / x$n_major[x$schema == "S3"]', TOL_1DP)
+reg("RECL-14", "Reclassification", "350 (9.2%) reassigned by MD-COPD-ESI", 9.2,
+    "reclassification.csv", '100 * x$major_to_aflonly[x$schema == "S4"] / x$n_major[x$schema == "S4"]', TOL_1DP)
+reg("CTAUC-05", "ESI and CT", "pooled ESI AUC 0.80 for wall thickening", 0.80,
+    "esi_ct_auc.csv", CA("All participants", "Airway wall thickening", "auc_ESI"), TOL_2DP)
+reg("CTAUC-06", "ESI and CT", "with airflow limitation, AUC 0.75 for emphysema", 0.75,
+    "esi_ct_auc.csv", CA("Airflow limitation", "Visual emphysema", "auc_ESI"), TOL_2DP)
+reg("CTAUC-07", "ESI and CT", "with airflow limitation, AUC 0.75 for wall thickening", 0.75,
+    "esi_ct_auc.csv", CA("Airflow limitation", "Airway wall thickening", "auc_ESI"), TOL_2DP)
+reg("CTAUC-08", "ESI and CT", "without airflow limitation, AUC 0.61 for wall thickening", 0.61,
+    "esi_ct_auc.csv", CA("Preserved spirometry", "Airway wall thickening", "auc_ESI"), TOL_2DP)
+reg("AGR-01", "Agreement", "noCOPD sensitivity 89.3% with MD-NoCT", 89.3, "agreement_by_group.csv", AG("noCOPD", "recall_noct"), TOL_1DP)
+reg("AGR-02", "Agreement", "noCOPD sensitivity 88.5% with MD-COPD-ESI", 88.5, "agreement_by_group.csv", AG("noCOPD", "recall_esi"), TOL_1DP)
+reg("AGR-03", "Agreement", "noCOPD PPV 97.7% with MD-NoCT", 97.7, "agreement_by_group.csv", AG("noCOPD", "pct_noct"), TOL_1DP)
+reg("AGR-04", "Agreement", "noCOPD PPV 97.8% with MD-COPD-ESI", 97.8, "agreement_by_group.csv", AG("noCOPD", "pct_esi"), TOL_1DP)
+reg("AGR-05", "Agreement", "COPD-minor sensitivity 88.7% with MD-NoCT", 88.7, "agreement_by_group.csv", AG("COPD-minor", "recall_noct"), TOL_1DP)
+reg("AGR-06", "Agreement", "COPD-minor sensitivity 89.4% with MD-COPD-ESI", 89.4, "agreement_by_group.csv", AG("COPD-minor", "recall_esi"), TOL_1DP)
+reg("AGR-07", "Agreement", "COPD-minor PPV 60.4% with MD-NoCT", 60.4, "agreement_by_group.csv", AG("COPD-minor", "pct_noct"), TOL_1DP)
+reg("AGR-08", "Agreement", "COPD-minor PPV 58.8% with MD-COPD-ESI", 58.8, "agreement_by_group.csv", AG("COPD-minor", "pct_esi"), TOL_1DP)
+reg("AGR-09", "Agreement", "AFL-only PPV 24.8% with MD-NoCT", 24.8, "agreement_by_group.csv", AG("AFL-only", "pct_noct"), TOL_1DP)
+reg("AGR-10", "Agreement", "AFL-only PPV 35.5% with MD-COPD-ESI", 35.5, "agreement_by_group.csv", AG("AFL-only", "pct_esi"), TOL_1DP)
+reg("AGR-11", "Agreement", "AFL-only PPV difference P < 0.005", TRUE, "agreement_by_group.csv",
+    sprintf('%s < 0.005', AG("AFL-only", "p_boot")), TOL_EXACT)
+reg("AGR-12", "Agreement", "COPD-major PPV 100% with MD-NoCT", 100, "agreement_by_group.csv", AG("COPD-major", "pct_noct"), TOL_1DP)
+reg("AGR-13", "Agreement", "COPD-major PPV 97.7% with MD-COPD-ESI", 97.7, "agreement_by_group.csv", AG("COPD-major", "pct_esi"), TOL_1DP)
+reg("RATE-08", "AFL-only outcomes", "MD-NoCT AFL-only: 0.39 respiratory deaths per 100 person-years", 0.39,
+    "consensus_ref_crude.csv", RT("S3", "resp"), TOL_2DP)
+reg("RATE-09", "AFL-only outcomes", "MD-COPD-CT AFL-only: 0.09 respiratory deaths per 100 person-years", 0.09,
+    "consensus_ref_crude.csv", RT("S2", "resp"), TOL_2DP)
+reg("RATE-10", "AFL-only outcomes", "MD-COPD-ESI AFL-only: 0.09 respiratory deaths per 100 person-years", 0.09,
+    "consensus_ref_crude.csv", RT("S4", "resp"), TOL_2DP)
+reg("DISC-FOUR", "Discussion", "MD-NoCT AFL-only four times the size of MD-COPD-CT AFL-only (1,108 versus 275)", 4,
+    "schema_labels.csv", sprintf('round(%s / %s)', L("S3", "AFL-only"), L("S2", "AFL-only")), TOL_EXACT)
+reg("DISC-HALF", "Discussion", "ESI kept more than half of the 833 CT-dependent COPD-major from AFL-only", TRUE, "crossclass.csv",
+    'with(x, { a <- n[schema == "S3" & row_cat == "AFL-only" & col_cat == "COPD-major"]; b <- n[schema == "S4" & row_cat == "AFL-only" & col_cat == "COPD-major"]; (a - b) / a > 0.5 })', TOL_EXACT)
+reg("SM-CTMISS", "Supplemental Methods", "missing visual CT scores (n = 4)", TRUE, "esi_ct_levels.csv",
+    '9240 - sum(x$n[x$criterion == "Visual emphysema"]) == 4 && 9240 - sum(x$n[x$criterion == "Airway wall thickening"]) == 4', TOL_EXACT)
 
 # --- evaluate -------------------------------------------------------------
 rows <- lapply(REG, function(e) {

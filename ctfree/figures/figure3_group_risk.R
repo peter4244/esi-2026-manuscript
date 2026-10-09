@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Figure 2 (crude) and Supplemental Figure S1 (crude and adjusted): risk of each
+# Figure 3 (crude) and Supplemental Figure S1 (crude and adjusted): risk of each
 # diagnostic group under each multidimensional classification, against the
 # common noCOPD reference. Rows are the diagnostic groups, columns the outcomes.
 # Replaces the former Figures 2 to 4, one per group (Pete, 2026-09-13).

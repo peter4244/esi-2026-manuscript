@@ -1,16 +1,21 @@
 #!/usr/bin/env Rscript
-# Figure 1: reclassification of the MD-COPD categories when chest CT is
+# Figure 2: reclassification of the MD-COPD-CT categories when chest CT is
 # unavailable. Two rows: the participant flow across the full width on top,
 # the two cross-classifications side by side beneath it (Pete, 2026-09-10).
 #
-#   A  Participant flow: NoCT classification | MD-COPD | ESI classification
-#   B  NoCT classification cross-classified against MD-COPD (under the NoCT side of A)
-#   C  ESI classification cross-classified against MD-COPD (under the ESI side of A)
+#   A  Participant flow: MD-NoCT | MD-COPD-CT | MD-COPD-ESI
+#   B  MD-NoCT cross-classified against MD-COPD-CT (under the MD-NoCT side of A)
+#   C  MD-COPD-ESI cross-classified against MD-COPD-CT (under the MD-COPD-ESI side of A)
+#
+# Input: the participant-level ctfree/assets/schema_labels.rds written by the
+# analysis render (git-ignored, never deposited), plus reclassification.csv and
+# accuracy_test.csv. This is the only figure script that needs participant-level
+# data; the others read aggregate assets only.
 #
 # Coloring follows the v15 Figure 1 (../../figures/figure1_agreement): the
 # category palette, matrix diagonals shaded in the category color with depth
 # scaled to count, off-diagonal cells white with a light border, strata with
-# thin dark borders. Ribbons are colored by MD-COPD origin, solid where the
+# thin dark borders. Ribbons are colored by MD-COPD-CT origin, solid where the
 # participant changes category and pale where it agrees (Pete, 2026-09-10).
 #
 # Portrait. The flow panel, the busiest element, gets the whole content width,

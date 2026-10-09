@@ -12,8 +12,9 @@ output:
 ---
 
 <!--
-Single reproducible analysis report that produces every result, table, and
-figure cited in the CT-free MD-COPD manuscript. Bhatt et al.'s JAMA 2025
+Single reproducible analysis report that produces every result table cited in
+the CT-free MD-COPD manuscript (aggregate CSVs in ctfree/assets/). The figures
+are drawn from those assets by the scripts in ctfree/figures/. Bhatt et al.'s JAMA 2025
 multidimensional COPD (MD-COPD) framework requires chest CT; this manuscript
 asks whether ESI, a spirometry-only measure, can substitute for the CT
 criteria while preserving MD-COPD's advantage over the fixed ratio.
@@ -23,6 +24,10 @@ Four classifications are compared on the same COPDGene participants:
   2. MD-COPD        - the published CT-based framework (the reference)
   3. NoCT-MD-COPD   - MD-COPD with the two CT criteria removed
   4. ESI-MD-COPD    - MD-COPD with the two CT criteria replaced by ESI
+
+Name crosswalk. The code and assets keep the working names; the manuscript
+(v8) uses: S1 = fixed ratio, S2 "MD-COPD" = MD-COPD-CT, S3 "NoCT-MD-COPD" =
+MD-NoCT, S4 "ESI-MD-COPD" = MD-COPD-ESI.
 
 MD-COPD categories are taken from Bhatt et al.'s own per-subject
 classification file (MDCOPD_PATH) rather than reconstructed heuristically.
@@ -41,10 +46,12 @@ and ESI-MD-COPD are ours, built from the individual criteria directly.
 This report reproduces the numerical claims of the manuscript from six
 COPDGene source files: ESI values, phenotype/CT, vital status, cause of
 death, long-term follow-up exacerbations, and Bhatt et al.'s per-subject
-MD-COPD classification. Each section writes its output (tables as CSV,
-figures as PNG) into `OUT_DIR`. A closing self-check block echoes every
-canonical value cited in the manuscript prose against the expected number
-so drift can be detected on any re-run.
+MD-COPD classification. Each section writes its output tables as CSV into
+`ctfree/assets/` (`OUT_DIR` below; any `OUT_DIR` in `config_paths.R` belongs
+to the v15 analysis and is ignored). No figure is written here: the figure
+scripts in `ctfree/figures/` draw from these assets. The closing completeness
+check (Section 11) only confirms that every asset was written; the numbers
+cited in the manuscript are checked against the assets by `ctfree/verify.R`.
 
 # PATHS -- supplied at run time
 
@@ -162,8 +169,8 @@ step (CT quality control + minor-criteria data completeness) and their
 MD-COPD classification are NOT reconstructed here: two independent attempts
 at a heuristic reconstruction each landed within a handful of participants
 of their counts, and a subject-level merge against their own classification
-file showed exactly where the residual came from. See the header comment on
-`MDCOPD_PATH` in `config_paths.R.example` for the full story. Using their
+file showed exactly where the residual came from. See the comment at the top
+of this file for the full story. Using their
 file directly gives an exact match on all four category counts.
 
 Only after MD-COPD is validated against the published counts do we impose
@@ -321,7 +328,7 @@ write.csv(baseline, file.path(OUT_DIR, "supp_baseline.csv"), row.names = FALSE)
 kable(baseline, caption = "Baseline characteristics by GOLD stratum.")
 ```
 
-## Section 1.2 -- ESI against quantitative CT (Supplemental Table S2)
+## Section 1.2 -- ESI against quantitative CT (not in the v8 supplement)
 
 Pearson correlations of ESI with quantitative CT emphysema, overall and within
 stratum. The earlier analysis's supplemental table was a correlation matrix
@@ -413,7 +420,7 @@ s4_two <- function(df, k, tl, th) {
 # Section 3 -- Fitting NoCT-MD-COPD and ESI-MD-COPD
 
 Both need a count threshold (three-of-five doesn't apply once the criterion
-count changes), and ESI-MD-COPD also needs the two ESI thresholds. Fitting
+count changes), and ESI-MD-COPD also needs the ESI threshold. Fitting
 is outcome-blind: only the MD-COPD labels enter, never mortality or
 exacerbations, so the risk profiles below are an independent check rather
 than a restatement of the fit.
@@ -1199,7 +1206,7 @@ print(binary_vs_mdcopd, digits = 3)
 # Section 8a -- A common reference group across the three classifications
 
 Section 7 estimates every category against its own classification's noCOPD
-group. Those references differ in composition (4,357, 3,853 and 3,815
+group. Those references differ in composition (4,357, 3,982 and 3,941
 participants), so an estimate under one classification is not on the same
 scale as an estimate under another, and part of any difference between them
 is the moving denominator.
@@ -1602,7 +1609,7 @@ kable(fev1_decline, digits = 2,
 
 Sensitivity analysis (Pete, 2026-10-08): the same models with a random slope
 for time per participant as well as a random intercept. The primary model
-(Table S6) is unchanged; this one is reported alongside it.
+(Table S6) is unchanged; this one is reported alongside it (Table S7).
 
 ```{r fev1-decline-random-slope}
 # Same data, formula, covariates and common reference as fev1-decline; only the
@@ -2115,7 +2122,7 @@ write.csv(adj, file.path(OUT_DIR, "discord_adjusted.csv"), row.names = FALSE)
 kable(adj, digits = 2, caption = "Adjusted estimates against Both-noCOPD.")
 ```
 
-# Section 9b -- Both strata together, for Figures 5 and 6
+# Section 9b -- Both strata together, for Table S8, Figure 4, Figure S2 and the Table S3 P values
 
 Profile, crude ratios and adjusted estimates for the concordant and discordant
 groups in each stratum, laid out identically so the figures can set the strata
@@ -2229,7 +2236,7 @@ print(agreement_by_group[, c("category", "pct_noct", "pct_esi", "recall_noct", "
 ```
 
 ```{r strata-profile-tests}
-# Pairwise tests behind the Figure 5 brackets, within each stratum: Wilcoxon
+# Pairwise tests behind the Figure S2 brackets, within each stratum: Wilcoxon
 # rank-sum for the two continuous measures, Fisher's exact test for the five
 # criteria. Unadjusted. Where neither group has a criterion, or both have it
 # throughout, there is nothing to test and P is 1.

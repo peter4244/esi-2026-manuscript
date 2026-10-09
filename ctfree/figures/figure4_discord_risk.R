@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Figure 3: risk in the groups on which MD-COPD and the ESI classification agree
+# Figure 4: risk in the groups on which MD-COPD-CT and MD-COPD-ESI agree
 # or disagree, within each stratum of airflow limitation.
 #
 # Rows are strata and columns outcomes. Each panel shows the three groups either

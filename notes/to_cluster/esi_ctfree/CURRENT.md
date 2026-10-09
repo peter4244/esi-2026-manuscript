@@ -3,7 +3,7 @@
 **Protocol:** the `copilot-relay` skill (`~/.claude/skills/copilot-relay/SKILL.md`), approved by Pete
 2026-10-07. Read it once. This file holds only what is specific to this project.
 
-**Last updated:** 2026-10-08 19:52 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_1920_esi-rs.md`.
+**Last updated:** 2026-10-08 21:55 by Claude Code. Last report read: `from_cluster/esi_ctfree/2026-10-08_2148_esi-pkg.md`.
 
 ## The job
 
@@ -27,6 +27,7 @@ The cluster run will use the original files and its results will be compared aga
 | `esi-resp` | **closed** (Claude) | — | — |
 | `esi-rs` | **closed** (Claude; Pete confirmed Copilot's work done, 19:51) | — | — |
 | `esi-c3b` | **closed** (both sides) | — | — |
+| `esi-pkg` | **closed** (Copilot proposed, Claude agreed) | — | — |
 
 ## Do now
 
@@ -95,6 +96,7 @@ Nothing. No open threads; no timer should be attached.
 | file | status |
 |---|---|
 | `2026-10-08_1745_esi-c3b_r3.md` | done; closed (report `2026-10-08_1847_esi-c3b_r3.md`) |
+| `2026-10-08_2135_esi-pkg.md` + `ctfree_package_versions.R` | done; closed (report `2026-10-08_2148_esi-pkg.md`) |
 | `2026-10-08_1930_esi-rs_r2.md` | closed from the Claude side (no Copilot reply needed) |
 | `2026-10-08_1745_esi-rs.md` + `run_ctfree_rs.sh` | done (report `2026-10-08_1920_esi-rs.md`) |
 | `2026-10-08_1740_esi-c3b_r2.md` | done |

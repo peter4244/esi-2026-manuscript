@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-# Figure 4: structural, spirometric and symptom profile of the groups on which
-# MD-COPD and the ESI classification agree or disagree, within each stratum.
+# Supplemental Figure S2: structural, spirometric and symptom profile of the
+# groups on which MD-COPD-CT and MD-COPD-ESI agree or disagree, within each stratum.
 #
 # Updated from v15 Figure 2 (../../figures/figure2_discordance), which showed the
 # preserved-spirometry stratum only. Bars for group means with standard errors and

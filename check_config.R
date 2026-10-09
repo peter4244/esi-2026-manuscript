@@ -1,51 +1,69 @@
 #!/usr/bin/env Rscript
-# Validate a site configuration BEFORE running the analysis.
+# Validate a site configuration BEFORE running the CT-free MD-COPD analysis
+# (ctfree/ESI_ctfree_analysis_2026.9.3.Rmd).
 #
 #   Rscript check_config.R [config_file]
 #
-# Confirms each input exists, carries the identifier column named by ID_COL,
-# and supplies the columns the analysis actually reads. Reports everything it
-# finds rather than stopping at the first problem, so one run tells you the
-# full picture.
+# Confirms each of the six inputs exists, carries the identifier column named
+# by ID_COL, and supplies the columns the analysis actually reads. Reports
+# everything it finds rather than stopping at the first problem, so one run
+# tells you the full picture.
+#
+# Only the first line (the header) of each file is read. No data row is
+# opened, so this is safe to run anywhere the files are visible.
 
 args   <- commandArgs(trailingOnly = TRUE)
 CONFIG <- if (length(args)) args[1] else Sys.getenv("ESI_CONFIG", "config_paths.R")
 if (!file.exists(CONFIG)) stop("No such config: ", CONFIG)
 source(CONFIG)
 
-need <- c("ESI_PATH","PHE_PATH","VS_PATH","COD_PATH","EX_PATH","OUT_DIR","ID_COL")
+# OUT_DIR is not needed: the CT-free analysis always writes to ctfree/assets/.
+need <- c("ESI_PATH","PHE_PATH","VS_PATH","COD_PATH","EX_PATH","MDCOPD_PATH","ID_COL")
 miss <- need[!vapply(need, exists, logical(1))]
 if (length(miss)) stop("config does not define: ", paste(miss, collapse=", "))
 
-# Columns the analysis reads from each input.
+# Columns the CT-free analysis reads from each input, taken from the code of
+# ctfree/ESI_ctfree_analysis_2026.9.3.Rmd. Keep in step with that file.
 REQ <- list(
-  ESI_PATH = c("ESI"),
-  PHE_PATH = c("visitnum","finalgold_visit","FEV1_post","FEV1_FVC_post",
-               "years_from_baseline","CT_Visual_Emph_Severity",
-               "CT_Visual_Wall_Thickening","MMRCDyspneaScor","SGRQ_scoreTotal",
-               "Chronic_Bronchitis","Height_CM","age_visit","gender","race",
-               "SmokCigNow","ATS_PackYears","BMI","cohort"),
-  VS_PATH  = c("vital_status","days_followed"),
-  COD_PATH = c("Torch_Group_Basic"),
-  EX_PATH  = c("Total_Exacerbations","Total_Severe_Exacer","Years_Followed")
+  # one row per participant-visit-manoeuvre; PrePost 0 = pre-, 1 = post-bronchodilator
+  ESI_PATH    = c("visitnum","PrePost","ESI"),
+  PHE_PATH    = c(
+    # cohort exclusion chain
+    "visitnum","ExclusionaryDisease","cohort","FEV1_FVC_post",
+    # MD-COPD criteria used to build MD-NoCT and MD-COPD-ESI, and the cardiac rule
+    "CT_Visual_Emph_Severity","CT_Visual_Wall_Thickening","MMRCDyspneaScor",
+    "SGRQ_scoreTotal","Chronic_Bronchitis","CoronaryArtery","CongestHeartFail",
+    # covariates, strata and baseline description
+    "age_visit","gender","race","SmokCigNow","ATS_PackYears","BMI","Height_CM",
+    "finalgold_visit","FEV1pp_utah","Exacerbation_Frequency",
+    # FEV1 decline
+    "FEV1_post","years_from_baseline",
+    # quantitative CT (baseline description and discordance profiles)
+    "Insp_LAA950_total_Thirona","PRM_pct_emphysema_Thirona"),
+  VS_PATH     = c("vital_status","days_followed"),
+  COD_PATH    = c("Torch_Group_Basic","mortality_survival_vital_status","days_followed"),
+  EX_PATH     = c("Total_Exacerbations","Years_Followed"),
+  MDCOPD_PATH = c("MultiDim_COPD_score")
 )
 
 # Use the same delimiter sniffing as the analysis. Reading a tab-delimited
-# export with read.csv yields a single mangled column, which previously made
-# every required column look absent and reported a data problem that was really
-# a checker problem.
+# export as comma-separated yields a single mangled column, which previously
+# made every required column look absent and reported a data problem that was
+# really a checker problem. Only the header line is parsed.
 read_hdr <- function(p) {
-  sep <- if (grepl("\t", readLines(p, n = 1, warn = FALSE))) "\t" else ","
-  read.delim(p, sep = sep, nrows = 1, check.names = FALSE)
+  h <- readLines(p, n = 1, warn = FALSE)   # R drops a leading UTF-8 byte-order mark
+  sep <- if (grepl("\t", h)) "\t" else ","
+  names(read.delim(text = h, sep = sep, header = TRUE, check.names = FALSE,
+                   colClasses = "character"))
 }
 
 cat("config:", CONFIG, "\nidentifier column (ID_COL):", ID_COL, "\n\n")
 ok <- TRUE
 for (v in names(REQ)) {
   p <- get(v)
-  cat(sprintf("%-9s %s\n", v, p))
+  cat(sprintf("%-11s %s\n", v, p))
   if (!file.exists(p)) { cat("            MISSING\n\n"); ok <- FALSE; next }
-  hdr <- names(read_hdr(p))
+  hdr <- read_hdr(p)
   idc <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
   hit <- idc[idc %in% hdr]
   if (length(hit)) cat("            id column:", hit[1], "\n")
@@ -56,43 +74,12 @@ for (v in names(REQ)) {
   cat("\n")
 }
 
-# The cohort column drives the ILD/Bronchiectasis exclusion. If it is absent or
-# uses different level names the exclusion silently removes nobody, so report
-# its levels explicitly rather than letting that pass unnoticed.
-if (file.exists(PHE_PATH)) {
-  ph <- read.delim(PHE_PATH, stringsAsFactors = FALSE,
-                   sep = if (grepl("\t", readLines(PHE_PATH, 1, warn = FALSE))) "\t" else ",")
-  if ("cohort" %in% names(ph)) {
-    cat("cohort levels in the phenotype file:\n")
-    print(table(trimws(ph$cohort), useNA = "ifany"))
-    if (!any(trimws(ph$cohort) == "ILD/Brnch")) {
-      cat("\n  NOTE: no 'ILD/Brnch' level present, so the exclusion removes nobody\n",
-          "  here. That is expected if this export already excludes that cohort\n",
-          "  upstream; the resulting analytic cohort should then match the\n",
-          "  published one. It is NOT expected if the export should contain them,\n",
-          "  in which case the cohort column may be named or coded differently.\n")
-    }
-  }
-}
-# Filenames are not a reliable guide to which participants a file covers, so
-# measure the overlap instead of inferring it. A file that silently omits a
-# stratum would shrink an analytic set without any error being raised.
-if (file.exists(PHE_PATH) && file.exists(EX_PATH) && exists("ph") &&
-    "cohort" %in% names(ph)) {
-  bind <- function(df) {
-    cand <- c(ID_COL, paste0(ID_COL, ".x"), paste0(ID_COL, ".y"))
-    hit  <- cand[cand %in% names(df)]
-    if (length(hit)) as.character(df[[hit[1]]]) else character(0)
-  }
-  exs <- read.csv(EX_PATH, stringsAsFactors = FALSE, sep =
-                  if (grepl("\t", readLines(EX_PATH, 1, warn = FALSE))) "\t" else ",")
-  v1  <- ph[ph$visitnum == 1, ]
-  eid <- unique(bind(exs))
-  cat("\ncoverage of the exacerbations file, by recruitment cohort:\n")
-  for (lv in sort(unique(trimws(v1$cohort)))) {
-    ids <- unique(bind(v1[trimws(v1$cohort) == lv, ]))
-    cat(sprintf("  %-14s %5d of %5d present\n", lv, sum(ids %in% eid), length(ids)))
-  }
-}
-
-cat("\n", if (ok) "CONFIG OK" else "CONFIG HAS PROBLEMS - see above", "\n")
+# What a header cannot show. The analysis checks these itself and stops if
+# they fail, but it helps to know them before a long run:
+# - the ILD/bronchiectasis exclusion keeps rows with ExclusionaryDisease
+#   missing, and the never-smoker exclusion drops cohort == "Never smoked";
+#   the first four cohort counts must match Bhatt et al. (10,305, 10,198,
+#   10,132, 9,416) or the run stops;
+# - MultiDim_COPD_score is coded 0 (neither), 1 (COPD-major), 2 (COPD-minor);
+# - PrePost is 0 for pre- and 1 for post-bronchodilator manoeuvres.
+cat(if (ok) "CONFIG OK" else "CONFIG HAS PROBLEMS - see above", "\n")

@@ -1,37 +1,57 @@
-# Site-local input/output locations for the ESI analysis.
+# Site-local input/output locations for the ESI analyses.
 #
 # Copy to `config_paths.R` and fill in for the machine you are running on.
-# `config_paths.R` is git-ignored.
+# `config_paths.R` is git-ignored. Check it with `Rscript check_config.R`,
+# which reads only the header line of each file.
 #
-# All five inputs are COPDGene analysis files supplied through your own
+# All six inputs are COPDGene analysis files supplied through your own
 # institutional data agreement. Point each variable at the corresponding file
-# in your local COPDGene area.
+# in your local COPDGene area. The CT-free MD-COPD analysis
+# (ctfree/ESI_ctfree_analysis_2026.9.3.Rmd) reads all six; the columns it
+# needs from each are listed below and checked by check_config.R.
 
-# Emphysema Severity Index values, one row per participant-visit.
+# Emphysema Severity Index values, one row per participant, visit and
+# manoeuvre. Columns: visitnum, PrePost (0 = pre-, 1 = post-bronchodilator),
+# ESI. Replicate manoeuvres are averaged.
 ESI_PATH <- "<ESI values file>"
 
-# COPDGene longitudinal phenotype file (Phases 1-3): spirometry, CT visual
-# scores, symptoms, and the recruitment-cohort column used to exclude the
-# ILD/Bronchiectasis cohort.
+# COPDGene longitudinal phenotype file (Phases 1-3), one row per participant
+# and visit: spirometry (FEV1_post, FEV1_FVC_post, FEV1pp_utah,
+# finalgold_visit, years_from_baseline), visual CT scores
+# (CT_Visual_Emph_Severity, CT_Visual_Wall_Thickening), quantitative CT
+# (Insp_LAA950_total_Thirona, PRM_pct_emphysema_Thirona), symptoms
+# (MMRCDyspneaScor, SGRQ_scoreTotal, Chronic_Bronchitis), comorbidity
+# (CoronaryArtery, CongestHeartFail), prior-year Exacerbation_Frequency,
+# covariates (age_visit, gender, race, SmokCigNow, ATS_PackYears, BMI,
+# Height_CM), and the exclusion columns ExclusionaryDisease (ILD and
+# bronchiectasis) and cohort (never-smokers).
 PHE_PATH <- "<longitudinal phenotype file>"
 
-# Vital status and days of follow-up.
+# Vital status and days of follow-up (vital_status, days_followed).
 VS_PATH  <- "<vital status file>"
 
-# Adjudicated cause of death (supplies the TORCH underlying-cause grouping).
+# Adjudicated cause of death: Torch_Group_Basic (the TORCH underlying-cause
+# grouping), mortality_survival_vital_status and days_followed. Causes are
+# adjudicated only to the end of this file's coverage, so respiratory
+# mortality is censored there.
 COD_PATH <- "<adjudicated cause of death file>"
 
-# Long-term follow-up exacerbation counts and follow-up years.
+# Long-term follow-up exacerbation counts and follow-up years
+# (Total_Exacerbations, Years_Followed).
 EX_PATH  <- "<longitudinal follow-up exacerbations file>"
 
-# Bhatt et al.'s own per-subject MD-COPD classification (rand_id,
-# MultiDim_COPD_Subtype, MultiDim_COPD_score), used as ground truth for
-# cohort membership and major/minor category assignment rather than
-# reconstructing their CT-quality-control and minor-criteria logic.
+# Bhatt et al.'s own per-subject MD-COPD classification. Only
+# MultiDim_COPD_score is read (0 = neither, 1 = COPD-major, 2 = COPD-minor);
+# the file's MultiDim_COPD_Subtype column is not used. It is used as ground
+# truth for cohort membership and major/minor category assignment rather than
+# reconstructing their CT-quality-control and minor-criteria logic; the
+# header comment of ctfree/ESI_ctfree_analysis_2026.9.3.Rmd explains why.
 MDCOPD_PATH <- "<COPDGene multidimensional COPD classification file>"
 
-# Where result CSVs are written. Must match ASSETS in manifest.py, which the
-# supplement build reads. Relative paths resolve from the repository root.
+# Where the v15 analysis at the repository root writes its result CSVs. Must
+# match ASSETS in manifest.py, which the v15 supplement build reads. Relative
+# paths resolve from the repository root. The CT-free analysis ignores this
+# and always writes to ctfree/assets/.
 OUT_DIR  <- "manuscript_assets"
 
 # Name of the participant identifier column in YOUR copies of the files above.
