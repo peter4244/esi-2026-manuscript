@@ -68,7 +68,7 @@ plot_risk <- function(d, both) {
     base + geom_point(aes(shape = type), size = 2.4, position = pd, fill = "white", stroke = 0.9) +
       scale_shape_manual(values = c(Unadjusted = 21, Adjusted = 19), name = NULL,
                          breaks = c("Unadjusted", "Adjusted")) +
-      labs(x = "Rate ratio or hazard ratio versus the common noCOPD reference (log scale)") +
+      labs(x = "Rate ratio, HR or IRR versus the common noCOPD reference (log scale)") +
       theme(legend.position = "bottom", legend.margin = margin(t = -2, b = 0))
   } else {
     base + geom_point(size = 2.4)
@@ -94,13 +94,17 @@ ggsave(out_supp, p_supp, width = NATIVE_W, height = 7.4, dpi = 300, bg = "white"
 writeLines(sprintf("content_width_in=%.2f", CONTENT_W), file.path(HERE, "figureS1_group_risk.meta"))
 
 ref_n <- format(ref$n_cohort, big.mark = ",")
+# Outcome-specific sizes of the reference (Pete, 2026-10-08, v6 legends).
+ref_by_outcome <- sprintf("(%s in mortality analyses and %s in exacerbation analyses).",
+                          format(ref$n_mort, big.mark = ","), format(ref$n_exac, big.mark = ","))
 writeLines(c(
   "**Figure 3. Unadjusted risk of clinical outcomes by diagnostic group under the three multidimensional classifications.**",
   "",
   paste("Unadjusted rate ratios with 95% confidence intervals for all-cause mortality, respiratory",
         "mortality, and respiratory exacerbations (columns) according to diagnostic group (rows) under",
         "MD-COPD-CT, MD-NoCT, and MD-COPD-ESI. The common reference was the", ref_n, "participants",
-        "classified as noCOPD by all three classifications. The x-axis is on a logarithmic scale and",
+        "classified as noCOPD by all three classifications", ref_by_outcome,
+        "The x-axis is on a logarithmic scale and",
         "differs among columns. Rate ratios were calculated as the event rate in each group divided by",
         "that in the common reference. Estimates based on fewer than 10 events are shown without",
         "confidence intervals; corresponding adjusted estimates are shown in Figure S1 in the Online",
@@ -113,7 +117,8 @@ writeLines(c(
         "confidence intervals, are shown for each diagnostic group (rows) under MD-COPD-CT, MD-NoCT,",
         "and MD-COPD-ESI for all-cause mortality, respiratory mortality, and respiratory exacerbations",
         "(columns), relative to a common reference comprising the", ref_n, "participants classified as",
-        "noCOPD by all three classifications. The x-axis is on a logarithmic scale and differs among",
+        "noCOPD by all three classifications", ref_by_outcome,
+        "The x-axis is on a logarithmic scale and differs among",
         "columns. Adjusted estimates are hazard ratios for mortality and incidence rate ratios for",
         "exacerbations from models adjusted for age, sex, race, current smoking status, pack-years,",
         "and body mass index; exacerbation models were additionally adjusted for baseline exacerbation",

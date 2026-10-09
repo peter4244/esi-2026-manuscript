@@ -1,0 +1,15 @@
+"schema","category","n"
+"S1","noCOPD",1552
+"S1","COPD",951
+"S2","noCOPD",1390
+"S2","AFL-only",27
+"S2","COPD-minor",162
+"S2","COPD-major",924
+"S3","noCOPD",1337
+"S3","AFL-only",65
+"S3","COPD-minor",215
+"S3","COPD-major",886
+"S4","noCOPD",1208
+"S4","AFL-only",22
+"S4","COPD-minor",344
+"S4","COPD-major",929

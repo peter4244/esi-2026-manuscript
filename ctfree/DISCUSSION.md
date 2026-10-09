@@ -20,4 +20,4 @@ Several limitations should be considered. COPDGene enrolled current and former s
 
 In conclusion, replacing the CT criteria of MD-COPD-CT with ESI preserved much of the original multidimensional classification and recovered clinically relevant information lost when imaging criteria were simply removed. The recovery was concentrated in participants with airflow limitation, where ESI kept more than half of the participants whose COPD-major classification depended on CT criteria from being reassigned to AFL-only. Importantly, this was achieved by extracting additional information from the same spirometric examination used to assess airflow limitation, without introducing another diagnostic procedure. The findings suggest that the expiratory flow-volume curve contains clinically relevant physiological information about the structural dimension of COPD beyond conventional spirometric indices. External validation is required to establish the generalizability and clinical applicability of this framework.
 
-(Word count 3182)
+(Word count 3272)

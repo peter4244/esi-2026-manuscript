@@ -202,8 +202,10 @@ writeLines(c(
     "and columns the categories assigned by the modified classification; diagonal cells",
     "indicate concordant classification and are shaded in proportion to participant count.",
     "Overall, MD-COPD-ESI agreed with MD-COPD-CT for %s of %s participants (%.1f%%) and",
-    "MD-NoCT for %s (%.1f%%) (McNemar %s). AFL-only = airflow limitation without other",
-    "criteria; ESI = Emphysema Severity Index."),
+    "MD-NoCT for %s (%.1f%%) (McNemar %s). Colors indicate diagnostic categories: gray,",
+    "noCOPD; purple, AFL-only; orange, COPD-minor; red, COPD-major. AFL-only = airflow limitation",
+    "without other criteria; minor and major = COPD-minor and COPD-major; ESI = Emphysema",
+    "Severity Index."),
     count_lab(conc_right), count_lab(N), 100 * conc_right / N,
     count_lab(conc_left), 100 * conc_left / N, p_txt)),
   file.path(HERE, "figure2_flow_legend.md"))

@@ -34,7 +34,7 @@ MEAS <- list(
   list(test = "ESI",                       col = "mean_ESI",        se = "se_ESI",    title = "ESI"),
   list(test = "Insp_LAA950_total_Thirona", col = "mean_LAA950",     se = "se_LAA950", title = "%LAA-950HU"),
   list(test = "emph_yn", col = "pct_visual_emph", title = "Emphysema\n(visual)"),
-  list(test = "wall_yn", col = "pct_wall_thick",  title = "Wall thick.\n(visual)"),
+  list(test = "wall_yn", col = "pct_wall_thick",  title = "Wall thickening\n(visual)"),
   list(test = "dysp_yn", col = "pct_dyspnea",     title = "mMRC ≥ 2"),
   list(test = "qol_yn",  col = "pct_sgrq",        title = "SGRQ ≥ 25"),
   list(test = "cb_yn",   col = "pct_cb",          title = "Chronic\nbronchitis"))

@@ -37,7 +37,7 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               CONTENT_WIDTH_IN, new_section)
 import paginate                                              # noqa: E402
 
-OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v8.docx")
+OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v9.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
 
 

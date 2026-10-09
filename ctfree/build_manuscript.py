@@ -41,7 +41,7 @@ from supp_registry import supp_num                             # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
 OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v8.docx")
+                      "CT-free MD-COPD manuscript draft v9.docx")
 BODY_FS, TBL_FS = 11, 9
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
@@ -375,7 +375,7 @@ def t_discord_risk(doc, label="Table 4."):
             c = {o: cru[(title, g, o)] for o in ("all", "resp", "exac")}
             ev = {o: int(float(c[o]["events"])) for o in c}
             assert ev["all"] == int(rates[g]["deaths"]) and ev["resp"] == int(rates[g]["resp_deaths"]), g
-            rows.append(["\u2003" + g, f"{int(rates[g]['n']):,}", f"{ev['all']:,}",
+            rows.append(["\u2003" + {"CT-only-COPD": "CT-only", "ESI-only-COPD": "ESI-only"}.get(g, g), f"{int(rates[g]['n']):,}", f"{ev['all']:,}",
                          cell(c["all"], ev["all"], ref_ev["all"]),
                          cell(c["exac"], ev["exac"], ref_ev["exac"])])
     # With respiratory mortality out, every cell clears the floor; the legend
@@ -394,7 +394,7 @@ def t_discord_risk(doc, label="Table 4."):
            "corresponding reference group; confidence intervals were exact Poisson intervals for "
            "deaths and participant-level bootstrap intervals for exacerbations. Respiratory mortality "
            "is not shown because the numbers of respiratory deaths were too small for estimation. "
-           "CT-only-COPD = classified as COPD by MD-COPD-CT only; ESI-only-COPD = classified as COPD "
+           "CT-only = classified as COPD by MD-COPD-CT only; ESI-only = classified as COPD "
            "by MD-COPD-ESI only; Both-COPD = classified as COPD by both; AFL-only = airflow limitation "
            "without other criteria; CI = confidence interval.")
 
