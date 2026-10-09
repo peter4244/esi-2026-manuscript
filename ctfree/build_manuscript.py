@@ -524,6 +524,19 @@ def add_front_matter(doc):
     r = p.add_run(" " + " ".join(tp["KEYWORDS"]))
     r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
+    # Optional front-matter statements, printed in this order when present in
+    # TITLEPAGE.md, each as "<Label>: text" (Pete, 2026-10-08).
+    for key, label in (("FUNDING", "Supported by"), ("DATA AVAILABILITY", "Data availability"),
+                       ("DISCLOSURES", "Author disclosures")):
+        if tp.get(key):
+            doc.add_paragraph()
+            p = doc.add_paragraph()
+            r = p.add_run(f"{label}:")
+            r.bold = True
+            r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+            r = p.add_run(" " + " ".join(tp[key]))
+            r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+
 
 def heading_on_new_page(doc, text):
     """Start a section on its own page. page_break_before travels with the

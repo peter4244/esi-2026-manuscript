@@ -20,3 +20,6 @@ Peter J. Castaldi¹,²; Matteo Paoletti³; Mariaelena Occhipinti⁴; Alessandra 
 
 # KEYWORDS
 Chronic Obstructive Pulmonary Disease; Spirometry; Pulmonary Emphysema; Computed Tomography; Pulmonary Function Tests
+
+# DATA AVAILABILITY
+COPDGene data are available from dbGaP (accession phs000179.v7.p2).
