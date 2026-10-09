@@ -527,7 +527,7 @@ def add_front_matter(doc):
     # Optional front-matter statements, printed in this order when present in
     # TITLEPAGE.md, each as "<Label>: text" (Pete, 2026-10-08).
     for key, label in (("FUNDING", "Supported by"), ("DATA AVAILABILITY", "Data availability"),
-                       ("DISCLOSURES", "Author disclosures")):
+                       ("DISCLOSURES", "Author disclosures"), ("ACKNOWLEDGMENT", "Acknowledgment")):
         if tp.get(key):
             doc.add_paragraph()
             p = doc.add_paragraph()
