@@ -80,7 +80,16 @@ The items as originally listed:
 | O-text-8 | Abstract omits that the adjusted MD-NoCT all-cause difference was not significant (P = 0.074 in v6/v7). | 3 |
 | O-text-9 | Figure 2 panel A has no colour key; "Wall thick." in Figure S2 undefined; Figure S1 x-axis label omits IRR; discordance-group names vary across sections. | 3 |
 
-### Open: Methods vs code (step 5; none changes a number)
+### Methods vs code and deposit items (decided by Pete, 2026-10-08)
+
+Repository fixes applied (commit `2db946e`): O-r-2, O-r-3, O-r-5, O-r-6 (documented), O-r-7 (34 more verify.R
+claims; 291 pass), O-r-4 (`ctfree/SOFTWARE_VERSIONS.md`, from Channing). Manuscript text: **no change** to the
+Methods-vs-code items (O-m-1 to O-m-6), the R version sentence, or the statements (O-r-1), per Pete ("I don't feel
+like those changes are really needed"). Proposed wording kept in `TEXT_PROPOSALS_methods_deposit.md` for reference.
+
+The items as originally listed:
+
+### Methods vs code (step 5; none changes a number)
 
 | # | mismatch |
 |---|---|
