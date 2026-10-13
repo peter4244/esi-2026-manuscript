@@ -8,7 +8,8 @@
 # line at the level where the MD-COPD criterion is met, and an AUC inset. His
 # panels sit side by side, which at this project's font size clipped panel B's
 # title and hid its Definite point behind the inset, so the panels are stacked.
-# Each keeps its own y range because the two criteria span different ESI ranges.
+# Both panels share one ESI scale (Massimo, 2026-10-12), so the size of the ESI change across the
+# two structural abnormalities can be compared directly.
 suppressPackageStartupMessages({ library(dplyr); library(ggplot2); library(patchwork) })
 .b <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 HERE <- if (length(.b)) dirname(normalizePath(sub("^--file=", "", .b[1]))) else "ctfree/figures"
@@ -47,6 +48,8 @@ n_scored <- tapply(lv$n, lv$criterion, sum)
 stopifnot(length(unique(n_scored)) == 1)
 N_SCORED <- unname(n_scored[1])
 
+TOP <- max(lv$mean_ESI) * 1.28   # one y scale for both panels
+
 panel <- function(crit) {
   d <- lv[lv$criterion == crit, ]
   d <- d[order(d$level), ]
@@ -60,7 +63,7 @@ panel <- function(crit) {
   auc_txt <- paste(c("AUC", sprintf("%s %.2f", STRATA, a$auc_ESI)), collapse = "\n")
   cut_at  <- which(d$level == MET[[crit]]) - 0.5
   stopifnot(length(cut_at) == 1)
-  top <- max(d$mean_ESI) * 1.28
+  top <- TOP
   ggplot(d, aes(x = x, y = mean_ESI)) +
     geom_vline(xintercept = cut_at, linetype = 2, colour = "grey45", linewidth = 0.4) +
     geom_point(size = 2.6, colour = PALETTE[["CT-based"]]) +
@@ -87,15 +90,15 @@ writeLines(c(
   "**Figure 1. Relationship of ESI to the visual CT criteria of MD-COPD-CT.**",
   "",
   paste("Mean ESI according to visual emphysema severity (A) and visual airway wall thickening",
-        "category (B). Dashed vertical lines indicate the thresholds defining the corresponding CT",
-        "criteria in MD-COPD-CT: mild or greater emphysema and definite airway wall thickening. Insets",
-        "show the area under the receiver operating characteristic curve (AUC) for discrimination of",
-        "each visual CT criterion by ESI in the overall cohort and separately among participants with",
-        "and without airflow limitation. Numbers adjacent to the points indicate the",
+        "category (B), displayed using the same ESI scale to allow direct comparison of the magnitude",
+        "of ESI change across the two structural abnormalities. Dashed vertical lines indicate the",
+        "thresholds defining the corresponding CT criteria in MD-COPD-CT: mild or greater emphysema",
+        "and definite airway wall thickening. Insets show the area under the receiver operating",
+        "characteristic curve (AUC) for discrimination of each visual CT criterion by ESI in the",
+        "overall cohort and separately among participants with and without airflow limitation.",
+        "Numbers adjacent to the points indicate the",
         sprintf("number of participants in each CT category; %s participants had a visual score for each",
                 formatC(N_SCORED, format = "d", big.mark = ",")),
-        "criterion. Panels keep separate y axes because the two criteria span different ESI ranges.",
-        "ESI = Emphysema Severity Index; AUC = area under the receiver operating characteristic curve.")),
+        "criterion. ESI = Emphysema Severity Index; AUC = area under the receiver operating",
+        "characteristic curve.")),
   file.path(HERE, "figure1_esi_ct_legend.md"))
-cat(sprintf("wrote %s (%s participants scored per criterion)\n", out,
-            formatC(N_SCORED, format = "d", big.mark = ",")))

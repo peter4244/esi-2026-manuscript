@@ -1,4 +1,4 @@
-# Introduction — CT-free MD-COPD paper
+# Introduction - CT-free MD-COPD paper
 
 *(Massimo's v4 (2) of 2026-10-03, his response to Surya Bhatt's critiques, with the fixes Pete approved; v5.)*
 

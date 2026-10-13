@@ -1,4 +1,4 @@
-# Results — CT-free MD-COPD paper
+# Results - CT-free MD-COPD paper
 
 *(Massimo's v4 (2) of 2026-10-03, his response to Surya Bhatt's critiques, with the fixes Pete approved; v5.)*
 
@@ -8,7 +8,7 @@ The analytic cohort included 9,240 participants: 1,119 with preserved ratio impa
 
 ## Relationship of ESI to the visual CT criteria
 
-Mean ESI increased progressively with visually assessed emphysema severity, from 1.04 in participants with no emphysema to 6.62 in those with advanced destructive emphysema; and it also increased across categories of visual airway wall thickening, from 0.96 when airway thickening was absent to 3.32 when definite. Using the MD-COPD-CT criteria of emphysema of at least mild severity and definite airway wall thickening, ESI discriminated visual emphysema and wall thickening with AUCs of 0.78 and 0.80 in the overall cohort. When stratifying by the presence of airflow limitation, the discrimination performance for ESI was better in subjects with airflow limitation (AUC = 0.75 for both criteria) than among those without airflow limitation (AUC 0.56 and 0.61, respectively) (Figure 1).
+Mean ESI increased progressively with visually assessed emphysema severity, from 1.04 in participants with no emphysema to 6.62 in those with advanced destructive emphysema; and it also increased across categories of visual airway wall thickening, from 0.96 when airway thickening was absent to 3.32 when definite. ESI increased across increasing severity categories of both visual emphysema and airway wall thickening, although the magnitude of the increase was greater across emphysema severity categories (Figure 1). Using the MD-COPD-CT criteria of emphysema of at least mild severity and definite airway wall thickening, ESI discriminated visual emphysema and wall thickening with AUCs of 0.78 and 0.80 in the overall cohort. When stratifying by the presence of airflow limitation, the discrimination performance for ESI was better in subjects with airflow limitation (AUC = 0.75 for both criteria) than among those without airflow limitation (AUC 0.56 and 0.61, respectively) (Figure 1).
 
 ## Agreement between MD-COPD-CT and modified classifications
 

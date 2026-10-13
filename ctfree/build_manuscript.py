@@ -246,7 +246,7 @@ def legend(doc, label, text):
 # --------------------------------------------------------------------------
 def t_classifications(doc, label="Table 1."):
     lab = {(r["schema"], r["category"]): int(r["n"]) for r in load("schema_labels.csv")}
-    n = lambda s, c: f"{lab[(s, c)]:,}" if (s, c) in lab else "—"
+    n = lambda s, c: f"{lab[(s, c)]:,}" if (s, c) in lab else ""
     n_total = sum(lab[(s, c)] for (s, c) in lab if s == "S2")
     # ESI threshold read from the fitted-schema artifact so this cannot drift
     # from the actual model.
@@ -255,7 +255,7 @@ def t_classifications(doc, label="Table 1."):
     esi_desc = f"ESI ≥ {esi_t:.2f}, dyspnea, SGRQ, chronic bronchitis (≥2)"
     rows = [
         ["Fixed FEV\u2081/FVC ratio", "Post-bronchodilator\nFEV\u2081/FVC <0.70",
-         n("S1", "noCOPD"), "—", "—", n("S1", "COPD")],
+         n("S1", "noCOPD"), "", "", n("S1", "COPD")],
         ["MD-COPD-CT", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
         ["MD-NoCT classification", "dyspnea, SGRQ, chronic bronchitis (≥2)",
