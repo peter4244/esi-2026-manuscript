@@ -369,7 +369,7 @@ def s_groups_crude(doc, num):
     NM = {"S2": "MD-COPD-CT", "S3": "MD-NoCT", "S4": "MD-COPD-ESI"}
     OUTC = (("all", "All-cause mortality"), ("resp", "Respiratory mortality"), ("exac", "Exacerbations"))
     FLAG = "\u2020"
-    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}\u2013{float(hi):.2f}]"
+    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}-{float(hi):.2f}]"
     TRUE = ("TRUE", "T")
     rows = []
     for g in ("AFL-only", "COPD-minor", "COPD-major"):

@@ -299,7 +299,7 @@ def t_risk_common_ref(doc, label="Table 3."):
             ("resp", "Respiratory mortality", "resp_HR", "resp_LCI", "resp_UCI", "resp_few_events"),
             ("exac", "Exacerbations", "exac_IRR", "exac_LCI", "exac_UCI", None))
     FLAG, TRUE = "\u2020", ("TRUE", "T")
-    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}\u2013{float(hi):.2f}]"
+    ci = lambda v, lo, hi: f"{float(v):.2f} [{float(lo):.2f}-{float(hi):.2f}]"
     rows = []
     for g in ("AFL-only", "COPD-minor", "COPD-major"):
         rows.append(Section(g))
@@ -361,7 +361,7 @@ def t_discord_risk(doc, label="Table 4."):
             return "not estimable"
         if n_ev < FLOOR or n_ref < FLOOR or r["lo"] in ("", "NA"):
             return f"{float(r['rr']):.2f}{FLAG}"
-        return f"{float(r['rr']):.2f} [{float(r['lo']):.2f}\u2013{float(r['hi']):.2f}]"
+        return f"{float(r['rr']):.2f} [{float(r['lo']):.2f}-{float(r['hi']):.2f}]"
 
     rows = []
     for title, rf, refg in STRATA:
