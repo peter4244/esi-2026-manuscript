@@ -86,7 +86,7 @@ def add_page_numbers(doc):
 def add_toc(doc, entries):
     """A Word contents field over the Heading 2 headings. Its displayed result is
     written with the page numbers found by rendering, so it reads correctly on
-    opening, and the document asks Word to refresh fields when it is opened."""
+    opening. Word is not asked to refresh it on opening."""
     p = doc.add_paragraph()
     r = p.add_run("Contents")
     r.bold = True
@@ -527,9 +527,10 @@ def build(out, toc):
         new_section(doc, landscape=False)
     data_files(doc)
     supp_references(doc)
-    upd = OxmlElement("w:updateFields")
-    upd.set(qn("w:val"), "true")
-    doc.settings.element.append(upd)
+    # No "update fields on open": when Word refreshed the contents on opening
+    # (v7, 2026-10-31) every page number became 1. The page numbers written above
+    # come from a rendering and stay as written; the contents is still a Word
+    # field that can be refreshed by hand.
     doc.save(out)
     return list(HEADINGS)
 
