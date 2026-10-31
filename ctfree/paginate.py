@@ -19,6 +19,9 @@ SOFFICE = shutil.which("soffice") or "/Applications/LibreOffice.app/Contents/Mac
 
 def _key(text):
     """Compare text without case, spacing, punctuation or subscript glyphs."""
+    # Subscript digits are dropped, not normalized: in Arial, LibreOffice draws
+    # the ₁ of FEV₁ from a fallback font and its text comes out of line order.
+    text = re.sub("[\u2080-\u2089]", "", text)
     return re.sub(r"[^0-9a-z]+", "", unicodedata.normalize("NFKC", text).lower())
 
 

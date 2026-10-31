@@ -14,6 +14,7 @@ reverse, so the two cannot drift apart.
 
 Usage:  python3 /abs/path/to/ctfree/build_supplement.py
 """
+import copy
 import csv
 import os
 import re
@@ -34,7 +35,8 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               emphasis, ASSETS, CATS, read_titlepage, fmt_p,
                               t_risk_common_ref, t_discord_risk, Section,
                               add_figure, read_legend, figure_width, FIGS,
-                              CONTENT_WIDTH_IN, new_section)
+                              CONTENT_WIDTH_IN, new_section, _field,
+                              add_page_numbers, keep_outcome_blocks)
 import paginate                                              # noqa: E402
 
 OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v7.docx")
@@ -58,29 +60,6 @@ def heading(doc, text):
     p = doc.add_paragraph(text, style="Heading 2")
     p.paragraph_format.keep_with_next = True
     HEADINGS.append(text)
-
-
-def _field(par, kind, instr=None):
-    """One piece of a Word field: a begin, separate or end mark, or its instruction."""
-    r = par.add_run()
-    if instr is not None:
-        el = OxmlElement("w:instrText")
-        el.set(qn("xml:space"), "preserve")
-        el.text = instr
-    else:
-        el = OxmlElement("w:fldChar")
-        el.set(qn("w:fldCharType"), kind)
-    r._r.append(el)
-
-
-def add_page_numbers(doc):
-    p = doc.sections[0].footer.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _field(p, "begin")
-    _field(p, None, " PAGE ")
-    _field(p, "separate")
-    p.add_run("1")
-    _field(p, "end")
 
 
 def add_toc(doc, entries):
@@ -134,7 +113,8 @@ def supp_methods(doc):
               "intervals were obtained from 1,000 participant-level bootstrap resamples, with the "
               "reference rate recalculated in each resample. When either the diagnostic group "
               "or the reference group had fewer than 10 events, unadjusted rate ratios and adjusted "
-              "HRs or IRRs were reported without confidence intervals or P values.")
+              "hazard ratios (HRs) or incidence rate ratios (IRRs) were reported without confidence "
+              "intervals or P values.")
     para(doc, "For direct comparisons among classifications, the unadjusted event rate in each "
               "MD-NoCT and MD-COPD-ESI group was divided by that in the corresponding MD-COPD-CT group (rate "
               "ratio versus MD-COPD-CT), and its adjusted HR or IRR by that of the corresponding "
@@ -164,7 +144,8 @@ def s1_baseline(doc, num):
            "Values are mean (SD) unless otherwise indicated. The overall analytic "
            f"cohort comprised {int(n_overall):,} participants. PRISm = preserved ratio "
            "impaired spirometry; GOLD = Global Initiative for Chronic Obstructive Lung Disease; "
-           "FEV\u2081 %pred = FEV\u2081 percent predicted; ESI = Emphysema Severity Index.")
+           "FEV\u2081 = forced expiratory volume in 1 second; FEV\u2081 %pred = FEV\u2081 percent "
+           "predicted; ESI = Emphysema Severity Index.")
 
 
 def s4_sweep(doc, num):
@@ -226,7 +207,7 @@ def data_files(doc):
     for line in [
         "**COPDGene_P1P2P3_SM_NS_ILDBR_Long_Sep24**: the main COPD phenotype file in "
         "long format, used for baseline characteristics, spirometry, the visual CT "
-        "scores, the symptom criteria and the cohort exclusions.",
+        "scores, the symptom criteria, and the cohort exclusions.",
         "**COPDGene_Multidimensional_COPD_plus**: the per-participant MD-COPD-CT "
         "classification from the source report (S3), used as the MD-COPD-CT reference classification.",
         "**COPDGene_VitalStatus_SM_NS_Sep23**: vital status and follow-up time, "
@@ -287,9 +268,10 @@ def s6_fev1_decline(doc, num):
            "smoking status, pack-years, and baseline post-bronchodilator FEV\u2081 entered as "
            "an interaction with follow-up time. Negative values indicate faster FEV\u2081 "
            "decline relative to the reference. The MD-NoCT minus MD-COPD-ESI column compares corresponding "
-           "MD-NoCT and ESI groups, with confidence intervals and P values from 1,000 paired "
+           "MD-NoCT and MD-COPD-ESI groups, with confidence intervals and P values from 1,000 paired "
            "participant-level bootstrap resamples; negative values indicate faster decline under MD-NoCT. AFL-only = airflow limitation without other "
-           "criteria; CI = confidence interval.")
+           "criteria; ESI = Emphysema Severity Index; FEV\u2081 = forced expiratory volume in 1 "
+           "second; CI = confidence interval.")
 
 
 def s_fev1_random_slope(doc, num):
@@ -316,7 +298,8 @@ def s_fev1_random_slope(doc, num):
            "decline relative to the common noCOPD reference. The standard deviation of the "
            f"participant-specific slopes was {sd['S2']:.1f}, {sd['S3']:.1f}, and {sd['S4']:.1f} "
            "mL/yr in the models for MD-COPD-CT, MD-NoCT, and MD-COPD-ESI. AFL-only = airflow "
-           "limitation without other criteria; CI = confidence interval.")
+           "limitation without other criteria; ESI = Emphysema Severity Index; FEV\u2081 = "
+           "forced expiratory volume in 1 second; CI = confidence interval.")
 
 
 def s_crossclass_agreement(doc, num):
@@ -337,14 +320,31 @@ def s_crossclass_agreement(doc, num):
                         [f"{n_:,}", f"{float(ag[rc]['recall_' + key]):.1f}",
                          f"{100 * vals[i] / n_:.1f}",
                          f"{float(f1[rc]['f1_' + key]):.2f}"])
-    add_table(doc, ["Classification", "Assigned to", *[f"MD-COPD-CT {c}" for c in CATS],
-                    "Assigned, n", "Sensitivity, %", "PPV, %", "F1"],
-              rows, [1.05, 0.78, 0.58, 0.58, 0.58, 0.58, 0.60, 0.62, 0.55, 0.58])
+    # Headers broke mid-word at 9 pt ("noCOP/D", "Sensitivi/ty"; proofread,
+    # 2026-10-31): the category names go under one spanning "MD-COPD-CT
+    # category" cell, the header text is 8 pt, and the widths are rebalanced so
+    # every header word fits its column.
+    t = add_table(doc, ["Classification", "Assigned to", *CATS,
+                        "Assigned, n", "Sensitivity, %", "PPV, %", "F1"],
+                  rows, [1.00, 0.80, 0.58, 0.58, 0.58, 0.58, 0.64, 0.70, 0.52, 0.52])
+    for c in t.rows[0].cells:
+        for r_ in c.paragraphs[0].runs:
+            r_.font.size = Pt(8)
+    top = copy.deepcopy(t.rows[0]._tr)
+    t.rows[0]._tr.addprevious(top)
+    for c in t.rows[0].cells:
+        for r_ in c.paragraphs[0].runs:
+            r_.text = ""
+    span = t.rows[0].cells[2].merge(t.rows[0].cells[5])
+    for extra in span.paragraphs[1:]:
+        extra._p.getparent().remove(extra._p)
+    span.paragraphs[0].runs[0].text = "MD-COPD-CT category"
+    span.paragraphs[0].runs[0].bold = True
     ps = [float(ag[c]["p_boot"]) for c in CATS]
     p_txt = ("P < 0.005 in each of the four groups" if all(p < 0.005 for p in ps)
              else "; ".join(f"{c} P {'< 0.005' if p < 0.005 else '= ' + fmt_p(p)}" for c, p in zip(CATS, ps)))
     legend(doc, f"Table {num}.",
-           "Cross-classification of MD-NoCT and MD-COPD-ESI against MD-COPD-CT. Rows indicate the "
+           "Rows indicate the "
            "category assigned by each modified classification and columns the corresponding "
            "MD-COPD-CT category; diagonal cells indicate concordant classification. Positive "
            "predictive value (PPV) is the proportion of participants assigned to a category by the "
@@ -392,10 +392,11 @@ def s_groups_crude(doc, num):
                     vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
                     pt = fmt_p(p_)
                 rows.append([lead, NM[s_], f"{int(float(r['events'])):,}", rate, own, vs, pt])
-    add_table(doc, ["Outcome", "Classification", "Events", "Rate per 100 person-years",
+    t = add_table(doc, ["Outcome", "Classification", "Events", "Rate per 100 person-years",
                     "Rate ratio versus the common reference [95% CI]",
                     "Rate ratio versus MD-COPD-CT [95% CI]", "P"],
               rows, [1.05, 1.15, 0.55, 0.70, 1.25, 1.20, 0.60])
+    keep_outcome_blocks(t, rows)
     legend(doc, f"Table {num}.",
            "Each diagnostic group was compared with the common reference comprising the "
            f"{int(ref['n_cohort']):,} participants classified as noCOPD by all three "
@@ -410,7 +411,8 @@ def s_groups_crude(doc, num):
            "obtained from 1,000 paired participant-level bootstrap resamples. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
            "MD-COPD-CT; the estimate is shown without a confidence interval or P value. "
-           "AFL-only = airflow limitation without other criteria; CI = confidence interval.")
+           "AFL-only = airflow limitation without other criteria; ESI = Emphysema Severity "
+           "Index; CI = confidence interval.")
 
 
 def s_risk_common_ref(doc, num):
@@ -521,8 +523,11 @@ def build(out, toc):
             new_section(doc, landscape=want)
             landscape_now = want
         heading(doc, f"Supplemental Figure {n}. {figure_title(stem)}")
-        add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Supplemental Figure {n}.",
-                   read_legend(stem), width=w)
+        # The heading above carries the title, so the legend starts at its body,
+        # labeled like the table legends (proofread, 2026-10-31).
+        assert read_legend(stem).startswith(figure_title(stem) + ". "), stem
+        body = read_legend(stem)[len(figure_title(stem)) + 2:]
+        add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Figure {n}.", body, width=w)
     if landscape_now:
         new_section(doc, landscape=False)
     data_files(doc)

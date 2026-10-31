@@ -30,5 +30,5 @@ whose C-index sentence was cut on 2026-09-10) are dropped because the text citin
 22. Macklem PT, Mead J. Resistance of central and peripheral airways measured by a retrograde catheter. J Appl Physiol. 1967;22(3):395-401.
 23. Saltzman HP, Ciulla EM, Kuperman AS. The spirographic "kink": a sign of emphysema. Chest. 1976;69(1):51-55.
 24. Pellegrino R, Crimi E, Gobbi A, Torchio R, Antonelli A, Gulotta C, et al. Severity grading of chronic obstructive pulmonary disease: the confounding effect of phenotype and thoracic gas compression. J Appl Physiol (1985). 2015;118(7):796-802.
-25. Dal Negro RW, Turco P, Povero M, Pistolesi M. Basal computation of Emphysema Severity Index (ESI) in COPD patients is not affected by bronchodilation. EC Pulmonology and Respiratory Medicine. 2025;14(3):01-09.
+25. Dal Negro RW, Turco P, Povero M, Pistolesi M. Basal computation of Emphysema Severity Index (ESI) in COPD patients is not affected by bronchodilation. EC Pulmonol Respir Med. 2025;14(3):1-9.
 26. Albert P, Agusti A, Edwards L, Tal-Singer R, Yates J, Bakke P, et al. Bronchodilator responsiveness as a phenotypic characteristic of established chronic obstructive pulmonary disease. Thorax. 2012;67(8):701-708.

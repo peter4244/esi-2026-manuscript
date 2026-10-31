@@ -83,6 +83,12 @@ def init_document():
         st = doc.styles[name]
         st.font.name, st.font.size, st.font.bold = FONT_NAME, Pt(size), True
         st.font.color.rgb = RGBColor(0, 0, 0)
+        # Word reads the theme font before w:ascii, so the headings rendered in
+        # Calibri while everything else was Arial (proofread, 2026-10-31).
+        rF = st.element.get_or_add_rPr().find(qn("w:rFonts"))
+        for k in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+            if rF is not None and rF.get(qn(k)) is not None:
+                del rF.attrib[qn(k)]
         st.paragraph_format.space_before = Pt(12)
         st.paragraph_format.space_after = Pt(4)
     normal.paragraph_format.space_after = Pt(8)
@@ -232,6 +238,42 @@ def keep_table_together(t):
                 p.paragraph_format.keep_with_next = True
 
 
+def keep_outcome_blocks(t, rows):
+    """A long table breaks across pages anyway. Let it break only before a
+    diagnostic-group row, so a continued page never opens on rows whose Outcome
+    cell and group are blank (proofread, 2026-10-31). rows is the list given to
+    add_table; table row i + 1 is rows[i]."""
+    for i, r in enumerate(rows[:-1]):
+        if isinstance(rows[i + 1], Section):
+            for cell in t.rows[i + 1].cells:
+                for p in cell.paragraphs:
+                    p.paragraph_format.keep_with_next = False
+
+
+def _field(par, kind, instr=None):
+    """One piece of a Word field: a begin, separate or end mark, or its instruction."""
+    r = par.add_run()
+    if instr is not None:
+        el = OxmlElement("w:instrText")
+        el.set(qn("xml:space"), "preserve")
+        el.text = instr
+    else:
+        el = OxmlElement("w:fldChar")
+        el.set(qn("w:fldCharType"), kind)
+    r._r.append(el)
+
+
+def add_page_numbers(doc):
+    """Centered page number in the footer; later sections inherit it."""
+    p = doc.sections[0].footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _field(p, "begin")
+    _field(p, None, " PAGE ")
+    _field(p, "separate")
+    p.add_run("1")
+    _field(p, "end")
+
+
 def legend(doc, label, text):
     p = doc.add_paragraph()
     r = p.add_run(label + " ")
@@ -252,15 +294,15 @@ def t_classifications(doc, label="Table 1."):
     # from the actual model.
     fit = {r["schema"]: r for r in load("schema_fit.csv")}
     esi_t = float(fit["S4"]["t_low"])
-    esi_desc = f"ESI ≥ {esi_t:.2f}, dyspnea, SGRQ, chronic bronchitis (≥2)"
+    esi_desc = f"ESI ≥{esi_t:.2f}, dyspnea, SGRQ, chronic bronchitis (≥2)"
     rows = [
         ["Fixed FEV\u2081/FVC ratio", "Post-bronchodilator\nFEV\u2081/FVC <0.70",
          n("S1", "noCOPD"), "", "", n("S1", "COPD")],
         ["MD-COPD-CT", "emphysema, wall thickening, dyspnea, SGRQ, chronic bronchitis (≥3)",
          n("S2", "noCOPD"), n("S2", "AFL-only"), n("S2", "COPD-minor"), n("S2", "COPD-major")],
-        ["MD-NoCT classification", "dyspnea, SGRQ, chronic bronchitis (≥2)",
+        ["MD-NoCT", "dyspnea, SGRQ, chronic bronchitis (≥2)",
          n("S3", "noCOPD"), n("S3", "AFL-only"), n("S3", "COPD-minor"), n("S3", "COPD-major")],
-        ["MD-COPD-ESI classification", esi_desc,
+        ["MD-COPD-ESI", esi_desc,
          n("S4", "noCOPD"), n("S4", "AFL-only"), n("S4", "COPD-minor"), n("S4", "COPD-major")]]
     # Title above the table and legend below, as in Massimo's v4 (2) of 2026-10-03.
     legend(doc, label, f"Distribution of the {n_total:,} participants according to the four "
@@ -271,7 +313,7 @@ def t_classifications(doc, label="Table 1."):
     p = doc.add_paragraph()
     r = p.add_run(
            "The fixed-ratio classification defines COPD by post-bronchodilator "
-           "FEV\u2081/FVC < 0.70 alone. MD-COPD-CT incorporates airflow limitation as the major "
+           "FEV\u2081/FVC <0.70 alone. MD-COPD-CT incorporates airflow limitation as the major "
            "criterion and visual emphysema, definite airway wall thickening, dyspnea, SGRQ, "
            "and chronic bronchitis as minor criteria. MD-NoCT removes the two CT criteria without "
            "replacement, whereas MD-COPD-ESI replaces them with ESI as a single physiological "
@@ -279,7 +321,7 @@ def t_classifications(doc, label="Table 1."):
            "the COPD-minor pathway requires both CT criteria under MD-COPD-CT, is unavailable under "
            "the MD-NoCT classification, and requires the ESI criterion under the MD-COPD-ESI "
            "classification. AFL-only = airflow limitation without other criteria; ESI = Emphysema "
-           "Severity Index; SGRQ = St. George\u2019s Respiratory Questionnaire.")
+           "Severity Index; SGRQ = St. George's Respiratory Questionnaire.")
     r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS - 1)
 
 
@@ -321,10 +363,11 @@ def t_risk_common_ref(doc, label="Table 3."):
                     vs = ci(x["ratio_of_ratios"], x["lo"], x["hi"])
                     pt = fmt_p(p_)
                 rows.append([lead, NM[s_], events, own, vs, pt])
-    add_table(doc, ["Outcome", "Classification", "Events",
+    t = add_table(doc, ["Outcome", "Classification", "Events",
                     "HR or IRR versus the common reference [95% CI]",
                     "Ratio of HRs or IRRs versus MD-COPD-CT [95% CI]", "P"],
               rows, [1.25, 1.35, 0.55, 1.35, 1.35, 0.65])
+    keep_outcome_blocks(t, rows)
     legend(doc, label,
            "Adjusted hazard ratios (HRs) for all-cause and respiratory mortality and incidence "
            "rate ratios (IRRs) for respiratory exacerbations are shown relative to the common "
@@ -336,11 +379,11 @@ def t_risk_common_ref(doc, label="Table 3."):
            "divide the HR or IRR of each MD-NoCT and MD-COPD-ESI group by that of the "
            "corresponding MD-COPD-CT group; 95% confidence intervals and two-sided P values were "
            "obtained from 1,000 paired participant-level bootstrap resamples. Corresponding unadjusted "
-           f"rate ratios are shown in Supplemental Table {supp_num('groups_vs_mdcopd')}. "
+           f"rate ratios are shown in Table {supp_num('groups_vs_mdcopd')}. "
            f"{FLAG} Fewer than 10 events in the group, or in either group for comparisons with "
            "MD-COPD-CT; the estimate is shown without a confidence interval or P value. "
-           "AFL-only = airflow limitation without other criteria; HR = hazard ratio; "
-           "IRR = incidence rate ratio; CI = confidence interval.")
+           "AFL-only = airflow limitation without other criteria; ESI = Emphysema Severity "
+           "Index; HR = hazard ratio; IRR = incidence rate ratio; CI = confidence interval.")
 
 def t_discord_risk(doc, label="Table 4."):
     """Cross-classification of MD-COPD and the ESI classification: each group
@@ -396,7 +439,7 @@ def t_discord_risk(doc, label="Table 4."):
            "is not shown because the numbers of respiratory deaths were too small for estimation. "
            "CT-only = classified as COPD by MD-COPD-CT only; ESI-only = classified as COPD "
            "by MD-COPD-ESI only; Both-COPD = classified as COPD by both; AFL-only = airflow limitation "
-           "without other criteria; CI = confidence interval.")
+           "without other criteria; ESI = Emphysema Severity Index; CI = confidence interval.")
 
 def figure_width(meta_path, default=CONTENT_WIDTH_IN):
     """Content width a figure was rendered for, from the sidecar its script
@@ -547,16 +590,17 @@ def heading_on_new_page(doc, text):
     return p
 
 
-def main():
+def main(out):
     pjc_guard.check("The manuscript build")
-    word_guard.check([OUT], "The manuscript build")
+    word_guard.check([out], "The manuscript build")
     prose_guard.check("The manuscript build")
     prose_guard.check_owned("The manuscript build")
     display_order.check(HERE, {"Table": ["1"],
                                "Figure": [str(i) for i in range(1, 5)]},
                         "The manuscript build")
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     doc = init_document()
+    add_page_numbers(doc)       # AJRCCM: pages numbered consecutively
 
     add_front_matter(doc)
     add_prose(doc, os.path.join(HERE, "AT_A_GLANCE.md"))
@@ -613,8 +657,8 @@ def main():
     if landscape_now:
         new_section(doc, landscape=False)
 
-    doc.save(OUT)
-    print(f"wrote {OUT}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
+    doc.save(out)
+    print(f"wrote {out}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
           f"{n_d} Discussion paragraphs, {n_ref} references")
     # A floor against a source file failing to render, not a target length.
     # Massimo's Introduction is three paragraphs by choice (2026-09-20); v3 merged
@@ -624,4 +668,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # The output path is an argument, never a patched default: writing a check
+    # build to OUT overwrote a draft once (2026-10-07).
+    main(sys.argv[1] if len(sys.argv) > 1 else OUT)
