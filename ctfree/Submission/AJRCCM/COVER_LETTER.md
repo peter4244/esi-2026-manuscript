@@ -17,6 +17,7 @@ In accordance with the Journal's requirements:
 - All authors have read the manuscript and approve its submission.
 - No part of the research presented has been funded by tobacco industry sources.
 - The manuscript has not been published and is not under consideration elsewhere, and it has not been posted as a preprint.
+- The authors used Claude (Anthropic), an artificial intelligence tool, to help write and check analysis code, to reproduce and verify the reported results independently, to assemble the manuscript files, and to edit and proofread the text. The authors reviewed all AI-assisted output and take full responsibility for the content of the manuscript. This use is also stated on the title page and in the Methods.
 
 Correspondence should be addressed to Massimo Pistolesi (massimo.pistolesi@unifi.it).
 
