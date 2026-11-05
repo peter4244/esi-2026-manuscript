@@ -25,7 +25,7 @@ Chronic Obstructive Pulmonary Disease; Spirometry; Pulmonary Emphysema; Computed
 Massimo Pistolesi, Department of Experimental and Clinical Medicine, University of Florence, Florence, Italy. Email: massimo.pistolesi@unifi.it
 
 # IMPACT
-When chest CT is unavailable, the CT criteria of the multidimensional COPD diagnostic framework can be partly replaced by the Emphysema Severity Index, which is derived from the flow-volume curve of standard spirometry. In COPDGene, this replacement reproduced the CT-based classification more closely than removing the CT criteria, particularly in participants with airflow limitation, and preserved the distinction between lower- and higher-risk groups. If validated externally, this approach could support multidimensional COPD diagnosis where CT is not routinely available.
+When chest CT is unavailable, the CT criteria of the multidimensional COPD diagnostic framework can be partly replaced by the Emphysema Severity Index, which is derived from the flow-volume curve of standard spirometry. In COPDGene, this replacement reproduced the CT-based classification more closely than removing the CT criteria, particularly in participants with airflow limitation, and preserved the distinction between lower- and higher-risk groups. This approach could support multidimensional COPD diagnosis where CT is not routinely available.
 
 # CONTRIBUTIONS
 Peter J. Castaldi and Massimo Pistolesi conceived the study, performed the analysis, and wrote the manuscript. Surya P. Bhatt contributed to data interpretation. James D. Crapo and Edwin K. Silverman obtained funding and contributed to data generation. All authors critically reviewed the manuscript.

@@ -36,7 +36,8 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               t_risk_common_ref, t_discord_risk, Section,
                               add_figure, read_legend, figure_width, FIGS,
                               CONTENT_WIDTH_IN, new_section, _field,
-                              add_page_numbers, keep_outcome_blocks, alt_text)
+                              add_page_numbers, keep_outcome_blocks, alt_text,
+                              output_guard, record_build)
 import paginate                                              # noqa: E402
 
 # Never v7, which is Pete's (2026-11-05); see build_manuscript.OUT.
@@ -543,6 +544,7 @@ def build(out, toc):
 
 
 def main(out=OUT):
+    output_guard(out, "The supplement build")
     pjc_guard.check("The supplement build")
     word_guard.check([out], "The supplement build")
     prose_guard.check("The supplement build")
@@ -565,6 +567,7 @@ def main(out=OUT):
              if paginate.last_page_of(final, h) != pg]
     if moved:
         raise SystemExit(f"contents page numbers moved on the final rendering: {moved}")
+    record_build(out)
     check_citations(SUPP_ORDER)
     for h, pg in toc:
         print(f"  p{pg:>2}  {h}")

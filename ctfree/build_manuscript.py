@@ -247,6 +247,34 @@ def keep_table_together(t):
                 p.paragraph_format.keep_with_next = True
 
 
+BUILT = os.path.join(HERE, ".submission_built")
+
+
+def output_guard(out, build_name):
+    """Never write Pete's drafts in manuscript/ (Pete, 2026-11-05: "I don't want
+    you to change v7 at all"), and never overwrite a build output he has saved
+    since it was built: his edits there must be ported to the sources first.
+    record_build() stores each output's mtime after a build."""
+    out = os.path.abspath(out)
+    if os.path.dirname(out) == os.path.join(HERE, "manuscript"):
+        raise SystemExit(f"\nREFUSING TO BUILD. {build_name} would write {out}, Pete's draft.\n")
+    if not os.path.exists(out):
+        return
+    import json
+    built = json.load(open(BUILT)) if os.path.exists(BUILT) else {}
+    if os.path.getmtime(out) > built.get(out, 0) + 1e-6:
+        raise SystemExit(f"\nREFUSING TO BUILD. {out} was saved after it was last built.\n"
+                         "  Port the edits into the sources, then record_build() it.\n")
+
+
+def record_build(out):
+    import json
+    out = os.path.abspath(out)
+    built = json.load(open(BUILT)) if os.path.exists(BUILT) else {}
+    built[out] = os.path.getmtime(out)
+    json.dump(built, open(BUILT, "w"), indent=1)
+
+
 def keep_outcome_blocks(t, rows):
     """A long table breaks across pages anyway. Let it break only before a
     diagnostic-group row, so a continued page never opens on rows whose Outcome
@@ -559,6 +587,7 @@ def add_front_matter(doc):
     r.font.name, r.font.size = FONT_NAME, Pt(12)
 
     p = doc.add_paragraph()
+    p.paragraph_format.line_spacing = 1.0      # Pete, 2026-11-05
     r = p.add_run(" ".join(tp["AUTHORS"]))
     r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
@@ -624,14 +653,16 @@ def alt_text(doc, stem):
     labeled(doc.add_paragraph(), "Alt text", read_alt(stem), size=BODY_FS - 1)
 
 
-def line_numbers(doc):
-    """Continuous line numbers in every section (AJRCCM: strongly recommended)."""
-    for s in doc.sections:
+def line_numbers(doc, first=0):
+    """Line numbers (AJRCCM: strongly recommended) from section `first` on,
+    starting at 1 there and continuous after it. Pete wants them to start at
+    the Introduction (2026-11-05)."""
+    for k, s in enumerate(doc.sections[first:]):
         sp = s._sectPr
         if sp.find(qn("w:lnNumType")) is None:
             ln = OxmlElement("w:lnNumType")
             ln.set(qn("w:countBy"), "1")
-            ln.set(qn("w:restart"), "continuous")
+            ln.set(qn("w:restart"), "newSection" if k == 0 else "continuous")
             # schema order: lnNumType precedes pgNumType, cols and docGrid
             nxt = next((sp.find(qn(t)) for t in ("w:pgNumType", "w:cols", "w:docGrid")
                         if sp.find(qn(t)) is not None), None)
@@ -651,6 +682,7 @@ def heading_on_new_page(doc, text):
 
 
 def main(out):
+    output_guard(out, "The manuscript build")
     pjc_guard.check("The manuscript build")
     word_guard.check([out], "The manuscript build")
     prose_guard.check("The manuscript build")
@@ -692,7 +724,12 @@ def main(out):
     add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
     # AJRCCM: key words go on the abstract page.
     labeled(doc.add_paragraph(), "Key words", " ".join(read_titlepage()["KEYWORDS"]))
-    heading_on_new_page(doc, "INTRODUCTION")
+    sec = new_section(doc, landscape=False)     # line numbering starts in this section
+    # A new section copies the previous one's settings; page numbers continue.
+    for pg_ in sec._sectPr.findall(qn("w:pgNumType")):
+        sec._sectPr.remove(pg_)
+    intro_section = len(doc.sections) - 1
+    doc.add_paragraph("INTRODUCTION", style="Heading 1")
     n_i = add_prose(doc, os.path.join(HERE, "INTRODUCTION.md"))
     doc.add_paragraph("METHODS", style="Heading 1")
     n_m = add_prose(doc, os.path.join(HERE, "METHODS.md"), skip_after="Still to write")
@@ -755,7 +792,7 @@ def main(out):
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     if landscape_now:
         new_section(doc, landscape=False)
-    line_numbers(doc)
+    line_numbers(doc, first=intro_section)
 
     # A floor against a source file failing to render, not a target length.
     # Massimo's Introduction is three paragraphs by choice (2026-09-20); v3 merged
@@ -764,6 +801,7 @@ def main(out):
     assert n_i >= 3 and n_m > 10 and n_r >= 8 and n_d > 5, \
         f"prose came out suspiciously short: {n_i}, {n_m}, {n_r}, {n_d}"
     doc.save(out)
+    record_build(out)
     print(f"wrote {out}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
           f"{n_d} Discussion paragraphs, {n_ref} references")
 
