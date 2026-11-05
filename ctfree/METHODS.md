@@ -38,5 +38,5 @@ Annualized FEV₁ change relative to the common reference group was estimated us
 
 Discordance between MD-COPD-ESI and MD-COPD-CT was examined separately in participants with and without airflow limitation. Participants classified as noCOPD by both approaches served as the reference group without airflow limitation, and those classified as AFL-only by both approaches served as the reference group with airflow limitation. ESI and %LAA-950HU were compared between discordant groups using the Wilcoxon rank-sum test and minor-criterion prevalence using Fisher's exact test.
 
-Estimates are reported with 95% CIs in square brackets. Additional statistical details, including confidence-interval estimation for unadjusted outcome comparisons and handling of groups with fewer than 10 events, are provided in the Online Supplement. Analyses were performed in R version 4.5.2.
+Estimates are reported with 95% CIs in square brackets. Additional statistical details, including confidence-interval estimation for unadjusted outcome comparisons and handling of groups with fewer than 10 events, are provided in the Online Supplement. Analyses were performed in R version 4.5.2. Claude (Anthropic), an artificial intelligence tool, was used to help write and check analysis code, verify results, and edit the text; the authors reviewed all of its output.
 

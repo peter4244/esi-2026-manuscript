@@ -36,10 +36,11 @@ from build_manuscript import (init_document, add_table, legend,  # noqa: E402
                               t_risk_common_ref, t_discord_risk, Section,
                               add_figure, read_legend, figure_width, FIGS,
                               CONTENT_WIDTH_IN, new_section, _field,
-                              add_page_numbers, keep_outcome_blocks)
+                              add_page_numbers, keep_outcome_blocks, alt_text)
 import paginate                                              # noqa: E402
 
-OUT = os.path.join(HERE, "manuscript", "CT-free MD-COPD supplement draft v7.docx")
+# Never v7, which is Pete's (2026-11-05); see build_manuscript.OUT.
+OUT = os.path.join(HERE, "Submission", "AJRCCM", "CT-free MD-COPD supplement AJRCCM.docx")
 # SUPP_ORDER is defined after the table functions, from SUPP_TABLES.
 
 
@@ -528,6 +529,7 @@ def build(out, toc):
         assert read_legend(stem).startswith(figure_title(stem) + ". "), stem
         body = read_legend(stem)[len(figure_title(stem)) + 2:]
         add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Figure {n}.", body, width=w)
+        alt_text(doc, stem)
     if landscape_now:
         new_section(doc, landscape=False)
     data_files(doc)

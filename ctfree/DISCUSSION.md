@@ -2,6 +2,8 @@
 
 *(Massimo's v4 (2) of 2026-10-03, his response to Surya Bhatt's critiques, with the fixes Pete approved; v5.)*
 
+## Discussion
+
 In this study, we examined whether the Emphysema Severity Index (ESI), derived from the expiratory portion of the spirometric flow-volume curve, could represent part of the information contributed by the CT criteria of the MD-COPD-CT framework when CT is unavailable. We observed that using ESI in place of CT criteria preserved many of the beneficial aspects of the MD-COPD-CT classification, especially among individuals with airflow limitation, but was less effective in reproducing the CT-based classification among individuals without airflow limitation.
 
 The benefits of the MD-COPD-CT classification arise from the creation of the COPD-minor pathway, which confers the COPD label on individuals without airflow limitation but with high symptom burden or evidence of structural lung disease, and the AFL-only pathway, which removes the COPD diagnosis from relatively low-risk individuals with airflow limitation but no minor criteria. Our data show that incorporating ESI in place of the CT criteria in MD-COPD-CT is effective at reconstituting a "low-risk" AFL-only pathway, but less effective at isolating a "higher-risk" COPD-minor pathway. ESI reconstructed the MD-COPD-CT classification more closely than removing the CT criteria without replacement, particularly in the AFL-only pathway, demonstrating the utility of this approach in settings where CT is not available.
@@ -18,6 +20,7 @@ This study has several strengths. All three classifications were applied to the 
 
 Several limitations should be considered. COPDGene enrolled current and former smokers aged 45-80 years with ≥10 pack-years, and MD-COPD-ESI was developed and evaluated in the same cohort; although thresholds were cross-validated, external validation is required. MD-COPD-CT served as the reference but is not a diagnostic gold standard, so agreement measures how well its structure is preserved rather than diagnostic accuracy, and discordance cannot establish which approach is correct. Respiratory deaths were too few in AFL-only and COPD-minor for comparison between classifications. Finally, these findings do not imply that ESI can replace chest CT when anatomical characterization is clinically required.
 
+## Conclusion
+
 In conclusion, replacing the CT criteria of MD-COPD-CT with ESI preserved much of the original multidimensional classification and recovered clinically relevant information lost when imaging criteria were simply removed. The recovery was concentrated in participants with airflow limitation, where ESI kept more than half of the participants whose COPD-major classification depended on CT criteria from being reassigned to AFL-only. Importantly, this was achieved by extracting additional information from the same spirometric examination used to assess airflow limitation, without introducing another diagnostic procedure. The findings suggest that the expiratory flow-volume curve contains clinically relevant physiological information about the structural dimension of COPD beyond conventional spirometric indices. External validation is required to establish the generalizability and clinical applicability of this framework.
 
-(Word count 3371)

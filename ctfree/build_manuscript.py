@@ -40,9 +40,12 @@ from supp_registry import supp_num                             # noqa: E402
 
 ASSETS = os.path.join(HERE, "assets")
 FIGS   = os.path.join(HERE, "figures")
-OUT    = os.path.join(HERE, "manuscript",
-                      "CT-free MD-COPD manuscript draft v7.docx")
-BODY_FS, TBL_FS = 11, 9
+# v7 in manuscript/ is Pete's and is never written by a build (Pete, 2026-11-05:
+# "I don't want you to change v7 at all"). The AJRCCM submission build goes to
+# its own folder; pjc_guard still watches v7 for his edits.
+OUT    = os.path.join(HERE, "Submission", "AJRCCM",
+                      "CT-free MD-COPD manuscript AJRCCM.docx")
+BODY_FS, TBL_FS = 12, 9      # AJRCCM: 12-point type (2026-11-05)
 CATS = ["noCOPD", "AFL-only", "COPD-minor", "COPD-major"]
 # Mortality and exacerbation models are fitted on different participant sets,
 # so the denominator shown must follow the outcome rather than being one number
@@ -106,11 +109,15 @@ def emphasis(par, text, size=BODY_FS):
         r.font.name, r.font.size = FONT_NAME, Pt(size)
 
 
-def add_prose(doc, md_path, skip_after=None):
+def add_prose(doc, md_path, skip_after=None, start_at=None):
     """Render a prose source, stopping at `skip_after` so the editorial
-    'Still to write' and 'Open' sections never reach the document."""
+    'Still to write' and 'Open' sections never reach the document, and, given
+    `start_at`, beginning at the section of that title."""
     with open(md_path) as f:
         lines = f.read().split("\n")
+    if start_at:
+        lines = lines[next(i for i, l in enumerate(lines)
+                           if l.startswith("## ") and l[3:].strip().lower().startswith(start_at.lower())):]
     # Everything before the first section heading is editorial front matter
     # explaining the annotations, and belongs in the source rather than the
     # document.
@@ -137,7 +144,7 @@ def add_prose(doc, md_path, skip_after=None):
                 flush()
                 return emitted
             flush()
-            if t.startswith("## ") and title.lower() not in ("introduction", "discussion"):
+            if t.startswith("## ") and title.lower() not in ("introduction", "discussion", "conclusion"):
                 doc.add_paragraph(title, style="Heading 2")
         elif t.startswith("---") or t.startswith("|") or t.startswith("```"):
             flush()
@@ -197,6 +204,7 @@ def add_table(doc, headers, rows, widths, body_fs=TBL_FS, pad_in=0.05):
             p = cell.paragraphs[0]
             p.paragraph_format.space_before = Pt(3)
             p.paragraph_format.space_after = Pt(1)
+            p.paragraph_format.line_spacing = 1.0
             r = p.add_run(str(row))
             r.bold = True
             r.font.name, r.font.size = FONT_NAME, Pt(body_fs)
@@ -208,6 +216,7 @@ def add_table(doc, headers, rows, widths, body_fs=TBL_FS, pad_in=0.05):
             p = cell.paragraphs[0]
             p.paragraph_format.space_before = Pt(1)
             p.paragraph_format.space_after = Pt(1)
+            p.paragraph_format.line_spacing = 1.0
             if j:
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             r = p.add_run(str(val))
@@ -559,20 +568,22 @@ def add_front_matter(doc):
         r = p.add_run(aff)
         r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
-    doc.add_paragraph()
-    p = doc.add_paragraph()
-    r = p.add_run("Key words:")
-    r.bold = True
-    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
-    r = p.add_run(" " + " ".join(tp["KEYWORDS"]))
-    r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
-
-    # Optional front-matter statements, printed in this order when present in
-    # TITLEPAGE.md, each as "<Label>: text" (Pete, 2026-10-08).
-    for key, label in (("CORRESPONDING", "Correspondence"),
+    # Front-matter statements, printed in this order when present in
+    # TITLEPAGE.md, each as "<Label>: text" (Pete, 2026-10-08). AJRCCM title
+    # page (2026-11-05): corresponding author, word count, impact statement,
+    # author contributions, funding, conflicts of interest, AI-tool use. The
+    # word count is filled in once the body exists; this returns its paragraph.
+    wc = None
+    for key, label in (("CORRESPONDING", "Correspondence"), ("WORDCOUNT", "Word count"),
+                       ("IMPACT", "Impact statement"),
                        ("CONTRIBUTIONS", "Author contributions"),
                        ("FUNDING", "Supported by"), ("DATA AVAILABILITY", "Data availability"),
-                       ("DISCLOSURES", "Author disclosures"), ("ACKNOWLEDGMENT", "Acknowledgment")):
+                       ("DISCLOSURES", "Conflicts of interest"), ("ACKNOWLEDGMENT", "Acknowledgment"),
+                       ("AI", "Use of artificial intelligence tools")):
+        if key == "WORDCOUNT":
+            doc.add_paragraph()
+            wc = doc.add_paragraph()
+            continue
         if tp.get(key):
             doc.add_paragraph()
             p = doc.add_paragraph()
@@ -581,6 +592,53 @@ def add_front_matter(doc):
             r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
             r = p.add_run(" " + " ".join(tp[key]))
             r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+    return wc
+
+
+def labeled(par, label, text, size=BODY_FS):
+    """'<Label>: text' with the label in bold."""
+    r = par.add_run(f"{label}:")
+    r.bold = True
+    r.font.name, r.font.size = FONT_NAME, Pt(size)
+    r = par.add_run(f" {text}")
+    r.font.name, r.font.size = FONT_NAME, Pt(size)
+
+
+def read_alt(stem):
+    """A figure's alt text from FIGURE_ALT_TEXT.md, its section keyed by stem.
+    AJRCCM requires alt text under each figure legend (2026-11-05)."""
+    sec, out = None, {}
+    for line in open(os.path.join(HERE, "FIGURE_ALT_TEXT.md")):
+        line = line.strip()
+        if line.startswith("## "):
+            sec = line[3:].strip()
+            out[sec] = []
+        elif sec and line:
+            out[sec].append(line)
+    if not out.get(stem):
+        raise SystemExit(f"FIGURE_ALT_TEXT.md has no alt text for {stem}")
+    return " ".join(out[stem])
+
+
+def alt_text(doc, stem):
+    labeled(doc.add_paragraph(), "Alt text", read_alt(stem), size=BODY_FS - 1)
+
+
+def line_numbers(doc):
+    """Continuous line numbers in every section (AJRCCM: strongly recommended)."""
+    for s in doc.sections:
+        sp = s._sectPr
+        if sp.find(qn("w:lnNumType")) is None:
+            ln = OxmlElement("w:lnNumType")
+            ln.set(qn("w:countBy"), "1")
+            ln.set(qn("w:restart"), "continuous")
+            # schema order: lnNumType precedes pgNumType, cols and docGrid
+            nxt = next((sp.find(qn(t)) for t in ("w:pgNumType", "w:cols", "w:docGrid")
+                        if sp.find(qn(t)) is not None), None)
+            if nxt is not None:
+                nxt.addprevious(ln)
+            else:
+                sp.append(ln)
 
 
 def heading_on_new_page(doc, text):
@@ -603,11 +661,22 @@ def main(out):
     os.makedirs(os.path.dirname(out), exist_ok=True)
     doc = init_document()
     add_page_numbers(doc)       # AJRCCM: pages numbered consecutively
+    # AJRCCM: double spacing throughout (tables stay single spaced; add_table)
+    doc.styles["Normal"].paragraph_format.line_spacing = 2.0
+    cp = doc.core_properties
+    cp.title, cp.author, cp.comments = read_titlepage()["TITLE"][0], "Peter J. Castaldi", ""
 
-    add_front_matter(doc)
+    wc = add_front_matter(doc)
     add_prose(doc, os.path.join(HERE, "AT_A_GLANCE.md"))
 
-    heading_on_new_page(doc, "ABSTRACT")
+    # AJRCCM: pages are numbered from the abstract, which is page 1.
+    sec = new_section(doc, landscape=False)
+    pg = OxmlElement("w:pgNumType")
+    pg.set(qn("w:start"), "1")
+    nxt = next((sec._sectPr.find(qn(t)) for t in ("w:cols", "w:docGrid")
+                if sec._sectPr.find(qn(t)) is not None), None)
+    nxt.addprevious(pg) if nxt is not None else sec._sectPr.append(pg)
+    doc.add_paragraph("ABSTRACT", style="Heading 1")
     # Pete bolds the Abstract headings. Regenerating ABSTRACT.md from the plain
     # text of his docx dropped the bold markup three times (2026-09-27), so the
     # build refuses an Abstract whose paragraphs do not open with a bold label.
@@ -621,6 +690,8 @@ def main(out):
         raise SystemExit("ABSTRACT.md: every paragraph must open with its bold label, "
                          f"**{'**, **'.join(ABSTRACT_LABELS)}**, as Pete formats them")
     add_prose(doc, os.path.join(HERE, "ABSTRACT.md"))
+    # AJRCCM: key words go on the abstract page.
+    labeled(doc.add_paragraph(), "Key words", " ".join(read_titlepage()["KEYWORDS"]))
     heading_on_new_page(doc, "INTRODUCTION")
     n_i = add_prose(doc, os.path.join(HERE, "INTRODUCTION.md"))
     doc.add_paragraph("METHODS", style="Heading 1")
@@ -629,9 +700,19 @@ def main(out):
     n_r = add_prose(doc, os.path.join(HERE, "RESULTS.md"), skip_after="Open")
 
     doc.add_paragraph("DISCUSSION", style="Heading 1")
-    n_d = add_prose(doc, os.path.join(HERE, "DISCUSSION.md"))
+    n_d = add_prose(doc, os.path.join(HERE, "DISCUSSION.md"), skip_after="Conclusion")
+    # AJRCCM first-level headers include Conclusion (2026-11-05).
+    doc.add_paragraph("CONCLUSION", style="Heading 1")
+    n_d += add_prose(doc, os.path.join(HERE, "DISCUSSION.md"), start_at="Conclusion")
 
-    doc.add_paragraph("REFERENCES", style="Heading 1")
+    # Body word count for the title page: Introduction through Conclusion,
+    # headings included, as counted since v5.
+    ps = [p.text for p in doc.paragraphs]
+    n_words = sum(len(t.split()) for t in ps[ps.index("INTRODUCTION"):])
+    labeled(wc, "Word count", f"{n_words:,} (text); abstract "
+            + re.search(r"\(word count (\d+)\)", open(os.path.join(HERE, "ABSTRACT.md")).read()).group(1))
+
+    heading_on_new_page(doc, "REFERENCES")
     n_ref = check_references()
     for line in open(os.path.join(HERE, "REFERENCES.md")):
         if re.match(r"^\d+\.\s+\S", line):
@@ -644,29 +725,47 @@ def main(out):
     # landscape page must be placed at that width, or every font in it lands
     # smaller than the size the figure was validated at, so the page turns
     # where a width needs it to. Numbering follows Massimo's 2026-09-20 draft.
-    doc.add_page_break()
-    doc.add_paragraph("FIGURES", style="Heading 1")
+    # AJRCCM order: tables, figure legends, figures, each part on a new page;
+    # alt text under each legend (2026-11-05).
+    MAIN_FIGS = ((1, "figure1_esi_ct"), (2, "figure2_flow"),
+                 (3, "figure3_group_risk"), (4, "figure4_discord_risk"))
+    heading_on_new_page(doc, "FIGURE LEGENDS")
+    for n, stem in MAIN_FIGS:
+        legend(doc, f"Figure {n}.", read_legend(stem))
+        alt_text(doc, stem)
     landscape_now = False
-    for n, stem in ((1, "figure1_esi_ct"), (2, "figure2_flow"),
-                    (3, "figure3_group_risk"), (4, "figure4_discord_risk")):
+    for k, (n, stem) in enumerate(MAIN_FIGS):
         w = figure_width(os.path.join(FIGS, stem + ".meta"))
         want = w > CONTENT_WIDTH_IN + 0.01
         if want != landscape_now:
             new_section(doc, landscape=want)
             landscape_now = want
-        add_figure(doc, os.path.join(FIGS, stem + ".png"), f"Figure {n}.",
-                   read_legend(stem), width=w)
+        elif k:
+            doc.add_page_break()
+        if k == 0 and not landscape_now:
+            doc.add_page_break()
+        if k == 0:
+            doc.add_paragraph("FIGURES", style="Heading 1")
+        p = doc.add_paragraph()
+        r = p.add_run(f"Figure {n}")
+        r.bold = True
+        r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
+        p.paragraph_format.keep_with_next = True
+        doc.add_picture(os.path.join(FIGS, stem + ".png"), width=Inches(w))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     if landscape_now:
         new_section(doc, landscape=False)
+    line_numbers(doc)
 
+    # A floor against a source file failing to render, not a target length.
+    # Massimo's Introduction is three paragraphs by choice (2026-09-20); v3 merged
+    # two pairs of Results paragraphs, leaving ten. Checked before saving, so a
+    # failed build writes nothing.
+    assert n_i >= 3 and n_m > 10 and n_r >= 8 and n_d > 5, \
+        f"prose came out suspiciously short: {n_i}, {n_m}, {n_r}, {n_d}"
     doc.save(out)
     print(f"wrote {out}\n  {n_i} Introduction, {n_m} Methods, {n_r} Results, "
           f"{n_d} Discussion paragraphs, {n_ref} references")
-    # A floor against a source file failing to render, not a target length.
-    # Massimo's Introduction is three paragraphs by choice (2026-09-20); v3 merged
-    # two pairs of Results paragraphs, leaving ten.
-    assert n_i >= 3 and n_m > 10 and n_r >= 8 and n_d > 5, \
-        "prose came out suspiciously short"
 
 
 if __name__ == "__main__":
