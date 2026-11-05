@@ -21,6 +21,12 @@ Peter J. Castaldi¹,²; Matteo Paoletti³; Mariaelena Occhipinti⁴; Alessandra 
 # KEYWORDS
 Chronic Obstructive Pulmonary Disease; Spirometry; Pulmonary Emphysema; Computed Tomography; Pulmonary Function Tests
 
+# CORRESPONDING
+Massimo Pistolesi, Department of Experimental and Clinical Medicine, University of Florence, Florence, Italy. Email: massimo.pistolesi@unifi.it
+
+# CONTRIBUTIONS
+Peter J. Castaldi and Massimo Pistolesi conceived the study, performed the analysis, and wrote the manuscript. Surya P. Bhatt contributed to data interpretation. James D. Crapo and Edwin K. Silverman obtained funding and contributed to data generation. All authors critically reviewed the manuscript.
+
 # DATA AVAILABILITY
 COPDGene data are available from dbGaP (accession phs000179.v7.p2).
 
