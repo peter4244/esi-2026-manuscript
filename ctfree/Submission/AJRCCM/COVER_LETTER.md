@@ -1,9 +1,10 @@
 November 5, 2026
 
-The Editors
+Fernando J. Martinez
+Editor-in-Chief
 American Journal of Respiratory and Critical Care Medicine
 
-Dear Editors,
+Dear Dr. Martinez,
 
 We are pleased to submit our manuscript, "The Emphysema Severity Index: Representing CT Abnormalities in a Multidimensional COPD Framework," for consideration as an Original Research article in the American Journal of Respiratory and Critical Care Medicine.
 
