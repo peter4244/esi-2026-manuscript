@@ -578,6 +578,9 @@ def read_titlepage():
     return sections
 
 
+TP_SPACING = 1.15     # title page and At a Glance (Pete, 2026-11-05)
+
+
 def add_front_matter(doc):
     tp = read_titlepage()
 
@@ -591,9 +594,18 @@ def add_front_matter(doc):
     r = p.add_run(" ".join(tp["AUTHORS"]))
     r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
-    doc.add_paragraph()
+    # Pete's layout from his 2026-11-05 Word edit of the submission file: no blank
+    # line between authors and affiliations, the rest of the title page and the
+    # At a Glance at 1.15 line spacing, affiliations with no space after, and a
+    # blank line only before Correspondence and before Word count.
+    def spaced(p, after=None):
+        p.paragraph_format.line_spacing = TP_SPACING
+        if after is not None:
+            p.paragraph_format.space_after = Pt(after)
+        return p
+
     for aff in tp["AFFILIATIONS"]:
-        p = doc.add_paragraph()
+        p = spaced(doc.add_paragraph(), after=0)
         r = p.add_run(aff)
         r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
 
@@ -610,12 +622,13 @@ def add_front_matter(doc):
                        ("DISCLOSURES", "Conflicts of interest"), ("ACKNOWLEDGMENT", "Acknowledgment"),
                        ("AI", "Use of artificial intelligence tools")):
         if key == "WORDCOUNT":
-            doc.add_paragraph()
-            wc = doc.add_paragraph()
+            spaced(doc.add_paragraph())
+            wc = spaced(doc.add_paragraph())
             continue
         if tp.get(key):
-            doc.add_paragraph()
-            p = doc.add_paragraph()
+            if key == "CORRESPONDING":
+                spaced(doc.add_paragraph())
+            p = spaced(doc.add_paragraph())
             r = p.add_run(f"{label}:")
             r.bold = True
             r.font.name, r.font.size = FONT_NAME, Pt(BODY_FS)
@@ -699,7 +712,10 @@ def main(out):
     cp.title, cp.author, cp.comments = read_titlepage()["TITLE"][0], "Peter J. Castaldi", ""
 
     wc = add_front_matter(doc)
+    k0 = len(doc.paragraphs)
     add_prose(doc, os.path.join(HERE, "AT_A_GLANCE.md"))
+    for p in doc.paragraphs[k0:]:
+        p.paragraph_format.line_spacing = TP_SPACING
 
     # AJRCCM: pages are numbered from the abstract, which is page 1.
     sec = new_section(doc, landscape=False)
